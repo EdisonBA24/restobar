@@ -1,5 +1,6 @@
-from flask import Flask, app, jsonify
+from flask import Flask, jsonify
 from flask_cors import CORS
+
 from routes.productos import productos_bp
 from routes.unidades import unidades_bp
 from routes.health import health_bp
@@ -24,9 +25,9 @@ def create_app():
 
     CORS(app, supports_credentials=True)
 
-    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # 🔥 importante
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = False
-    
+
     # Blueprints
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(productos_bp, url_prefix="/api")
@@ -44,14 +45,12 @@ def create_app():
     app.register_blueprint(usuarios_bp, url_prefix="/api")
     app.register_blueprint(pagos_bp, url_prefix="/api")
 
-    # Ruta base
     @app.route("/")
     def home():
         return jsonify({
             "message": "ERP Backend funcionando"
         })
 
-    # Manejo global de errores
     @app.errorhandler(Exception)
     def handle_exception(e):
         return jsonify({
@@ -62,14 +61,12 @@ def create_app():
     return app
 
 
+# 🔥 ESTA ES LA CLAVE PARA RENDER
+app = create_app()
+
+
+# 🔥 SOLO PARA LOCAL
 if __name__ == "__main__":
-    app = create_app()
-    app.run(debug=True)
-
-
-import os
-
-if __name__ == "__main__":
+    import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-    
+    app.run(host="0.0.0.0", port=port, debug=True)

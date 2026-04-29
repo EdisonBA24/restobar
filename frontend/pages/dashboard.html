@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="../css/styles.css?v=2">
+
+    <style>
+        /* 🔥 SOLO MEJORAS VISUALES (NO ROMPE NADA) */
+
+        .main {
+            padding: 30px 40px;
+        }
+
+        .header-user {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header-user h1 {
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .user-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-box span {
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .btn-logout {
+            background: #ef4444;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-logout:hover {
+            background: #dc2626;
+        }
+
+        /* KPI */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .card-kpi {
+            padding: 25px;
+            border-radius: 16px;
+        }
+
+        .card-kpi h3 {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+
+        .card-kpi h1 {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        /* Tabla */
+        .card h2 {
+            margin-bottom: 15px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table thead th {
+            text-align: left;
+            font-size: 13px;
+            opacity: 0.6;
+            padding: 10px 0;
+        }
+
+        .table tbody td {
+            padding: 10px 0;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .table tbody tr:hover {
+            background: rgba(0,0,0,0.02);
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <!-- ===================== SIDEBAR ===================== -->
+        <aside class="sidebar">
+
+            <img src="../assets/logo.ico"
+                 alt="Logo"
+                 class="logo"
+                 width="80%"
+                 style="margin: 20px auto; display: block;">
+
+            <ul>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">🏠 Dashboard</div>
+                    <ul class="submenu">
+                        <li class="active">📋 Resumen del día</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">👥 Clientes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
+                        <li onclick="ir('clientes')">📋 Consultar clientes</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">📦 Productos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_producto')">➕ Crear producto</li>
+                        <li onclick="ir('productos')">📋 Consultar productos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">👤 Usuarios</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_usuario')">➕ Crear Usuario</li>
+                        <li onclick="ir('usuarios')">📋 Consultar Usuarios</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🍳 Recetas</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_receta')">➕ Crear Receta</li>
+                        <li onclick="ir('recetas')">📋 Consultar Recetas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🛒 Compras</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_compra')">➕ Crear Compra</li>
+                        <li onclick="ir('compras')">📋 Consultar Compras</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🧾 Pedidos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pedido_desayuno')">🥞 Desayunos</li>
+                        <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
+                        <li onclick="ir('crear_pedido_comidas_rapidas')">🍔 Comidas rápidas</li>
+                        <li onclick="ir('crear_pedido_licores')">🥃 Licores / Bebidas</li>
+                        <li onclick="ir('pedidos')">📋 Consultar Pedidos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">💰 Ventas</div>
+                    <ul class="submenu">
+                        <li onclick="ir('ventas')">📋 Consultar Ventas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">📊 Reportes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('reporte_inventario')">📦 Inventario</li>
+                        <li onclick="ir('reporte_ventas')">💰 Ventas</li>
+                        <li onclick="ir('reporte_costos')">📊 Costos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">💰 Pagos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pago')">➕ Registrar Pago</li>
+                        <li onclick="ir('pagos')">📋 Consultar Pagos</li>
+                    </ul>
+                </li>
+
+            </ul>
+        </aside>
+
+        <!-- ===================== MAIN ===================== -->
+        <main class="main">
+
+            <header class="header header-user">
+
+                <h1>📊 Resumen del Día</h1>
+
+                <div class="user-box">
+                    <span id="nombreUsuario">👤 Usuario</span>
+                    <button onclick="logout()" class="btn-logout">Cerrar sesión</button>
+                </div>
+
+            </header>
+
+            <!-- KPI -->
+            <div class="dashboard-grid">
+
+                <div class="card card-kpi">
+                    <h3>💰 Ventas del día</h3>
+                    <h1 id="ventas">$0</h1>
+                </div>
+
+                <div class="card card-kpi success">
+                    <h3>📈 Utilidad del día</h3>
+                    <h1 id="utilidad">$0</h1>
+                </div>
+
+            </div>
+
+            <!-- Tabla -->
+            <div class="card">
+                <h2>🔥 Top productos</h2>
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Utilidad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topProductos"></tbody>
+                </table>
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- ===================== SCRIPTS ===================== -->
+
+    <script type="module" src="../js/auth.js"></script>
+    <script type="module" src="../js/menu.js" defer></script>
+    <script type="module" src="../js/dashboard.js" defer></script>
+
+    <script>
+        function ir(p) {
+            window.location.href = `../pages/${p}.html`;
+        }
+    </script>
+
+</body>
+
+</html>

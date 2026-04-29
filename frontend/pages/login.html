@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Login</title>
+
+    <link rel="stylesheet" href="../css/styles.css?v=2">
+
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: radial-gradient(circle at 20% 20%, #1e3a8a, #0f172a);
+            overflow: hidden;
+        }
+
+        .login-card {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 35px;
+            border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            text-align: center;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-logo {
+            width: 140px;
+            margin-bottom: 15px;
+        }
+
+        .login-title {
+            font-weight: 700;
+            font-size: 20px;
+            margin-bottom: 25px;
+        }
+
+        .login-input {
+            width: 90%;
+            padding: 12px;
+            margin-bottom: 14px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            outline: none;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .login-btn.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .login-btn.loading::after {
+            content: "";
+            width: 18px;
+            height: 18px;
+            border: 2px solid white;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .error-msg {
+            color: red;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .success-msg {
+            color: green;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-pass {
+            position: absolute;
+            right: 10px;
+            top: 35%;
+            cursor: pointer;
+            font-size: 14px;
+            color: #2563eb;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="login-card">
+
+        <img src="../assets/logo.ico" class="login-logo">
+
+        <h2 class="login-title">INICIAR SESIÓN</h2>
+
+        <form onsubmit="event.preventDefault(); login();">
+
+            <input type="text" id="usuario" class="login-input" placeholder="Usuario">
+
+            <div class="password-wrapper">
+                <input type="password" id="password" class="login-input" placeholder="Contraseña">
+                <span class="toggle-pass" onclick="togglePassword()">👁️</span>
+            </div>
+
+            <button class="login-btn" type="submit">
+                <span class="btn-text">Ingresar</span>
+            </button>
+
+        </form>
+
+        <div id="loginMsg"></div>
+
+    </div>
+
+    <script>
+        // 🔥 CONFIG DINÁMICA (LOCAL vs PRODUCCIÓN)
+        const API_URL = window.location.hostname.includes("localhost") ||
+                        window.location.hostname.includes("127.0.0.1")
+            ? "http://127.0.0.1:5000"
+            : "https://restobar.onrender.com"; // 🔥 CAMBIAR POR TU URL REAL
+
+        function togglePassword() {
+            const input = document.getElementById("password");
+            const toggle = document.querySelector(".toggle-pass");
+
+            if (input.type === "password") {
+                input.type = "text";
+                toggle.innerText = "🙈";
+            } else {
+                input.type = "password";
+                toggle.innerText = "👁️";
+            }
+        }
+
+        async function login() {
+
+            const btn = document.querySelector(".login-btn");
+            const btnText = document.querySelector(".btn-text");
+            const msg = document.getElementById("loginMsg");
+
+            const usuario = document.getElementById("usuario").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!usuario || !password) {
+                msg.innerText = "Completa todos los campos";
+                msg.className = "error-msg";
+                return;
+            }
+
+            msg.innerText = "";
+
+            btn.classList.add("loading");
+            btnText.style.visibility = "hidden";
+
+            try {
+
+                const res = await fetch(`${API_URL}/api/login`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ usuario, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || data.status !== "success") {
+                    msg.innerText = data.message || "Error login";
+                    msg.className = "error-msg";
+                    return;
+                }
+
+                msg.innerText = "Ingreso exitoso";
+                msg.className = "success-msg";
+
+                localStorage.setItem("usuario", JSON.stringify(data.user));
+
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 700);
+
+            } catch (e) {
+                console.error(e);
+                msg.innerText = "Error de conexión";
+                msg.className = "error-msg";
+            } finally {
+                btn.classList.remove("loading");
+                btnText.style.visibility = "visible";
+            }
+        }
+
+        document.addEventListener("keydown", e => {
+            if (e.key === "Enter") login();
+        });
+    </script>
+
+</body>
+
+</html>

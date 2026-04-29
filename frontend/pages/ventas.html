@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Ventas</title>
+    <link rel="stylesheet" href="../css/styles.css?v=2">
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <img src="../assets/logo.ico" class="logo" width="80%" style="margin:20px auto;display:block;">
+
+            <ul>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">🏠 Dashboard</div>
+                    <ul class="submenu">
+                        <li onclick="ir('dashboard')">📋 Resumen del día</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">👥 Clientes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
+                        <li onclick="ir('clientes')">📋 Consultar clientes</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">📦 Productos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_producto')">➕ Crear producto</li>
+                        <li onclick="ir('productos')">📋 Consultar productos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">👤 Usuarios</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_usuario')">➕ Crear Usuario</li>
+                        <li onclick="ir('usuarios')">📋 Consultar Usuarios</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🍳 Recetas</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_receta')">➕ Crear Receta</li>
+                        <li onclick="ir('recetas')">📋 Consultar Recetas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🛒 Compras</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_compra')">➕ Crear Compra</li>
+                        <li onclick="ir('compras')">📋 Consultar Compras</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🧾 Pedidos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pedido_desayuno')">🥞 Desayunos</li>
+                        <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
+                        <li onclick="ir('crear_pedido_comidas_rapidas')">🍔 Comidas rápidas</li>
+                        <li onclick="ir('crear_pedido_licores')">🥃 Licores / Bebidas</li>
+                        <li onclick="ir('pedidos')">📋 Consultar Pedidos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">💰 Ventas</div>
+                    <ul class="submenu">
+                        <!-- <li onclick="ir('crear_venta_desayuno')">🥞 Desayunos</li>
+                        <li onclick="ir('crear_venta_almuerzo')">🍛 Almuerzos</li>
+                        <li onclick="ir('crear_venta_comidas_rapidas')">🍔 Comidas rápidas</li> -->
+                        <li class="active">📋 Consultar Ventas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">📊 Reportes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('reporte_inventario')">📦 Inventario</li>
+                        <li onclick="ir('reporte_ventas')">💰 Ventas</li>
+                        <li onclick="ir('reporte_costos')">📊 Costos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">💰 Pagos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pago')">➕ Registrar Pago</li>
+                        <li onclick="ir('pagos')">📋 Consultar Pagos</li>
+                    </ul>
+                </li>
+
+            </ul>
+        </aside>
+
+        <main class="main">
+
+            <header class="header header-user">
+
+                <h1>Historial de Ventas</h1>
+
+                <div class="user-box">
+                    <span id="nombreUsuario">👤 Usuario</span>
+                    <button onclick="logout()" class="btn-logout">Cerrar sesión</button>
+                </div>
+
+            </header>
+
+            <div class="card">
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaVentas"></tbody>
+                </table>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- 🔥 MODAL REUTILIZADO -->
+    <div id="modalCompra" class="modal hidden">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h3>Detalle de Venta</h3>
+                <button class="btn-close" onclick="cerrarModal()">✖</button>
+            </div>
+
+            <div id="modalBody"></div>
+
+        </div>
+    </div>
+
+    <script type="module" src="../js/auth.js"></script>
+    <script type="module" src="../js/ventas.js"></script>
+    <script type="module" src="../js/menu.js" defer></script>
+
+    <script>
+        function ir(p) {
+            window.location.href = `../pages/${p}.html`;
+        }
+    </script>
+
+</body>
+
+</html>

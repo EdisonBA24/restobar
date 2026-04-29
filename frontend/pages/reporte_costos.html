@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Reporte Costos</title>
+    <link rel="stylesheet" href="../css/styles.css?v=2">
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <img src="../assets/logo.ico" alt="Logo" class="logo" width="80%"
+                style="margin: 20px auto; display: block;">
+
+            <ul>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">🏠 Dashboard</div>
+                    <ul class="submenu">
+                        <li onclick="ir('dashboard')">📋 Resumen del día</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">👥 Clientes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
+                        <li onclick="ir('clientes')">📋 Consultar clientes</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">📦 Productos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_producto')">➕ Crear producto</li>
+                        <li onclick="ir('productos')">📋 Consultar productos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">👤 Usuarios</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_usuario')">➕ Crear Usuario</li>
+                        <li onclick="ir('usuarios')">📋 Consultar Usuarios</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🍳 Recetas</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_receta')">➕ Crear Receta</li>
+                        <li onclick="ir('recetas')">📋 Consultar Recetas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🛒 Compras</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_compra')">➕ Crear Compra</li>
+                        <li onclick="ir('compras')">📋 Consultar Compras</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🧾 Pedidos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pedido_desayuno')">🥞 Desayunos</li>
+                        <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
+                        <li onclick="ir('crear_pedido_comidas_rapidas')">🍔 Comidas rápidas</li>
+                        <li onclick="ir('crear_pedido_licores')">🥃 Licores / Bebidas</li>
+                        <li onclick="ir('pedidos')">📋 Consultar Pedidos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">💰 Ventas</div>
+                    <ul class="submenu">
+                        <li onclick="ir('ventas')">📋 Consultar Ventas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">📊 Reportes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('reporte_inventario')">📦 Inventario</li>
+                        <li onclick="ir('reporte_ventas')">💰 Ventas</li>
+                        <li class="active">📊 Costos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">💰 Pagos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pago')">➕ Registrar Pago</li>
+                        <li onclick="ir('pagos')">📋 Consultar Pagos</li>
+                    </ul>
+                </li>
+
+            </ul>
+        </aside>
+
+        <main class="main">
+
+            <header class="header header-user">
+
+                <h1>Reporte de Costos</h1>
+
+                <div class="user-box">
+                    <span id="nombreUsuario">👤 Usuario</span>
+                    <button onclick="logout()" class="btn-logout">Cerrar sesión</button>
+                </div>
+
+            </header>
+
+            <div class="card">
+
+                <div class="actions-bar">
+                    <button type="button" class="btn-primary" onclick="cargarCostos()">Cargar</button>
+                    <button type="button" class="btn-primary" onclick="exportarExcel()">Exportar Excel</button>
+                </div>
+
+                <table class="table">
+                    <thead id="thead"></thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module" src="../js/auth.js"></script>
+    <script type="module" src="../js/menu.js" defer></script>
+
+    <script>
+        function ir(p) {
+            window.location.href = `../pages/${p}.html`;
+        }
+    </script>
+
+    <script>
+
+        // 🔥 CONFIG GLOBAL (LOCAL vs PRODUCCIÓN)
+        const API_URL = window.location.hostname.includes("localhost") ||
+                        window.location.hostname.includes("127.0.0.1")
+            ? "http://127.0.0.1:5000"
+            : "https://TU-BACKEND.onrender.com"; // 🔥 CAMBIAR
+
+        function formatoMoneda(valor) {
+            return new Intl.NumberFormat("es-CO", {
+                style: "currency",
+                currency: "COP"
+            }).format(valor || 0);
+        }
+
+        async function cargarCostos() {
+            try {
+
+                const res = await fetch(`${API_URL}/api/reportes/costos`, {
+                    credentials: "include"
+                });
+
+                if (!res.ok) {
+                    mostrarMensaje("Error en backend ❌", "error");
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (!data || data.length === 0) {
+                    mostrarMensaje("No hay datos ⚠️", "warning");
+                    return;
+                }
+
+                window.dataGlobal = data;
+
+                renderTabla(data);
+
+            } catch (e) {
+                console.error(e);
+                mostrarMensaje("Error cargando costos ❌", "error");
+            }
+        }
+
+        function renderTabla(data) {
+
+            let th = "<tr>";
+            Object.keys(data[0]).forEach(k => th += `<th>${k}</th>`);
+            th += "</tr>";
+
+            let tb = "";
+
+            data.forEach(row => {
+                tb += "<tr>";
+
+                Object.entries(row).forEach(([k, v]) => {
+
+                    let valor = v;
+
+                    if (k.toLowerCase().includes("precio") ||
+                        k.toLowerCase().includes("costo") ||
+                        k.toLowerCase().includes("utilidad")) {
+
+                        valor = formatoMoneda(v);
+                    }
+
+                    if (k.toLowerCase().includes("margen")) {
+                        valor = `${v} %`;
+                    }
+
+                    tb += `<td>${valor}</td>`;
+                });
+
+                tb += "</tr>";
+            });
+
+            document.getElementById("thead").innerHTML = th;
+            document.getElementById("tbody").innerHTML = tb;
+        }
+
+        async function exportarExcel() {
+
+            if (!window.dataGlobal || window.dataGlobal.length === 0) {
+                mostrarMensaje("Primero debes cargar datos ⚠️", "warning");
+                return;
+            }
+
+            try {
+
+                const res = await fetch(`${API_URL}/api/reportes/exportar`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        data: window.dataGlobal,
+                        nombre: "costos"
+                    })
+                });
+
+                if (!res.ok) {
+                    mostrarMensaje("Error generando Excel ❌", "error");
+                    return;
+                }
+
+                const blob = await res.blob();
+
+                if (blob.size === 0) {
+                    mostrarMensaje("Archivo vacío ❌", "error");
+                    return;
+                }
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+
+                a.href = url;
+                a.download = "costos.xlsx";
+
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+            } catch (e) {
+                console.error(e);
+                mostrarMensaje("Error exportando Excel ❌", "error");
+            }
+        }
+
+        function mostrarMensaje(msg, tipo = "success") {
+            const div = document.createElement("div");
+            div.className = `mensaje ${tipo}`;
+            div.textContent = msg;
+
+            document.body.appendChild(div);
+
+            setTimeout(() => {
+                div.remove();
+            }, 3000);
+        }
+    </script>
+
+</body>
+
+</html>

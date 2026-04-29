@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Pedido Desayuno</title>
+    <link rel="stylesheet" href="../css/styles.css?v=2">
+</head>
+
+<body data-categoria="DESAYUNO">
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <img src="../assets/logo.ico" class="logo" width="80%" style="margin:20px auto;display:block;">
+
+            <ul>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">🏠 Dashboard</div>
+                    <ul class="submenu">
+                        <li onclick="ir('dashboard')">📋 Resumen del día</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">👥 Clientes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
+                        <li onclick="ir('clientes')">📋 Consultar clientes</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">📦 Productos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_producto')">➕ Crear producto</li>
+                        <li onclick="ir('productos')">📋 Consultar productos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">👤 Usuarios</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_usuario')">➕ Crear Usuario</li>
+                        <li onclick="ir('usuarios')">📋 Consultar Usuarios</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🍳 Recetas</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_receta')">➕ Crear Receta</li>
+                        <li onclick="ir('recetas')">📋 Consultar Recetas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🛒 Compras</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_compra')">➕ Crear Compra</li>
+                        <li onclick="ir('compras')">📋 Consultar Compras</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">🧾 Pedidos</div>
+                    <ul class="submenu">
+                        <li class="active">🥞 Desayunos</li>
+                        <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
+                        <li onclick="ir('crear_pedido_comidas_rapidas')">🍔 Comidas rápidas</li>
+                        <li onclick="ir('crear_pedido_licores')">🥃 Licores / Bebidas</li>
+                        <li onclick="ir('pedidos')">📋 Consultar Pedidos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">💰 Ventas</div>
+                    <ul class="submenu">
+                        <!-- <li onclick="ir('crear_venta_desayuno')">🥞 Desayunos</li>
+                        <li onclick="ir('crear_venta_almuerzo')">🍛 Almuerzos</li>
+                        <li onclick="ir('crear_venta_comidas_rapidas')">🍔 Comidas rápidas</li> -->
+                        <li onclick="ir('ventas')">📋 Consultar Ventas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">📊 Reportes</div>
+                    <ul class="submenu">
+                        <li onclick="ir('reporte_inventario')">📦 Inventario</li>
+                        <li onclick="ir('reporte_ventas')">💰 Ventas</li>
+                        <li onclick="ir('reporte_costos')">📊 Costos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">💰 Pagos</div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pago')">➕ Registrar Pago</li>
+                        <li onclick="ir('pagos')">📋 Consultar Pagos</li>
+                    </ul>
+                </li>
+
+            </ul>
+        </aside>
+
+        <main class="main">
+
+            <header class="header header-user">
+                <h1>Pedido - Desayuno</h1>
+            </header>
+
+            <div class="card">
+
+                <div class="compra-header">
+                    <select id="tipoServicio">
+                        <option value="LLEVAR">LLEVAR</option>
+                        <option value="DOMICILIO">DOMICILIO</option>
+                        <option value="MESA">MESAS</option>
+                    </select>
+                </div>
+
+                <div class="compra-header">
+                    <input type="text" id="mesa" placeholder="Mesa">
+                </div>
+
+                <div class="compra-header">
+                    <div style="position:relative;">
+                        <input type="text" id="cliente" placeholder="Buscar cliente..." autocomplete="off">
+                        <div id="listaClientes" class="autocomplete-list hidden"></div>
+                    </div>
+                </div>
+
+                <div class="compra-grid header-grid">
+                    <div>Producto</div>
+                    <div>Cantidad</div>
+                    <div>Precio</div>
+                    <div>Subtotal</div>
+                    <div></div>
+                </div>
+
+                <div id="productosPedido"></div>
+
+                <p id="mensajeVacio">No hay productos agregados</p>
+
+                <button class="btn-primary" onclick="agregarProducto()">+ Agregar producto</button>
+
+                <div class="resumen-compra">
+                    Total: <span id="totalPedido">$0</span>
+                </div>
+
+                <button class="btn-primary" onclick="guardarPedido()">Guardar Pedido</button>
+
+            </div>
+
+            <div id="modalCliente" class="modal hidden">
+                <div class="modal-content modal-cliente">
+
+                    <div class="modal-header">
+                        <h3>👤 Nuevo Cliente</h3>
+                        <button class="btn-close" onclick="cerrarModalCliente()">✖</button>
+                    </div>
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" id="nuevoNombre" placeholder="Nombre completo">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Documento</label>
+                            <input type="text" id="nuevoDocumento" placeholder="Cédula / NIT">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" id="nuevoTelefono" placeholder="Número">
+                        </div>
+
+                        <div class="form-group full">
+                            <label>Dirección</label>
+                            <input type="text" id="nuevoDireccion" placeholder="Dirección completa">
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn-primary" onclick="guardarClienteRapido()">
+                            💾 Guardar Cliente
+                        </button>
+                    </div>
+
+                </div>
+
+                <div id="warningCliente" class="warning-cliente hidden"></div>
+
+        </main>
+    </div>
+
+    <script type="module" src="../js/auth.js"></script>
+    <script type="module" src="../js/pedidos.js"></script>
+    <script type="module" src="../js/menu.js" defer></script>
+
+    <script>
+        function ir(p) {
+            window.location.href = `../pages/${p}.html`;
+        }
+    </script>
+
+    <script>
+        window.seleccionarCliente = function (nombre, id) {
+
+            const input = document.getElementById("cliente");
+
+            input.value = nombre;
+            input.dataset.id = id;
+
+            input.style.borderColor = "#28a745";
+            input.style.background = "#f0fff4";
+
+            document.getElementById("listaClientes").classList.add("hidden");
+        };
+
+        document.addEventListener("click", function (e) {
+
+            const lista = document.getElementById("listaClientes");
+            const input = document.getElementById("cliente");
+
+            if (!lista || !input) return;
+
+            if (!input.contains(e.target) && !lista.contains(e.target)) {
+                lista.classList.add("hidden");
+            }
+        });
+    </script>
+
+</body>
+
+</html>

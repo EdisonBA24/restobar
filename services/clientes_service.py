@@ -1,4 +1,5 @@
 from database.connection import get_connection
+from config import Config
 
 
 def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
@@ -11,39 +12,68 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
     try:
         estado = 0 if solo_inactivos else 1
 
-        query = """
+        # 🔥 FIX CLAVE: evitar error si no existe DB_ENGINE
+        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
+        is_postgres = db_engine == "postgres"
+
+        # 🔥 funciones compatibles
+        null_fn = "COALESCE" if is_postgres else "ISNULL"
+        placeholder = "%s" if is_postgres else "?"
+
+        query = f"""
         SELECT *
         FROM clientes
-        WHERE activo = ?
+        WHERE activo = {placeholder}
         """
 
         params = [estado]
 
         if search and str(search).strip() != "":
-            query += """
+            like = f"%{search.lower()}%"
+
+            query += f"""
             AND (
-                LOWER(ISNULL(nombre, '')) LIKE ? OR
-                LOWER(ISNULL(documento, '')) LIKE ? OR
-                LOWER(ISNULL(telefono, '')) LIKE ? OR
-                LOWER(ISNULL(direccion, '')) LIKE ?
+                LOWER({null_fn}(nombre, '')) LIKE {placeholder} OR
+                LOWER({null_fn}(documento, '')) LIKE {placeholder} OR
+                LOWER({null_fn}(telefono, '')) LIKE {placeholder} OR
+                LOWER({null_fn}(direccion, '')) LIKE {placeholder}
             )
             """
-            like = f"%{search.lower()}%"
+
             params.extend([like, like, like, like])
 
-        query += """
-        ORDER BY id DESC
-        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-        """
-
-        params.extend([offset, limit])
+        # 🔥 paginación compatible
+        if is_postgres:
+            query += f"""
+            ORDER BY id DESC
+            LIMIT {placeholder} OFFSET {placeholder}
+            """
+            params.extend([limit, offset])
+        else:
+            query += f"""
+            ORDER BY id DESC
+            OFFSET {placeholder} ROWS FETCH NEXT {placeholder} ROWS ONLY
+            """
+            params.extend([offset, limit])
 
         cursor.execute(query, params)
 
         columns = [column[0] for column in cursor.description]
-        data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        data = []
+        for row in cursor.fetchall():
+            r = dict(zip(columns, row))
+
+            # 🔥 NORMALIZACIÓN (evita errores en frontend)
+            r["id"] = int(r.get("id") or 0)
+
+            data.append(r)
 
         return data
+
+    except Exception as e:
+        print("❌ ERROR GET CLIENTES:", e)
+        return []
 
     finally:
         conn.close()
@@ -60,15 +90,19 @@ def create_cliente(data):
     try:
         print("📥 DATA CLIENTE:", data)
 
-        cursor.execute("""
+        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
+        is_postgres = db_engine == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
+        cursor.execute(f"""
             INSERT INTO clientes (nombre, documento, telefono, direccion, usuario_id, activo)
-            VALUES (?, ?, ?, ?, ?, 1)
+            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 1)
         """, (
             data.get("nombre"),
             data.get("documento"),
             data.get("telefono"),
             data.get("direccion"),
-            data.get("usuario_id") or 1  # 🔥 FIX
+            data.get("usuario_id") or 1
         ))
 
         conn.commit()
@@ -80,6 +114,7 @@ def create_cliente(data):
     except Exception as e:
         conn.rollback()
         print("❌ ERROR CREATE CLIENTE:", e)
+
         return {"status": "error", "message": str(e)}
 
     finally:
@@ -95,10 +130,14 @@ def update_cliente(id, data):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
+        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
+        is_postgres = db_engine == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
+        cursor.execute(f"""
             UPDATE clientes
-            SET nombre=?, documento=?, telefono=?, direccion=?
-            WHERE id=? AND activo=1
+            SET nombre={placeholder}, documento={placeholder}, telefono={placeholder}, direccion={placeholder}
+            WHERE id={placeholder} AND activo=1
         """, (
             data.get("nombre"),
             data.get("documento"),
@@ -109,11 +148,15 @@ def update_cliente(id, data):
 
         conn.commit()
 
+        if cursor.rowcount == 0:
+            print("⚠️ UPDATE CLIENTE: sin cambios")
+
         return {"status": "success", "message": "Cliente actualizado"}
 
     except Exception as e:
         conn.rollback()
         print("❌ ERROR UPDATE CLIENTE:", e)
+
         return {"status": "error", "message": str(e)}
 
     finally:
@@ -129,14 +172,21 @@ def delete_cliente(id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("UPDATE clientes SET activo = 0 WHERE id = ?", (id,))
+        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
+        placeholder = "%s" if db_engine == "postgres" else "?"
+
+        cursor.execute(f"UPDATE clientes SET activo = 0 WHERE id = {placeholder}", (id,))
         conn.commit()
+
+        if cursor.rowcount == 0:
+            print("⚠️ DELETE CLIENTE: no encontrado")
 
         return {"status": "success", "message": "Cliente desactivado"}
 
     except Exception as e:
         conn.rollback()
         print("❌ ERROR DELETE CLIENTE:", e)
+
         return {"status": "error", "message": str(e)}
 
     finally:
@@ -152,14 +202,21 @@ def activar_cliente(id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("UPDATE clientes SET activo = 1 WHERE id = ?", (id,))
+        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
+        placeholder = "%s" if db_engine == "postgres" else "?"
+
+        cursor.execute(f"UPDATE clientes SET activo = 1 WHERE id = {placeholder}", (id,))
         conn.commit()
+
+        if cursor.rowcount == 0:
+            print("⚠️ ACTIVATE CLIENTE: no encontrado")
 
         return {"status": "success", "message": "Cliente activado"}
 
     except Exception as e:
         conn.rollback()
         print("❌ ERROR ACTIVATE CLIENTE:", e)
+
         return {"status": "error", "message": str(e)}
 
     finally:

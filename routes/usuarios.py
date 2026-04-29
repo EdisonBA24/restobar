@@ -16,19 +16,32 @@ def es_admin():
     return session.get("perfil") == "admin"
 
 
+def validar_admin():
+    return "user_id" in session and es_admin()
+
+
 # =============================
 # LISTAR USUARIOS
 # =============================
 @usuarios_bp.route("/usuarios", methods=["GET"])
 def listar():
 
-    if "user_id" not in session or not es_admin():
+    if not validar_admin():
         return jsonify({"status": "unauthorized"}), 403
 
-    return jsonify({
-        "status": "success",
-        "data": get_usuarios()
-    })
+    try:
+        return jsonify({
+            "status": "success",
+            "data": get_usuarios()
+        })
+
+    except Exception as e:
+        print("❌ ERROR LISTAR USUARIOS:", e)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 # =============================
@@ -37,11 +50,27 @@ def listar():
 @usuarios_bp.route("/usuarios", methods=["POST"])
 def crear():
 
-    if "user_id" not in session or not es_admin():
+    if not validar_admin():
         return jsonify({"status": "unauthorized"}), 403
 
-    data = request.json
-    return jsonify(crear_usuario(data))
+    try:
+        data = request.json or {}
+
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "Datos vacíos"
+            }), 400
+
+        return jsonify(crear_usuario(data))
+
+    except Exception as e:
+        print("❌ ERROR CREAR USUARIO:", e)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 # =============================
@@ -50,11 +79,27 @@ def crear():
 @usuarios_bp.route("/usuarios/<int:id>", methods=["PUT"])
 def actualizar(id):
 
-    if "user_id" not in session or not es_admin():
+    if not validar_admin():
         return jsonify({"status": "unauthorized"}), 403
 
-    data = request.json
-    return jsonify(update_usuario(id, data))
+    try:
+        data = request.json or {}
+
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "Datos vacíos"
+            }), 400
+
+        return jsonify(update_usuario(id, data))
+
+    except Exception as e:
+        print("❌ ERROR ACTUALIZAR USUARIO:", e)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 # =============================
@@ -63,7 +108,7 @@ def actualizar(id):
 @usuarios_bp.route("/usuarios/<int:id>/activar", methods=["PUT"])
 def activar_usuario(id):
 
-    if "user_id" not in session or not es_admin():
+    if not validar_admin():
         return jsonify({"status": "unauthorized"}), 403
 
     # 🔥 evitar que el admin se desactive a sí mismo
@@ -73,10 +118,9 @@ def activar_usuario(id):
             "message": "No puedes desactivarte a ti mismo"
         }), 400
 
-    data = request.json
-    activo = data.get("activo", 1)
-
     try:
+        data = request.json or {}
+        activo = data.get("activo", 1)
 
         activar_usuario_service(id, activo)
 
@@ -86,6 +130,8 @@ def activar_usuario(id):
         })
 
     except Exception as e:
+        print("❌ ERROR ACTIVAR/DESACTIVAR USUARIO:", e)
+
         return jsonify({
             "status": "error",
             "message": str(e)

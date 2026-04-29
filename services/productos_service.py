@@ -1,5 +1,20 @@
 from database.connection import get_connection
 from decimal import Decimal
+from config import Config
+
+
+# =============================
+# 🔥 ENGINE SAFE (FIX ERROR)
+# =============================
+def _get_engine():
+    try:
+        return getattr(Config, "DB_ENGINE")
+    except:
+        import os
+        return os.environ.get("DB_ENGINE", "sqlserver")
+
+
+DB_ENGINE = _get_engine()
 
 
 # =============================
@@ -36,6 +51,9 @@ def _base_query():
 # =============================
 def get_all_productos(page=1, limit=10, solo_inactivos=False, search=None):
 
+    # 🔥 HARDENING
+    page = max(int(page), 1)
+    limit = max(int(limit), 1)
     offset = (page - 1) * limit
 
     conn = get_connection()
@@ -44,39 +62,75 @@ def get_all_productos(page=1, limit=10, solo_inactivos=False, search=None):
     try:
         estado = 0 if solo_inactivos else 1
 
-        query = """
-        SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-        FROM productos p
-        LEFT JOIN unidades_medida u ON p.unidad_id = u.id
-        WHERE p.activo = ?
-        """
+        # 🔥 BASE SEGÚN MOTOR
+        if DB_ENGINE == "postgres":
+            query = """
+            SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
+            FROM productos p
+            LEFT JOIN unidades_medida u ON p.unidad_id = u.id
+            WHERE p.activo = %s
+            """
+        else:
+            query = """
+            SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
+            FROM productos p
+            LEFT JOIN unidades_medida u ON p.unidad_id = u.id
+            WHERE p.activo = ?
+            """
 
         params = [estado]
 
-        # 🔥 FIX REAL: validar correctamente search
+        # =============================
+        # 🔍 SEARCH
+        # =============================
         if search and str(search).strip() != "":
-            query += """
-            AND (
-                LOWER(ISNULL(p.nombre, '')) LIKE ? OR
-                LOWER(ISNULL(p.codigo, '')) LIKE ? OR
-                LOWER(ISNULL(p.categoria, '')) LIKE ? OR
-                LOWER(ISNULL(p.tipo, '')) LIKE ?
-            )
-            """
-            like = f"%{search.lower()}%"
+            search = str(search).strip().lower()
+
+            if DB_ENGINE == "postgres":
+                query += """
+                AND (
+                    LOWER(COALESCE(p.nombre, '')) LIKE %s OR
+                    LOWER(COALESCE(p.codigo, '')) LIKE %s OR
+                    LOWER(COALESCE(p.categoria, '')) LIKE %s OR
+                    LOWER(COALESCE(p.tipo, '')) LIKE %s
+                )
+                """
+            else:
+                query += """
+                AND (
+                    LOWER(ISNULL(p.nombre, '')) LIKE ? OR
+                    LOWER(ISNULL(p.codigo, '')) LIKE ? OR
+                    LOWER(ISNULL(p.categoria, '')) LIKE ? OR
+                    LOWER(ISNULL(p.tipo, '')) LIKE ?
+                )
+                """
+
+            like = f"%{search}%"
             params.extend([like, like, like, like])
 
-        query += """
-        ORDER BY p.id DESC
-        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-        """
+        # =============================
+        # 📄 PAGINACIÓN
+        # =============================
+        if DB_ENGINE == "postgres":
+            query += " ORDER BY p.id DESC LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
+        else:
+            query += " ORDER BY p.id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"
+            params.extend([offset, limit])
 
-        params.extend([offset, limit])
-
-        cursor.execute(query, params)
+        cursor.execute(query, tuple(params))
 
         columns = [column[0] for column in cursor.description]
-        data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        data = []
+        for row in cursor.fetchall():
+            r = dict(zip(columns, row))
+
+            # 🔥 NORMALIZACIÓN SEGURA
+            r["precio_venta"] = float(r.get("precio_venta") or 0)
+            r["stock"] = float(r.get("stock") or 0)
+
+            data.append(r)
 
         return data
 
@@ -103,6 +157,10 @@ def create_producto(data):
         stock = _to_decimal(data.get("stock"))
 
         query = """
+        INSERT INTO productos 
+        (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock)
+        VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+        """ if DB_ENGINE == "postgres" else """
         INSERT INTO productos 
         (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock)
         VALUES (?, ?, ?, ?, ?, 1, ?, ?)
@@ -146,6 +204,10 @@ def update_producto(id, data):
 
         query = """
         UPDATE productos
+        SET nombre=%s, codigo=%s, precio_venta=%s, categoria=%s, unidad_id=%s, tipo=%s
+        WHERE id=%s AND activo=1
+        """ if DB_ENGINE == "postgres" else """
+        UPDATE productos
         SET nombre=?, codigo=?, precio_venta=?, categoria=?, unidad_id=?, tipo=?
         WHERE id=? AND activo=1
         """
@@ -185,11 +247,9 @@ def delete_producto(id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute(
-            "UPDATE productos SET activo = 0 WHERE id = ?",
-            (id,)
-        )
+        query = "UPDATE productos SET activo = 0 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE productos SET activo = 0 WHERE id = ?"
 
+        cursor.execute(query, (id,))
         conn.commit()
 
         if cursor.rowcount == 0:
@@ -215,11 +275,9 @@ def activar_producto(id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute(
-            "UPDATE productos SET activo = 1 WHERE id = ?",
-            (id,)
-        )
+        query = "UPDATE productos SET activo = 1 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE productos SET activo = 1 WHERE id = ?"
 
+        cursor.execute(query, (id,))
         conn.commit()
 
         if cursor.rowcount == 0:

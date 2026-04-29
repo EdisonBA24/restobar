@@ -1,6 +1,7 @@
 from database.connection import get_connection
 from flask import session
 from decimal import Decimal, InvalidOperation
+from config import Config
 
 
 # =============================
@@ -36,16 +37,31 @@ def crear_compra(data):
         if not detalles:
             raise Exception("No hay productos en la compra")
 
+        if not usuario_id:
+            raise Exception("Usuario no autenticado")
+
+        # 🔥 MOTOR DINÁMICO
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+        null_fn = "COALESCE" if is_postgres else "ISNULL"
+
         total = Decimal("0")
 
         # =========================
         # INSERT COMPRA
         # =========================
-        cursor.execute("""
-            INSERT INTO compras (proveedor, total, usuario_id)
-            OUTPUT INSERTED.id
-            VALUES (?, 0, ?)
-        """, (proveedor, usuario_id))
+        if is_postgres:
+            cursor.execute(f"""
+                INSERT INTO compras (proveedor, total, usuario_id)
+                VALUES ({placeholder}, 0, {placeholder})
+                RETURNING id
+            """, (proveedor, usuario_id))
+        else:
+            cursor.execute(f"""
+                INSERT INTO compras (proveedor, total, usuario_id)
+                OUTPUT INSERTED.id
+                VALUES ({placeholder}, 0, {placeholder})
+            """, (proveedor, usuario_id))
 
         compra_id = cursor.fetchone()[0]
 
@@ -54,9 +70,16 @@ def crear_compra(data):
         # =========================
         for item in detalles:
 
-            producto_id = item["producto_id"]
-            cantidad = to_decimal(item["cantidad"], "Cantidad")
-            precio = to_decimal(item["precio"], "Precio")
+            producto_id = item.get("producto_id")
+
+            if not producto_id:
+                raise Exception("Producto inválido")
+
+            cantidad = to_decimal(item.get("cantidad"), "Cantidad")
+            precio = to_decimal(item.get("precio"), "Precio")
+
+            if cantidad <= 0 or precio <= 0:
+                raise Exception("Cantidad o precio inválido")
 
             subtotal = cantidad * precio
             total += subtotal
@@ -64,64 +87,67 @@ def crear_compra(data):
             # =========================
             # INSERT DETALLE
             # =========================
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO detalle_compras (compra_id, producto_id, cantidad, precio)
-                VALUES (?, ?, ?, ?)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (compra_id, producto_id, cantidad, precio))
 
             # =========================
             # 🔥 OBTENER STOCK Y COSTO ACTUAL
             # =========================
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT stock, costo
                 FROM productos
-                WHERE id = ?
+                WHERE id = {placeholder}
             """, (producto_id,))
 
             row = cursor.fetchone()
 
+            if not row:
+                raise Exception(f"Producto no existe: {producto_id}")
+
             stock_actual = Decimal(row[0] or 0)
             costo_actual = Decimal(row[1] or 0)
 
-            cantidad_compra = cantidad
-            costo_compra = precio
-
             # =========================
-            # 🔥 CALCULAR COSTO PROMEDIO
+            # 🔥 COSTO PROMEDIO
             # =========================
-            if (stock_actual + cantidad_compra) > 0:
+            if (stock_actual + cantidad) > 0:
                 nuevo_costo = (
                     (stock_actual * costo_actual) +
-                    (cantidad_compra * costo_compra)
-                ) / (stock_actual + cantidad_compra)
+                    (cantidad * precio)
+                ) / (stock_actual + cantidad)
             else:
-                nuevo_costo = costo_compra
+                nuevo_costo = precio
+
+            # 🔥 redondeo controlado (evita decimales infinitos en DB)
+            nuevo_costo = nuevo_costo.quantize(Decimal("0.0001"))
 
             # =========================
             # 🔥 ACTUALIZAR PRODUCTO
             # =========================
-            cursor.execute("""
+            cursor.execute(f"""
                 UPDATE productos
                 SET 
-                    stock = ISNULL(stock, 0) + ?,
-                    costo = ?
-                WHERE id = ?
-            """, (cantidad_compra, nuevo_costo, producto_id))
+                    stock = {null_fn}(stock, 0) + {placeholder},
+                    costo = {placeholder}
+                WHERE id = {placeholder}
+            """, (cantidad, nuevo_costo, producto_id))
 
         # =========================
         # ACTUALIZAR TOTAL COMPRA
         # =========================
-        cursor.execute("""
+        cursor.execute(f"""
             UPDATE compras
-            SET total = ?
-            WHERE id = ?
+            SET total = {placeholder}
+            WHERE id = {placeholder}
         """, (total, compra_id))
 
         conn.commit()
 
         return {
             "message": "Compra registrada correctamente",
-            "total": float(total)
+            "total": float(round(total, 2))
         }
 
     except Exception as e:
@@ -140,17 +166,32 @@ def get_compras():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT id, proveedor, total, fecha
-        FROM compras
-        ORDER BY id DESC
-    """)
+    try:
+        cursor.execute("""
+            SELECT id, proveedor, total, fecha
+            FROM compras
+            ORDER BY id DESC
+        """)
 
-    columns = [c[0] for c in cursor.description]
-    data = [dict(zip(columns, r)) for r in cursor.fetchall()]
+        columns = [c[0] for c in cursor.description]
 
-    conn.close()
-    return data
+        data = []
+        for r in cursor.fetchall():
+            row = dict(zip(columns, r))
+
+            # 🔥 normalización frontend
+            row["total"] = float(row.get("total") or 0)
+
+            data.append(row)
+
+        return data
+
+    except Exception as e:
+        print("❌ ERROR GET COMPRAS:", e)
+        return []
+
+    finally:
+        conn.close()
 
 
 # =============================
@@ -160,15 +201,34 @@ def get_detalle_compra(compra_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT dc.producto_id, p.nombre, dc.cantidad, dc.precio
-        FROM detalle_compras dc
-        JOIN productos p ON dc.producto_id = p.id
-        WHERE dc.compra_id = ?
-    """, (compra_id,))
+    try:
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
 
-    columns = [c[0] for c in cursor.description]
-    data = [dict(zip(columns, r)) for r in cursor.fetchall()]
+        cursor.execute(f"""
+            SELECT dc.producto_id, p.nombre, dc.cantidad, dc.precio
+            FROM detalle_compras dc
+            JOIN productos p ON dc.producto_id = p.id
+            WHERE dc.compra_id = {placeholder}
+        """, (compra_id,))
 
-    conn.close()
-    return data
+        columns = [c[0] for c in cursor.description]
+
+        data = []
+        for r in cursor.fetchall():
+            row = dict(zip(columns, r))
+
+            # 🔥 normalización
+            row["cantidad"] = float(row.get("cantidad") or 0)
+            row["precio"] = float(row.get("precio") or 0)
+
+            data.append(row)
+
+        return data
+
+    except Exception as e:
+        print("❌ ERROR DETALLE COMPRA:", e)
+        return []
+
+    finally:
+        conn.close()

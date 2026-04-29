@@ -1,14 +1,20 @@
 from flask import Blueprint, request, jsonify, send_file, session
-import pyodbc
 import pandas as pd
 import io
 from config import Config
+from database.connection import get_connection
 
 reportes_bp = Blueprint("reportes", __name__)
 
 
-def get_connection():
-    return pyodbc.connect(Config.get_connection_string())
+# =============================
+# 🔐 HELPERS
+# =============================
+def validar_sesion():
+    return "user_id" in session
+
+def get_placeholder():
+    return "?" if Config.DB_ENGINE == "sqlserver" else "%s"
 
 
 # ==========================
@@ -17,9 +23,10 @@ def get_connection():
 @reportes_bp.route("/reportes/inventario", methods=["GET"])
 def reporte_inventario():
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
-    
+
+    conn = None
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -38,21 +45,23 @@ def reporte_inventario():
 
         rows = cursor.fetchall()
 
-        data = []
-        for r in rows:
-            data.append({
-                "Producto": r[0],
-                "Stock": float(r[1] or 0),
-                "Unidad": r[2],
-                "Costo Unitario": float(r[3] or 0),
-                "Valor Inventario": float(r[4] or 0)
-            })
+        data = [{
+            "Producto": r[0],
+            "Stock": float(r[1] or 0),
+            "Unidad": r[2],
+            "Costo Unitario": float(r[3] or 0),
+            "Valor Inventario": float(r[4] or 0)
+        } for r in rows]
 
         return jsonify(data)
 
     except Exception as e:
         print("❌ ERROR INVENTARIO:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+    finally:
+        if conn:
+            conn.close()
 
 
 # ==========================
@@ -61,15 +70,18 @@ def reporte_inventario():
 @reportes_bp.route("/reportes/ventas", methods=["GET"])
 def reporte_ventas():
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
-    
+
+    conn = None
     try:
         inicio = request.args.get("inicio")
         fin = request.args.get("fin")
 
         conn = get_connection()
         cursor = conn.cursor()
+
+        placeholder = get_placeholder()
 
         query = """
             SELECT fecha, total, utilidad
@@ -79,27 +91,29 @@ def reporte_ventas():
         params = []
 
         if inicio and fin:
-            query += " WHERE cast(fecha as date) between ? and ?"
+            query += f" WHERE cast(fecha as date) between {placeholder} and {placeholder}"
             params = [inicio, fin]
 
         query += " ORDER BY fecha"
 
         cursor.execute(query, params)
-
         rows = cursor.fetchall()
 
-        data = []
-        for r in rows:
-            data.append({
-                "Fecha": r[0].strftime("%Y-%m-%d"),
-                "Total": float(r[1]),
-                "Utilidad": float(r[2])
-            })
+        data = [{
+            "Fecha": r[0].strftime("%Y-%m-%d") if r[0] else "",
+            "Total": float(r[1] or 0),
+            "Utilidad": float(r[2] or 0)
+        } for r in rows]
 
         return jsonify(data)
 
     except Exception as e:
+        print("❌ ERROR VENTAS:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+    finally:
+        if conn:
+            conn.close()
 
 
 # ==========================
@@ -108,12 +122,15 @@ def reporte_ventas():
 @reportes_bp.route("/reportes/costos", methods=["GET"])
 def reporte_costos():
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
-    
+
+    conn = None
     try:
         conn = get_connection()
         cursor = conn.cursor()
+
+        placeholder = get_placeholder()
 
         cursor.execute("""
             SELECT id, nombre, precio_venta
@@ -125,15 +142,14 @@ def reporte_costos():
         data = []
 
         for p in productos:
-            producto_id = p[0]
-            nombre = p[1]
-            precio_venta = float(p[2] or 0)
+            producto_id, nombre, precio_venta = p
+            precio_venta = float(precio_venta or 0)
 
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT rd.insumo_id, rd.cantidad, rd.unidad
                 FROM recetas r
                 JOIN recetas_detalle rd ON r.id = rd.receta_id
-                WHERE r.producto_id = ?
+                WHERE r.producto_id = {placeholder}
             """, (producto_id,))
 
             insumos = cursor.fetchall()
@@ -145,18 +161,14 @@ def reporte_costos():
                 if unidad and str(unidad).lower() in ["g", "gr", "gramos"]:
                     cantidad = cantidad / 1000
 
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT costo
                     FROM productos
-                    WHERE id = ?
+                    WHERE id = {placeholder}
                 """, (insumo_id,))
 
                 row = cursor.fetchone()
-
-                if not row:
-                    costo_unitario = 0
-                else:
-                    costo_unitario = float(row[0] or 0)
+                costo_unitario = float(row[0] or 0) if row else 0
 
                 costo_total += costo_unitario * cantidad
 
@@ -177,24 +189,35 @@ def reporte_costos():
         print("❌ ERROR COSTOS:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
+    finally:
+        if conn:
+            conn.close()
+
 
 # ==========================
 # 📥 EXPORTAR EXCEL
 # ==========================
 @reportes_bp.route("/reportes/exportar", methods=["POST"])
 def exportar_excel():
+
+    if not validar_sesion():
+        return jsonify({"status": "unauthorized"}), 401
+
     try:
         data = request.json.get("data", [])
         nombre = request.json.get("nombre", "reporte")
 
-        df = pd.DataFrame(data)
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "No hay datos para exportar"
+            }), 400
 
-        # 🔥 FIX CLAVE
+        df = pd.DataFrame(data)
         df = df.fillna(0)
 
         output = io.BytesIO()
         df.to_excel(output, index=False, engine="openpyxl")
-
         output.seek(0)
 
         return send_file(

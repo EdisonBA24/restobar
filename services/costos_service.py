@@ -1,5 +1,6 @@
 from database.connection import get_connection
 from decimal import Decimal
+from config import Config
 
 
 # =============================
@@ -7,12 +8,12 @@ from decimal import Decimal
 # =============================
 def convertir_cantidad(cantidad, unidad):
 
-    cantidad = Decimal(cantidad)
+    cantidad = Decimal(cantidad or 0)
 
     if not unidad:
         return cantidad
 
-    unidad = unidad.lower()
+    unidad = str(unidad).lower().strip()
 
     # gramos → kg
     if unidad in ["g", "gr", "gramos"]:
@@ -22,7 +23,7 @@ def convertir_cantidad(cantidad, unidad):
     if unidad in ["kg", "kilogramo", "kilogramos"]:
         return cantidad
 
-    # unidad (und)
+    # unidad (und u otras)
     return cantidad
 
 
@@ -35,12 +36,18 @@ def get_costo_producto(producto_id):
     cursor = conn.cursor()
 
     try:
-        # 🔥 AHORA USA UNIDAD DE RECETA
-        cursor.execute("""
+        # 🔥 DETECTAR MOTOR UNA SOLA VEZ (mejor performance)
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
+        # =============================
+        # 🔥 INSUMOS RECETA
+        # =============================
+        cursor.execute(f"""
             SELECT rd.insumo_id, rd.cantidad, rd.unidad
             FROM recetas r
             JOIN recetas_detalle rd ON r.id = rd.receta_id
-            WHERE r.producto_id = ?
+            WHERE r.producto_id = {placeholder}
         """, (producto_id,))
 
         insumos = cursor.fetchall()
@@ -55,36 +62,50 @@ def get_costo_producto(producto_id):
 
         costo_total = Decimal("0")
 
+        # =============================
+        # 🔥 QUERY DINÁMICO PRECIO
+        # =============================
+        query_precio = f"""
+            SELECT precio
+            FROM detalle_compras
+            WHERE producto_id = {placeholder}
+            ORDER BY id DESC
+            {"LIMIT 1" if is_postgres else ""}
+        """
+
+        if not is_postgres:
+            query_precio = f"""
+                SELECT TOP 1 precio
+                FROM detalle_compras
+                WHERE producto_id = {placeholder}
+                ORDER BY id DESC
+            """
+
         for insumo_id, cantidad_base, unidad in insumos:
 
             cantidad_real = convertir_cantidad(cantidad_base, unidad)
 
-            cursor.execute("""
-                SELECT TOP 1 precio
-                FROM detalle_compras
-                WHERE producto_id = ?
-                ORDER BY id DESC
-            """, (insumo_id,))
-
+            cursor.execute(query_precio, (insumo_id,))
             compra = cursor.fetchone()
 
             if not compra:
                 continue
 
             precio = Decimal(compra[0] or 0)
-
             costo_total += cantidad_real * precio
 
-        # precio venta
-        cursor.execute("""
+        # =============================
+        # 🔥 PRECIO VENTA
+        # =============================
+        cursor.execute(f"""
             SELECT precio_venta
             FROM productos
-            WHERE id = ?
+            WHERE id = {placeholder}
         """, (producto_id,))
 
         result = cursor.fetchone()
 
-        precio_venta = Decimal(result[0] or 0)
+        precio_venta = Decimal(result[0] or 0) if result else Decimal("0")
 
         utilidad = precio_venta - costo_total
 

@@ -18,12 +18,24 @@ def login_required():
 def listar_pagos():
 
     if not login_required():
-        return jsonify({"status": "unauthorized"}), 403
+        return jsonify({"status": "unauthorized"}), 401  # 🔥 FIX (antes 403)
 
-    return jsonify({
-        "status": "success",
-        "data": get_pagos()
-    })
+    try:
+
+        data = get_pagos()
+
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
+
+    except Exception as e:
+        print("❌ ERROR LISTAR PAGOS:", e)  # 🔥 LOG CLAVE
+
+        return jsonify({
+            "status": "error",
+            "message": "Error obteniendo pagos"
+        }), 500
 
 
 # =============================
@@ -33,17 +45,32 @@ def listar_pagos():
 def crear():
 
     if not login_required():
-        return jsonify({"status": "unauthorized"}), 403
+        return jsonify({"status": "unauthorized"}), 401  # 🔥 FIX
 
     data = request.json
 
+    # 🔥 VALIDACIÓN REAL
+    if not data:
+        return jsonify({
+            "status": "error",
+            "message": "No se enviaron datos"
+        }), 400
+
     try:
+
+        # 🔥 agregar usuario desde sesión
+        data["usuario_id"] = session.get("user_id")
+
         result = crear_pago(data)
+
         return jsonify({
             "status": "success",
             "message": result
         })
+
     except Exception as e:
+        print("❌ ERROR CREAR PAGO:", e)  # 🔥 LOG CLAVE
+
         return jsonify({
             "status": "error",
             "message": str(e)

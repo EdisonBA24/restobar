@@ -1,4 +1,5 @@
 from database.connection import get_connection
+from config import Config
 
 
 def crear_receta(data):
@@ -7,14 +8,28 @@ def crear_receta(data):
     cursor = conn.cursor()
 
     try:
-        producto_id = data["producto_id"]
-        detalle = data["detalle"]
+        producto_id = data.get("producto_id")
+        detalle = data.get("detalle", [])
 
-        # 🔥 1. VERIFICAR SI YA EXISTE
-        cursor.execute("""
+        if not producto_id:
+            raise Exception("producto_id requerido")
+
+        if not detalle:
+            raise Exception("Detalle vacío")
+
+        # 🔥 MOTOR
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
+        print(f"🧪 CREAR RECETA producto_id={producto_id} | items={len(detalle)}")
+
+        # =============================
+        # 🔍 VERIFICAR SI EXISTE
+        # =============================
+        cursor.execute(f"""
             SELECT id
             FROM recetas
-            WHERE producto_id = ?
+            WHERE producto_id = {placeholder}
         """, (producto_id,))
 
         receta = cursor.fetchone()
@@ -22,35 +37,62 @@ def crear_receta(data):
         if receta:
             receta_id = receta[0]
 
-            # 🔥 2. BORRAR DETALLE ANTERIOR
-            cursor.execute("""
+            print(f"♻️ RECETA EXISTENTE id={receta_id} → limpiando detalle")
+
+            # =============================
+            # 🧹 BORRAR DETALLE
+            # =============================
+            cursor.execute(f"""
                 DELETE FROM recetas_detalle
-                WHERE receta_id = ?
+                WHERE receta_id = {placeholder}
             """, (receta_id,))
 
         else:
-            # 🔥 3. CREAR NUEVA RECETA
-            cursor.execute("""
-                INSERT INTO recetas (producto_id, activo)
-                OUTPUT INSERTED.id
-                VALUES (?, 1)
-            """, (producto_id,))
+            # =============================
+            # 🆕 CREAR RECETA
+            # =============================
+            print("🆕 CREANDO NUEVA RECETA")
 
-            receta_id = cursor.fetchone()[0]
+            if is_postgres:
+                cursor.execute(f"""
+                    INSERT INTO recetas (producto_id, activo)
+                    VALUES ({placeholder}, 1)
+                    RETURNING id
+                """, (producto_id,))
+            else:
+                cursor.execute(f"""
+                    INSERT INTO recetas (producto_id, activo)
+                    OUTPUT INSERTED.id
+                    VALUES ({placeholder}, 1)
+                """, (producto_id,))
 
-        # 🔥 4. INSERTAR NUEVO DETALLE
+            row = cursor.fetchone()
+            if not row:
+                raise Exception("Error creando receta")
+
+            receta_id = row[0]
+
+        # =============================
+        # 📦 INSERTAR DETALLE
+        # =============================
         for item in detalle:
-            cursor.execute("""
+
+            if not item.get("insumo_id"):
+                raise Exception("insumo_id requerido")
+
+            cursor.execute(f"""
                 INSERT INTO recetas_detalle (receta_id, insumo_id, cantidad, unidad)
-                VALUES (?, ?, ?, ?)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (
                 receta_id,
-                item["insumo_id"],
-                item["cantidad"],
-                item["unidad"]
+                item.get("insumo_id"),
+                item.get("cantidad") or 0,
+                item.get("unidad")
             ))
 
         conn.commit()
+
+        print(f"✅ RECETA GUARDADA id={receta_id}")
 
         return {"message": "Receta guardada correctamente"}
 
@@ -68,30 +110,54 @@ def obtener_receta(producto_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT r.id
-        FROM recetas r
-        WHERE r.producto_id = ?
-    """, (producto_id,))
+    try:
+        # 🔥 validación defensiva
+        if not producto_id:
+            return {"detalle": []}
 
-    receta = cursor.fetchone()
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
 
-    if not receta:
-        return {"detalle": []}
+        # =============================
+        # 🔍 BUSCAR RECETA (solo activa)
+        # =============================
+        cursor.execute(f"""
+            SELECT r.id
+            FROM recetas r
+            WHERE r.producto_id = {placeholder}
+            AND r.activo = 1
+        """, (producto_id,))
 
-    receta_id = receta[0]
+        receta = cursor.fetchone()
 
-    cursor.execute("""
-        SELECT insumo_id, cantidad, unidad
-        FROM recetas_detalle
-        WHERE receta_id = ?
-    """, (receta_id,))
+        print(f"📦 RECETA BUSCADA producto_id={producto_id} → receta={receta}")
 
-    data = [
-        {"insumo_id": row[0], "cantidad": float(row[1]), "unidad": row[2]}
-        for row in cursor.fetchall()
-    ]
+        if not receta:
+            return {"detalle": []}
 
-    conn.close()
+        receta_id = receta[0]
 
-    return {"detalle": data}
+        # =============================
+        # 📄 DETALLE ORDENADO
+        # =============================
+        cursor.execute(f"""
+            SELECT insumo_id, cantidad, unidad
+            FROM recetas_detalle
+            WHERE receta_id = {placeholder}
+            ORDER BY id
+        """, (receta_id,))
+
+        data = []
+        for row in cursor.fetchall():
+            data.append({
+                "insumo_id": int(row[0]) if row[0] is not None else None,
+                "cantidad": float(row[1] or 0),
+                "unidad": row[2]
+            })
+
+        print(f"📄 DETALLE RECETA ({receta_id}) → {len(data)} items")
+
+        return {"detalle": data}
+
+    finally:
+        conn.close()

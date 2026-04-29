@@ -1,12 +1,23 @@
 from database.connection import get_connection
 from decimal import Decimal
+from config import Config
 
 
 def convertir_cantidad(cantidad, unidad):
-    cantidad = Decimal(cantidad)
+    cantidad = Decimal(cantidad or 0)
 
-    if unidad and unidad.lower() in ["kg", "kilogramo", "kilogramos"]:
+    if not unidad:
+        return cantidad
+
+    unidad = str(unidad).lower()
+
+    # 🔥 CORRECCIÓN: gramos → kg
+    if unidad in ["g", "gr", "gramos"]:
         return cantidad / Decimal(1000)
+
+    # kg queda igual
+    if unidad in ["kg", "kilogramo", "kilogramos"]:
+        return cantidad
 
     return cantidad
 
@@ -16,68 +27,86 @@ def convertir_cantidad(cantidad, unidad):
 # =============================
 def calcular_costo_producto(cursor, producto_id):
 
-    cursor.execute("""
+    is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+    placeholder = "%s" if is_postgres else "?"
+
+    query_insumos = f"""
         SELECT rd.insumo_id, rd.cantidad, u.abreviatura
         FROM recetas r
         JOIN recetas_detalle rd ON r.id = rd.receta_id
         JOIN productos p ON rd.insumo_id = p.id
         LEFT JOIN unidades_medida u ON p.unidad_id = u.id
-        WHERE r.producto_id = ?
-    """, (producto_id,))
+        WHERE r.producto_id = {placeholder}
+    """
 
+    cursor.execute(query_insumos, (producto_id,))
     insumos = cursor.fetchall()
 
     costo_total = Decimal("0")
+
+    query_precio = f"""
+        SELECT precio
+        FROM detalle_compras
+        WHERE producto_id = {placeholder}
+        ORDER BY id DESC
+    """
+
+    # 🔥 LIMIT / TOP dinámico
+    if is_postgres:
+        query_precio += " LIMIT 1"
+    else:
+        query_precio = query_precio.replace("SELECT precio", "SELECT TOP 1 precio")
 
     for insumo_id, cantidad_base, unidad in insumos:
 
         cantidad_real = convertir_cantidad(cantidad_base, unidad)
 
-        cursor.execute("""
-            SELECT TOP 1 precio
-            FROM detalle_compras
-            WHERE producto_id = ?
-            ORDER BY id DESC
-        """, (insumo_id,))
-
+        cursor.execute(query_precio, (insumo_id,))
         compra = cursor.fetchone()
+
         if not compra:
             continue
 
         precio = Decimal(compra[0] or 0)
-
         costo_total += cantidad_real * precio
 
     return costo_total
 
 
 # =============================
-# 🔥 NUEVO: UTILIDAD POR PRODUCTO REAL (DESDE VENTAS)
+# 🔥 UTILIDAD POR PRODUCTO REAL
 # =============================
 def get_utilidad_por_producto(cursor):
 
-    cursor.execute("""
+    is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+
+    # 🔥 FECHA COMPATIBLE
+    fecha_condition = "CURRENT_DATE" if is_postgres else "CAST(GETDATE() AS DATE)"
+
+    query = f"""
         SELECT 
             p.nombre,
             SUM(dv.cantidad) as cantidad,
-            SUM((dv.precio * dv.cantidad)) as total
+            SUM((dv.precio * dv.cantidad)) as total,
+            SUM((dv.precio - p.costo) * dv.cantidad) AS utilidad
         FROM detalle_ventas dv
         JOIN productos p ON dv.producto_id = p.id
         JOIN ventas v ON dv.venta_id = v.id
-        WHERE CAST(v.fecha AS DATE) = CAST(GETDATE() AS DATE)
+        WHERE CAST(v.fecha AS DATE) = {fecha_condition}
         GROUP BY p.nombre
-    """)
+    """
 
+    cursor.execute(query)
     data = cursor.fetchall()
 
     resultado = []
 
-    for nombre, cantidad, total in data:
+    for nombre, cantidad, total, utilidad in data:
 
         resultado.append({
             "producto": nombre,
             "cantidad": int(cantidad or 0),
-            "utilidad": float(round(total or 0, 2))
+            "utilidad": float(round(utilidad or 0, 2))
         })
 
     resultado.sort(key=lambda x: x["utilidad"], reverse=True)
@@ -95,13 +124,18 @@ def get_dashboard():
 
     try:
 
-        # 🔥 ventas del día (SIN CAMBIOS)
-        cursor.execute("""
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
+        fecha_condition = "CURRENT_DATE" if is_postgres else "CAST(GETDATE() AS DATE)"
+
+        query_ventas = f"""
             SELECT id, total
             FROM ventas
-            WHERE CAST(fecha AS DATE) = CAST(GETDATE() AS DATE)
-        """)
+            WHERE CAST(fecha AS DATE) = {fecha_condition}
+        """
 
+        cursor.execute(query_ventas)
         ventas = cursor.fetchall()
 
         total_ventas = Decimal("0")
@@ -113,31 +147,31 @@ def get_dashboard():
 
             total_ventas += Decimal(total or 0)
 
-            # 🔥 NUEVO: traer utilidad REAL de la venta
-            cursor.execute("""
+            # 🔥 utilidad desde BD
+            cursor.execute(f"""
                 SELECT utilidad
                 FROM ventas
-                WHERE id = ?
+                WHERE id = {placeholder}
             """, (venta_id,))
 
             utilidad_bd = cursor.fetchone()
-            utilidad_total += Decimal(utilidad_bd[0] or 0)
+            utilidad_total += Decimal(utilidad_bd[0] or 0) if utilidad_bd else Decimal("0")
 
-            # 🔥 mantenemos tu lógica original (NO se elimina)
-            cursor.execute("""
+            # 🔥 detalle
+            cursor.execute(f"""
                 SELECT producto_id, cantidad, precio
                 FROM detalle_ventas
-                WHERE venta_id = ?
+                WHERE venta_id = {placeholder}
             """, (venta_id,))
 
             detalles = cursor.fetchall()
 
             for producto_id, cantidad, precio in detalles:
 
-                cantidad = Decimal(cantidad)
-                precio = Decimal(precio)
+                cantidad = Decimal(cantidad or 0)
+                precio = Decimal(precio or 0)
 
-                # 🔥 se deja (pero ya NO afecta total final)
+                # 🔥 se mantiene lógica original
                 costo = calcular_costo_producto(cursor, producto_id)
 
                 utilidad = (precio - costo) * cantidad
@@ -151,7 +185,7 @@ def get_dashboard():
                 productos[producto_id]["cantidad"] += int(cantidad)
                 productos[producto_id]["utilidad"] += utilidad
 
-        # 🔥 top productos (AHORA USAMOS MÉTODO REAL)
+        # 🔥 TOP PRODUCTOS
         top = get_utilidad_por_producto(cursor)
 
         return {
@@ -159,6 +193,10 @@ def get_dashboard():
             "utilidad_dia": float(round(utilidad_total, 2)),
             "top_productos": top[:5]
         }
+
+    except Exception as e:
+        print("❌ ERROR DASHBOARD:", e)
+        raise e
 
     finally:
         conn.close()

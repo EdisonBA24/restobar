@@ -11,12 +11,19 @@ productos_bp = Blueprint("productos", __name__)
 
 
 # =============================
+# 🔐 HELPER AUTH
+# =============================
+def validar_sesion():
+    return "user_id" in session
+
+
+# =============================
 # GET PRODUCTOS (CON SEARCH 🔥)
 # =============================
 @productos_bp.route("/productos", methods=["GET"])
 def listar_productos():
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
     
     try:
@@ -34,7 +41,7 @@ def listar_productos():
 
         return jsonify({
             "status": "success",
-            "data": data
+            "data": data or []  # 🔥 evita null
         })
 
     except Exception as e:
@@ -51,14 +58,29 @@ def listar_productos():
 @productos_bp.route("/productos", methods=["POST"])
 def crear_producto():
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
     
     try:
-        return jsonify(create_producto(request.json))
+        data = request.json
+
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "No se enviaron datos"
+            }), 400
+
+        # 🔥 trazabilidad
+        data["usuario_id"] = session.get("user_id")
+
+        return jsonify(create_producto(data))
+
     except Exception as e:
         print("❌ ERROR CREAR:", e)
-        return jsonify({"message": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 # =============================
@@ -67,14 +89,26 @@ def crear_producto():
 @productos_bp.route("/productos/<int:id>", methods=["PUT"])
 def actualizar_producto(id):
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
     
     try:
-        return jsonify(update_producto(id, request.json))
+        data = request.json
+
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "No se enviaron datos"
+            }), 400
+
+        return jsonify(update_producto(id, data))
+
     except Exception as e:
         print("❌ ERROR UPDATE:", e)
-        return jsonify({"message": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 # =============================
@@ -83,14 +117,17 @@ def actualizar_producto(id):
 @productos_bp.route("/productos/<int:id>", methods=["DELETE"])
 def eliminar_producto(id):
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
     
     try:
         return jsonify(delete_producto(id))
     except Exception as e:
         print("❌ ERROR DELETE:", e)
-        return jsonify({"message": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 # =============================
@@ -99,11 +136,14 @@ def eliminar_producto(id):
 @productos_bp.route("/productos/<int:id>/activar", methods=["PUT"])
 def activar(id):
 
-    if "user_id" not in session:
+    if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
     
     try:
         return jsonify(activar_producto(id))
     except Exception as e:
         print("❌ ERROR ACTIVATE:", e)
-        return jsonify({"message": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500

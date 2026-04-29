@@ -2,6 +2,7 @@ from database.connection import get_connection
 from flask import session
 from decimal import Decimal, InvalidOperation
 from services.ventas_service import crear_venta
+from config import Config
 
 
 # =============================
@@ -23,12 +24,12 @@ def to_decimal(value, field):
 # =============================
 def convertir_cantidad(cantidad, unidad):
 
-    cantidad = Decimal(cantidad)
+    cantidad = Decimal(cantidad or 0)
 
     if not unidad:
         return cantidad
 
-    unidad = unidad.lower()
+    unidad = str(unidad).lower()
 
     if unidad in ["g", "gr", "gramos"]:
         return cantidad / Decimal(1000)
@@ -48,27 +49,43 @@ def validar_stock_pedido(data):
     cursor = conn.cursor()
 
     try:
-        for item in data["detalles"]:
+        detalles = data.get("detalles", [])
+
+        if not detalles:
+            return {"ok": True}  # 🔥 evita error innecesario
+
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
+        for item in detalles:
 
             producto_id = item["producto_id"]
             cantidad = to_decimal(item["cantidad"], "Cantidad")
 
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT rd.insumo_id, rd.cantidad, rd.unidad
                 FROM recetas r
                 JOIN recetas_detalle rd ON r.id = rd.receta_id
-                WHERE r.producto_id = ?
+                WHERE r.producto_id = {placeholder}
             """, (producto_id,))
 
             insumos = cursor.fetchall()
 
             for insumo_id, cantidad_base, unidad in insumos:
 
-                cantidad_total = Decimal(cantidad_base) * cantidad
+                cantidad_total = Decimal(cantidad_base or 0) * cantidad
                 cantidad_real = convertir_cantidad(cantidad_total, unidad)
 
-                cursor.execute("SELECT stock, nombre FROM productos WHERE id=?", (insumo_id,))
+                cursor.execute(f"""
+                    SELECT stock, nombre 
+                    FROM productos 
+                    WHERE id = {placeholder}
+                """, (insumo_id,))
+
                 result = cursor.fetchone()
+
+                if not result:
+                    continue
 
                 stock = Decimal(result[0] or 0)
                 nombre = result[1]
@@ -100,38 +117,56 @@ def crear_pedido(data):
         if not detalles:
             raise Exception("No hay productos en el pedido")
 
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
         total = Decimal("0")
 
-        # =============================
-        # 🔥 CALCULAR TOTAL (SIN COSTO)
-        # =============================
         for item in detalles:
             cantidad = to_decimal(item["cantidad"], "Cantidad")
             precio = to_decimal(item["precio"], "Precio")
-
             total += cantidad * precio
 
         # =============================
         # INSERT PEDIDO
         # =============================
-        cursor.execute("""
-            INSERT INTO pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
-            OUTPUT INSERTED.id
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data.get("mesa"),
-            data.get("tipo"),
-            data.get("cliente"),
-            data.get("cliente_id"),
-            data.get("estado"),
-            usuario_id,
-            total
-        ))
+        if is_postgres:
+            cursor.execute(f"""
+                INSERT INTO pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                RETURNING id
+            """, (
+                data.get("mesa"),
+                data.get("tipo"),
+                data.get("cliente"),
+                data.get("cliente_id"),
+                data.get("estado"),
+                usuario_id,
+                total
+            ))
+        else:
+            cursor.execute(f"""
+                INSERT INTO pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
+                OUTPUT INSERTED.id
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            """, (
+                data.get("mesa"),
+                data.get("tipo"),
+                data.get("cliente"),
+                data.get("cliente_id"),
+                data.get("estado"),
+                usuario_id,
+                total
+            ))
 
-        pedido_id = cursor.fetchone()[0]
+        pedido_row = cursor.fetchone()
+        if not pedido_row:
+            raise Exception("Error creando pedido")
+
+        pedido_id = pedido_row[0]
 
         # =============================
-        # DETALLE PEDIDO (SIN STOCK)
+        # DETALLE PEDIDO
         # =============================
         for item in detalles:
 
@@ -139,9 +174,9 @@ def crear_pedido(data):
             cantidad = to_decimal(item["cantidad"], "Cantidad")
             precio = to_decimal(item["precio"], "Precio")
 
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio)
-                VALUES (?, ?, ?, ?)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (pedido_id, producto_id, cantidad, precio))
 
         conn.commit()
@@ -169,18 +204,26 @@ def get_pedidos():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT p.id, p.mesa, p.tipo, p.cliente, p.total, p.fecha, p.estado, u.nombre AS usuario
-        FROM pedidos p
-        LEFT JOIN usuarios u ON p.usuario_id = u.id
-        ORDER BY p.id DESC
-    """)
+    try:
+        cursor.execute("""
+            SELECT p.id, p.mesa, p.tipo, p.cliente, p.total, p.fecha, p.estado, u.nombre AS usuario
+            FROM pedidos p
+            LEFT JOIN usuarios u ON p.usuario_id = u.id
+            ORDER BY p.id DESC
+        """)
 
-    columns = [c[0] for c in cursor.description]
-    data = [dict(zip(columns, r)) for r in cursor.fetchall()]
+        columns = [c[0] for c in cursor.description]
 
-    conn.close()
-    return data
+        data = []
+        for r in cursor.fetchall():
+            row = dict(zip(columns, r))
+            row["total"] = float(row.get("total") or 0)
+            data.append(row)
+
+        return data
+
+    finally:
+        conn.close()
 
 
 # =============================
@@ -191,35 +234,53 @@ def get_pedido_detalle(pedido_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT pe.mesa, dp.producto_id, p.nombre, dp.cantidad, dp.precio
-        FROM detalle_pedidos dp
-        JOIN pedidos pe ON dp.pedido_id = pe.id
-        JOIN productos p ON dp.producto_id = p.id
-        WHERE dp.pedido_id = ?
-    """, (pedido_id,))
+    try:
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
 
-    columns = [c[0] for c in cursor.description]
-    data = [dict(zip(columns, r)) for r in cursor.fetchall()]
+        cursor.execute(f"""
+            SELECT pe.mesa, dp.producto_id, p.nombre, dp.cantidad, dp.precio
+            FROM detalle_pedidos dp
+            JOIN pedidos pe ON dp.pedido_id = pe.id
+            JOIN productos p ON dp.producto_id = p.id
+            WHERE dp.pedido_id = {placeholder}
+        """, (pedido_id,))
 
-    conn.close()
-    return data
+        columns = [c[0] for c in cursor.description]
+        data = []
+
+        for r in cursor.fetchall():
+            row = dict(zip(columns, r))
+            row["cantidad"] = float(row.get("cantidad") or 0)
+            row["precio"] = float(row.get("precio") or 0)
+            data.append(row)
+
+        return data
+
+    finally:
+        conn.close()
 
 
 # =============================
 # 🧾 FACTURAR PEDIDO → VENTA
 # =============================
-def facturar_pedido(pedido_id, metodo_pago="Efectivo"):
+def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, **kwargs):
 
     conn = get_connection()
     cursor = conn.cursor()
-    
 
     try:
-        cursor.execute("""
+        usuario_id = usuario_id or session.get("user_id") or 1
+
+        print(f"🧾 FACTURAR PEDIDO | id={pedido_id} | metodo={metodo_pago} | usuario_id={usuario_id}")
+
+        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        placeholder = "%s" if is_postgres else "?"
+
+        cursor.execute(f"""
             SELECT id, estado, mesa, cliente, cliente_id
             FROM pedidos
-            WHERE id = ?
+            WHERE id = {placeholder}
         """, (pedido_id,))
 
         pedido = cursor.fetchone()
@@ -227,16 +288,13 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo"):
         if not pedido:
             raise Exception("Pedido no existe")
 
-        if pedido[1] == "facturado":
+        if str(pedido[1]).lower() == "facturado":
             raise Exception("El pedido ya fue facturado")
 
-        # =============================
-        # DETALLE
-        # =============================
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT producto_id, cantidad, precio
             FROM detalle_pedidos
-            WHERE pedido_id = ?
+            WHERE pedido_id = {placeholder}
         """, (pedido_id,))
 
         detalles_db = cursor.fetchall()
@@ -244,16 +302,13 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo"):
         if not detalles_db:
             raise Exception("Pedido sin productos")
 
-        # =============================
-        # DATA VENTA
-        # =============================
         data_venta = {
             "cliente": pedido[3] or f"Mesa {pedido[2]}",
-            "cliente_id": pedido[4],  # 🔥 NUEVO
-            "mesa": pedido[2],          # 🔥 NUEVO
-           ## "tipo": pedido[1],          # 🔥 NUEVO
+            "cliente_id": pedido[4],
+            "mesa": pedido[2],
             "metodo_pago": metodo_pago,
-            "usuario": session.get("nombreUsuario", "admin"),  # 🔥 CORRECTO
+            "usuario": session.get("nombreUsuario") or f"user_{usuario_id}",
+            "usuario_id": usuario_id,  # 🔥 clave
             "detalles": []
         }
 
@@ -264,18 +319,12 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo"):
                 "precio": float(precio)
             })
 
-        # =============================
-        # CREAR VENTA
-        # =============================
         resultado = crear_venta(data_venta)
 
-        # =============================
-        # ACTUALIZAR PEDIDO
-        # =============================
-        cursor.execute("""
+        cursor.execute(f"""
             UPDATE pedidos
             SET estado = 'facturado'
-            WHERE id = ?
+            WHERE id = {placeholder}
         """, (pedido_id,))
 
         conn.commit()

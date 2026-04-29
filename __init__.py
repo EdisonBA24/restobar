@@ -1,0 +1,1 @@
+# Carpeta preparada para la aplicación principal del backend, donde se inicializa la aplicación.

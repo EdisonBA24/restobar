@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+import os
 
 from routes.productos import productos_bp
 from routes.unidades import unidades_bp
@@ -21,14 +22,42 @@ from routes.pagos import pagos_bp
 def create_app():
     app = Flask(__name__)
     app.json.sort_keys = False
-    app.secret_key = "super_secret_key"
+    app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
 
-    CORS(app, supports_credentials=True)
+    # =============================
+    # 🔥 DETECTAR ENTORNO
+    # =============================
+    ENV = os.environ.get("FLASK_ENV", "development")
 
-    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    app.config["SESSION_COOKIE_SECURE"] = False
+    # =============================
+    # 🔥 CORS CORRECTO
+    # =============================
+    if ENV == "production":
+        CORS(
+            app,
+            supports_credentials=True,
+            origins=[
+                "https://restobar.onrender.com"  # 🔥 CAMBIA ESTO
+            ]
+        )
+    else:
+        CORS(app, supports_credentials=True)
 
-    # Blueprints
+    # =============================
+    # 🔥 COOKIES (CLAVE PARA LOGIN)
+    # =============================
+    if ENV == "production":
+        app.config["SESSION_COOKIE_SAMESITE"] = "None"   # 🔥 obligatorio cross-domain
+        app.config["SESSION_COOKIE_SECURE"] = True       # 🔥 obligatorio HTTPS
+    else:
+        app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+        app.config["SESSION_COOKIE_SECURE"] = False
+
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+
+    # =============================
+    # BLUEPRINTS
+    # =============================
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(productos_bp, url_prefix="/api")
     app.register_blueprint(unidades_bp, url_prefix="/api")
@@ -45,12 +74,18 @@ def create_app():
     app.register_blueprint(usuarios_bp, url_prefix="/api")
     app.register_blueprint(pagos_bp, url_prefix="/api")
 
+    # =============================
+    # ROOT
+    # =============================
     @app.route("/")
     def home():
         return jsonify({
             "message": "ERP Backend funcionando"
         })
 
+    # =============================
+    # ERROR GLOBAL
+    # =============================
     @app.errorhandler(Exception)
     def handle_exception(e):
         return jsonify({
@@ -61,12 +96,11 @@ def create_app():
     return app
 
 
-# 🔥 ESTA ES LA CLAVE PARA RENDER
+# 🔥 RENDER ENTRYPOINT
 app = create_app()
 
 
-# 🔥 SOLO PARA LOCAL
+# 🔥 LOCAL RUN
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)

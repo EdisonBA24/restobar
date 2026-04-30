@@ -16,16 +16,25 @@ def init_admin():
 
     print("🔐 HASH GENERADO:", password)
 
-    cursor.execute("SELECT id FROM usuarios WHERE usuario = ?", ("admin",))
+    # 🔥 DETECTAR TIPO DE DB (PostgreSQL vs otros)
+    param = "%s" if conn.__class__.__module__.startswith("psycopg2") else "?"
+
+    # =============================
+    # SELECT
+    # =============================
+    cursor.execute(
+        f"SELECT id FROM usuarios WHERE usuario = {param}",
+        ("admin",)
+    )
     existing = cursor.fetchone()
 
     if existing:
         print("⚠️ El usuario admin ya existe, se actualizará password...")
 
-        cursor.execute("""
+        cursor.execute(f"""
             UPDATE usuarios
-            SET password = ?, nombre = ?, perfil = ?, activo = 1
-            WHERE usuario = ?
+            SET password = {param}, nombre = {param}, perfil = {param}, activo = 1
+            WHERE usuario = {param}
         """, (
             password,
             "Administrador",
@@ -34,9 +43,9 @@ def init_admin():
         ))
 
     else:
-        cursor.execute("""
+        cursor.execute(f"""
             INSERT INTO usuarios (nombre, usuario, password, perfil, activo)
-            VALUES (?, ?, ?, ?, 1)
+            VALUES ({param}, {param}, {param}, {param}, 1)
         """, (
             "Administrador",
             "admin",

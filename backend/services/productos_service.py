@@ -41,8 +41,8 @@ def _to_int(value):
 def _base_query():
     return """
         SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-        FROM productos p
-        LEFT JOIN unidades_medida u ON p.unidad_id = u.id
+        FROM restobar.productos p
+        LEFT JOIN restobar.unidades_medida u ON p.unidad_id = u.id
     """
 
 
@@ -66,15 +66,15 @@ def get_all_productos(page=1, limit=10, solo_inactivos=False, search=None):
         if DB_ENGINE == "postgres":
             query = """
             SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-            FROM productos p
-            LEFT JOIN unidades_medida u ON p.unidad_id = u.id
+            FROM restobar.productos p
+            LEFT JOIN restobar.unidades_medida u ON p.unidad_id = u.id
             WHERE p.activo = %s
             """
         else:
             query = """
             SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-            FROM productos p
-            LEFT JOIN unidades_medida u ON p.unidad_id = u.id
+            FROM restobar.productos p
+            LEFT JOIN restobar.unidades_medida u ON p.unidad_id = u.id
             WHERE p.activo = ?
             """
 
@@ -157,11 +157,11 @@ def create_producto(data):
         stock = _to_decimal(data.get("stock"))
 
         query = """
-        INSERT INTO productos 
+        INSERT INTO restobar.productos 
         (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock)
         VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
         """ if DB_ENGINE == "postgres" else """
-        INSERT INTO productos 
+        INSERT INTO restobar.productos 
         (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock)
         VALUES (?, ?, ?, ?, ?, 1, ?, ?)
         """
@@ -203,11 +203,11 @@ def update_producto(id, data):
         precio = _to_decimal(data.get("precio_venta"))
 
         query = """
-        UPDATE productos
+        UPDATE restobar.productos
         SET nombre=%s, codigo=%s, precio_venta=%s, categoria=%s, unidad_id=%s, tipo=%s
         WHERE id=%s AND activo=1
         """ if DB_ENGINE == "postgres" else """
-        UPDATE productos
+        UPDATE restobar.productos
         SET nombre=?, codigo=?, precio_venta=?, categoria=?, unidad_id=?, tipo=?
         WHERE id=? AND activo=1
         """
@@ -247,7 +247,7 @@ def delete_producto(id):
     cursor = conn.cursor()
 
     try:
-        query = "UPDATE productos SET activo = 0 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE productos SET activo = 0 WHERE id = ?"
+        query = "UPDATE restobar.productos SET activo = 0 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE restobar.productos SET activo = 0 WHERE id = ?"
 
         cursor.execute(query, (id,))
         conn.commit()
@@ -275,7 +275,7 @@ def activar_producto(id):
     cursor = conn.cursor()
 
     try:
-        query = "UPDATE productos SET activo = 1 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE productos SET activo = 1 WHERE id = ?"
+        query = "UPDATE restobar.productos SET activo = 1 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE restobar.productos SET activo = 1 WHERE id = ?"
 
         cursor.execute(query, (id,))
         conn.commit()

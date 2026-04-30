@@ -22,7 +22,7 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
 
         query = f"""
         SELECT *
-        FROM clientes
+        FROM restobar.clientes
         WHERE activo = {placeholder}
         """
 
@@ -95,7 +95,7 @@ def create_cliente(data):
         placeholder = "%s" if is_postgres else "?"
 
         cursor.execute(f"""
-            INSERT INTO clientes (nombre, documento, telefono, direccion, usuario_id, activo)
+            INSERT INTO restobar.clientes (nombre, documento, telefono, direccion, usuario_id, activo)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 1)
         """, (
             data.get("nombre"),
@@ -135,7 +135,7 @@ def update_cliente(id, data):
         placeholder = "%s" if is_postgres else "?"
 
         cursor.execute(f"""
-            UPDATE clientes
+            UPDATE restobar.clientes
             SET nombre={placeholder}, documento={placeholder}, telefono={placeholder}, direccion={placeholder}
             WHERE id={placeholder} AND activo=1
         """, (
@@ -175,7 +175,7 @@ def delete_cliente(id):
         db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
         placeholder = "%s" if db_engine == "postgres" else "?"
 
-        cursor.execute(f"UPDATE clientes SET activo = 0 WHERE id = {placeholder}", (id,))
+        cursor.execute(f"UPDATE restobar.clientes SET activo = 0 WHERE id = {placeholder}", (id,))
         conn.commit()
 
         if cursor.rowcount == 0:
@@ -205,7 +205,7 @@ def activar_cliente(id):
         db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
         placeholder = "%s" if db_engine == "postgres" else "?"
 
-        cursor.execute(f"UPDATE clientes SET activo = 1 WHERE id = {placeholder}", (id,))
+        cursor.execute(f"UPDATE restobar.clientes SET activo = 1 WHERE id = {placeholder}", (id,))
         conn.commit()
 
         if cursor.rowcount == 0:

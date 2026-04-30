@@ -47,7 +47,7 @@ def calcular_costo_producto(cursor, producto_id, cantidad):
     is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
     placeholder = "%s" if is_postgres else "?"
 
-    cursor.execute(f"SELECT tipo, costo FROM productos WHERE id = {placeholder}", (producto_id,))
+    cursor.execute(f"SELECT tipo, costo FROM restobar.productos WHERE id = {placeholder}", (producto_id,))
     result = cursor.fetchone()
 
     if not result:
@@ -63,8 +63,8 @@ def calcular_costo_producto(cursor, producto_id, cantidad):
     # 🍔 RECETA
     cursor.execute(f"""
         SELECT rd.insumo_id, rd.cantidad, rd.unidad
-        FROM recetas r
-        JOIN recetas_detalle rd ON r.id = rd.receta_id
+        FROM restobar.recetas r
+        JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
         WHERE r.producto_id = {placeholder}
     """, (producto_id,))
 
@@ -80,7 +80,7 @@ def calcular_costo_producto(cursor, producto_id, cantidad):
         cantidad_total = Decimal(cantidad_base or 0) * cantidad
         cantidad_real = convertir_cantidad(cantidad_total, unidad)
 
-        cursor.execute(f"SELECT costo FROM productos WHERE id = {placeholder}", (insumo_id,))
+        cursor.execute(f"SELECT costo FROM restobar.productos WHERE id = {placeholder}", (insumo_id,))
         result = cursor.fetchone()
 
         costo_unitario = Decimal(result[0] or 0) if result else Decimal("0")
@@ -109,7 +109,7 @@ def validar_stock(data):
             producto_id = item.get("producto_id")
             cantidad = to_decimal(item.get("cantidad"), "Cantidad")
 
-            cursor.execute(f"SELECT tipo FROM productos WHERE id = {placeholder}", (producto_id,))
+            cursor.execute(f"SELECT tipo FROM restobar.productos WHERE id = {placeholder}", (producto_id,))
             row = cursor.fetchone()
 
             if not row:
@@ -120,7 +120,7 @@ def validar_stock(data):
             # 🥃 DIRECTO
             if tipo in ["LICORES", "BEBIDAS"]:
 
-                cursor.execute(f"SELECT stock, nombre FROM productos WHERE id={placeholder}", (producto_id,))
+                cursor.execute(f"SELECT stock, nombre FROM restobar.productos WHERE id={placeholder}", (producto_id,))
                 result = cursor.fetchone()
 
                 stock = Decimal(result[0] or 0)
@@ -134,8 +134,8 @@ def validar_stock(data):
 
                 cursor.execute(f"""
                     SELECT rd.insumo_id, rd.cantidad, rd.unidad
-                    FROM recetas r
-                    JOIN recetas_detalle rd ON r.id = rd.receta_id
+                    FROM restobar.recetas r
+                    JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
                     WHERE r.producto_id = {placeholder}
                 """, (producto_id,))
 
@@ -146,7 +146,7 @@ def validar_stock(data):
                     cantidad_total = Decimal(cantidad_base or 0) * cantidad
                     cantidad_real = convertir_cantidad(cantidad_total, unidad)
 
-                    cursor.execute(f"SELECT stock, nombre FROM productos WHERE id={placeholder}", (insumo_id,))
+                    cursor.execute(f"SELECT stock, nombre FROM restobar.productos WHERE id={placeholder}", (insumo_id,))
                     result = cursor.fetchone()
 
                     stock = Decimal(result[0] or 0)
@@ -205,7 +205,7 @@ def crear_venta(data):
         # =============================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id)
+                INSERT INTO restobar.ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                 RETURNING id
             """, (
@@ -221,7 +221,7 @@ def crear_venta(data):
             ))
         else:
             cursor.execute(f"""
-                INSERT INTO ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id)
+                INSERT INTO restobar.ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id)
                 OUTPUT INSERTED.id
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
@@ -248,11 +248,11 @@ def crear_venta(data):
             precio = to_decimal(item.get("precio"), "Precio")
 
             cursor.execute(f"""
-                INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio)
+                INSERT INTO restobar.detalle_ventas (venta_id, producto_id, cantidad, precio)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (venta_id, producto_id, cantidad, precio))
 
-            cursor.execute(f"SELECT tipo FROM productos WHERE id = {placeholder}", (producto_id,))
+            cursor.execute(f"SELECT tipo FROM restobar.productos WHERE id = {placeholder}", (producto_id,))
             tipo_row = cursor.fetchone()
 
             if not tipo_row:
@@ -262,7 +262,7 @@ def crear_venta(data):
 
             if tipo in ["LICORES", "BEBIDAS"]:
 
-                cursor.execute(f"SELECT stock, nombre FROM productos WHERE id={placeholder}", (producto_id,))
+                cursor.execute(f"SELECT stock, nombre FROM restobar.productos WHERE id={placeholder}", (producto_id,))
                 result = cursor.fetchone()
 
                 stock = Decimal(result[0] or 0)
@@ -272,7 +272,7 @@ def crear_venta(data):
                     raise Exception(f"Stock insuficiente: {nombre}")
 
                 cursor.execute(f"""
-                    UPDATE productos
+                    UPDATE restobar.productos
                     SET stock = {null_fn}(stock, 0) - {placeholder}
                     WHERE id = {placeholder}
                 """, (cantidad, producto_id))
@@ -281,8 +281,8 @@ def crear_venta(data):
 
                 cursor.execute(f"""
                     SELECT rd.insumo_id, rd.cantidad, rd.unidad
-                    FROM recetas r
-                    JOIN recetas_detalle rd ON r.id = rd.receta_id
+                    FROM restobar.recetas r
+                    JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
                     WHERE r.producto_id = {placeholder}
                 """, (producto_id,))
 
@@ -293,7 +293,7 @@ def crear_venta(data):
                     cantidad_total = Decimal(cantidad_base or 0) * cantidad
                     cantidad_real = convertir_cantidad(cantidad_total, unidad)
 
-                    cursor.execute(f"SELECT stock FROM productos WHERE id={placeholder}", (insumo_id,))
+                    cursor.execute(f"SELECT stock FROM restobar.productos WHERE id={placeholder}", (insumo_id,))
                     stock_row = cursor.fetchone()
 
                     stock = Decimal(stock_row[0] or 0) if stock_row else Decimal("0")
@@ -302,7 +302,7 @@ def crear_venta(data):
                         raise Exception("Stock insuficiente")
 
                     cursor.execute(f"""
-                        UPDATE productos
+                        UPDATE restobar.productos
                         SET stock = {null_fn}(stock, 0) - {placeholder}
                         WHERE id = {placeholder}
                     """, (cantidad_real, insumo_id))
@@ -336,8 +336,8 @@ def get_ventas():
     try:
         cursor.execute("""
             SELECT v.id, v.cliente, v.total, v.costo_total, v.utilidad, v.fecha, u.nombre AS usuario
-            FROM ventas v
-            LEFT JOIN usuarios u ON v.usuario_id = u.id
+            FROM restobar.ventas v
+            LEFT JOIN restobar.usuarios u ON v.usuario_id = u.id
             ORDER BY v.id DESC
         """)
 
@@ -370,8 +370,8 @@ def get_venta_detalle(venta_id):
 
         cursor.execute(f"""
             SELECT dv.producto_id, p.nombre, dv.cantidad, dv.precio
-            FROM detalle_ventas dv
-            JOIN productos p ON dv.producto_id = p.id
+            FROM restobar.detalle_ventas dv
+            JOIN restobar.productos p ON dv.producto_id = p.id
             WHERE dv.venta_id = {placeholder}
         """, (venta_id,))
 

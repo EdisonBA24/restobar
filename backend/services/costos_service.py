@@ -45,8 +45,8 @@ def get_costo_producto(producto_id):
         # =============================
         cursor.execute(f"""
             SELECT rd.insumo_id, rd.cantidad, rd.unidad
-            FROM recetas r
-            JOIN recetas_detalle rd ON r.id = rd.receta_id
+            FROM restobar.recetas r
+            JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
             WHERE r.producto_id = {placeholder}
         """, (producto_id,))
 
@@ -67,7 +67,7 @@ def get_costo_producto(producto_id):
         # =============================
         query_precio = f"""
             SELECT precio
-            FROM detalle_compras
+            FROM restobar.detalle_compras
             WHERE producto_id = {placeholder}
             ORDER BY id DESC
             {"LIMIT 1" if is_postgres else ""}
@@ -76,7 +76,7 @@ def get_costo_producto(producto_id):
         if not is_postgres:
             query_precio = f"""
                 SELECT TOP 1 precio
-                FROM detalle_compras
+                FROM restobar.detalle_compras
                 WHERE producto_id = {placeholder}
                 ORDER BY id DESC
             """
@@ -99,7 +99,7 @@ def get_costo_producto(producto_id):
         # =============================
         cursor.execute(f"""
             SELECT precio_venta
-            FROM productos
+            FROM restobar.productos
             WHERE id = {placeholder}
         """, (producto_id,))
 

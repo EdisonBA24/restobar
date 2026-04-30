@@ -25,7 +25,7 @@ def listar_unidades():
 
         cursor.execute("""
             SELECT id, nombre, abreviatura
-            FROM unidades_medida
+            FROM restobar.unidades_medida
             WHERE activo = 1
             ORDER BY nombre
         """)

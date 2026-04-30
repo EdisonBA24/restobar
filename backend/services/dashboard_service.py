@@ -32,10 +32,10 @@ def calcular_costo_producto(cursor, producto_id):
 
     query_insumos = f"""
         SELECT rd.insumo_id, rd.cantidad, u.abreviatura
-        FROM recetas r
-        JOIN recetas_detalle rd ON r.id = rd.receta_id
-        JOIN productos p ON rd.insumo_id = p.id
-        LEFT JOIN unidades_medida u ON p.unidad_id = u.id
+        FROM restobar.recetas r
+        JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
+        JOIN restobar.productos p ON rd.insumo_id = p.id
+        LEFT JOIN restobar.unidades_medida u ON p.unidad_id = u.id
         WHERE r.producto_id = {placeholder}
     """
 
@@ -46,7 +46,7 @@ def calcular_costo_producto(cursor, producto_id):
 
     query_precio = f"""
         SELECT precio
-        FROM detalle_compras
+        FROM restobar.detalle_compras
         WHERE producto_id = {placeholder}
         ORDER BY id DESC
     """
@@ -89,9 +89,9 @@ def get_utilidad_por_producto(cursor):
             SUM(dv.cantidad) as cantidad,
             SUM((dv.precio * dv.cantidad)) as total,
             SUM((dv.precio - p.costo) * dv.cantidad) AS utilidad
-        FROM detalle_ventas dv
-        JOIN productos p ON dv.producto_id = p.id
-        JOIN ventas v ON dv.venta_id = v.id
+        FROM restobar.detalle_ventas dv
+        JOIN restobar.productos p ON dv.producto_id = p.id
+        JOIN restobar.ventas v ON dv.venta_id = v.id
         WHERE CAST(v.fecha AS DATE) = {fecha_condition}
         GROUP BY p.nombre
     """
@@ -131,7 +131,7 @@ def get_dashboard():
 
         query_ventas = f"""
             SELECT id, total
-            FROM ventas
+            FROM restobar.ventas
             WHERE CAST(fecha AS DATE) = {fecha_condition}
         """
 
@@ -150,7 +150,7 @@ def get_dashboard():
             # 🔥 utilidad desde BD
             cursor.execute(f"""
                 SELECT utilidad
-                FROM ventas
+                FROM restobar.ventas
                 WHERE id = {placeholder}
             """, (venta_id,))
 
@@ -160,7 +160,7 @@ def get_dashboard():
             # 🔥 detalle
             cursor.execute(f"""
                 SELECT producto_id, cantidad, precio
-                FROM detalle_ventas
+                FROM restobar.detalle_ventas
                 WHERE venta_id = {placeholder}
             """, (venta_id,))
 

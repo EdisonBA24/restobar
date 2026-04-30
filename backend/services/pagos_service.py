@@ -51,7 +51,7 @@ def crear_pago(data):
         placeholder = "%s" if is_postgres else "?"
 
         query = f"""
-            INSERT INTO pagos (
+            INSERT INTO restobar.pagos (
                 empleado,
                 monto,
                 concepto,
@@ -100,8 +100,8 @@ def get_pagos():
                 p.concepto,
                 p.fecha,
                 u.nombre AS usuario
-            FROM pagos p
-            LEFT JOIN usuarios u ON p.usuario_id = u.id
+            FROM restobar.pagos p
+            LEFT JOIN restobar.usuarios u ON p.usuario_id = u.id
             ORDER BY p.id DESC
         """)
 

@@ -34,7 +34,7 @@ def login():
         # 🔥 QUERY SEGURA (solo usuario)
         query = """
             SELECT id, nombre, perfil, activo, password
-            FROM usuarios
+            FROM restobar.usuarios
             WHERE LOWER(usuario) = %s
         """
 

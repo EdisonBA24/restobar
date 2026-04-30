@@ -38,8 +38,8 @@ def reporte_inventario():
                 um.nombre AS unidad,
                 p.costo,
                 (p.stock * p.costo) AS valor_inventario
-            FROM productos p
-            JOIN unidades_medida um ON p.unidad_id = um.id
+            FROM restobar.productos p
+            JOIN restobar.unidades_medida um ON p.unidad_id = um.id
             WHERE tipo = 'INSUMO'
         """)
 
@@ -85,7 +85,7 @@ def reporte_ventas():
 
         query = """
             SELECT fecha, total, utilidad
-            FROM ventas
+            FROM restobar.ventas
         """
 
         params = []
@@ -134,7 +134,7 @@ def reporte_costos():
 
         cursor.execute("""
             SELECT id, nombre, precio_venta
-            FROM productos
+            FROM restobar.productos
             WHERE tipo = 'RECETA'
         """)
 
@@ -147,8 +147,8 @@ def reporte_costos():
 
             cursor.execute(f"""
                 SELECT rd.insumo_id, rd.cantidad, rd.unidad
-                FROM recetas r
-                JOIN recetas_detalle rd ON r.id = rd.receta_id
+                FROM restobar.recetas r
+                JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
                 WHERE r.producto_id = {placeholder}
             """, (producto_id,))
 
@@ -163,7 +163,7 @@ def reporte_costos():
 
                 cursor.execute(f"""
                     SELECT costo
-                    FROM productos
+                    FROM restobar.productos
                     WHERE id = {placeholder}
                 """, (insumo_id,))
 

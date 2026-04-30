@@ -25,7 +25,7 @@ def crear_usuario(data):
 
         # 🔥 VALIDAR USUARIO ÚNICO
         cursor.execute(f"""
-            SELECT id FROM usuarios WHERE usuario = {placeholder}
+            SELECT id FROM restobar.usuarios WHERE usuario = {placeholder}
         """, (data["usuario"],))
 
         if cursor.fetchone():
@@ -35,7 +35,7 @@ def crear_usuario(data):
         password_hash = generate_password_hash(data["password"])
 
         cursor.execute(f"""
-            INSERT INTO usuarios (nombre, usuario, password, perfil, activo)
+            INSERT INTO restobar.usuarios (nombre, usuario, password, perfil, activo)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, 1)
         """, (
             data["nombre"],
@@ -68,7 +68,7 @@ def get_usuarios():
     try:
         cursor.execute("""
             SELECT id, nombre, usuario, perfil, activo
-            FROM usuarios
+            FROM restobar.usuarios
             ORDER BY id DESC
         """)
 
@@ -102,7 +102,7 @@ def update_usuario(id, data):
 
         # 🔥 VALIDAR USUARIO ÚNICO (excepto él mismo)
         cursor.execute(f"""
-            SELECT id FROM usuarios 
+            SELECT id FROM restobar.usuarios
             WHERE usuario = {placeholder} AND id != {placeholder}
         """, (data["usuario"], id))
 
@@ -116,7 +116,7 @@ def update_usuario(id, data):
             password_hash = generate_password_hash(password)
 
             query = f"""
-                UPDATE usuarios
+                UPDATE restobar.usuarios
                 SET nombre = {placeholder}, usuario = {placeholder}, password = {placeholder}, perfil = {placeholder}, activo = {placeholder}
                 WHERE id = {placeholder}
             """
@@ -133,7 +133,7 @@ def update_usuario(id, data):
         else:
             # 🔥 no tocar password
             query = f"""
-                UPDATE usuarios
+                UPDATE restobar.usuarios
                 SET nombre = {placeholder}, usuario = {placeholder}, perfil = {placeholder}, activo = {placeholder}
                 WHERE id = {placeholder}
             """
@@ -178,7 +178,7 @@ def activar_usuario(id, activo):
         placeholder = "%s" if is_postgres else "?"
 
         cursor.execute(f"""
-            UPDATE usuarios
+            UPDATE restobar.usuarios
             SET activo = {placeholder}
             WHERE id = {placeholder}
         """, (activo, id))

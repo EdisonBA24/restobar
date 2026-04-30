@@ -64,8 +64,8 @@ def validar_stock_pedido(data):
 
             cursor.execute(f"""
                 SELECT rd.insumo_id, rd.cantidad, rd.unidad
-                FROM recetas r
-                JOIN recetas_detalle rd ON r.id = rd.receta_id
+                FROM restobar.recetas r
+                JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
                 WHERE r.producto_id = {placeholder}
             """, (producto_id,))
 
@@ -78,7 +78,7 @@ def validar_stock_pedido(data):
 
                 cursor.execute(f"""
                     SELECT stock, nombre 
-                    FROM productos 
+                    FROM restobar.productos 
                     WHERE id = {placeholder}
                 """, (insumo_id,))
 
@@ -132,7 +132,7 @@ def crear_pedido(data):
         # =============================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
+                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                 RETURNING id
             """, (
@@ -146,7 +146,7 @@ def crear_pedido(data):
             ))
         else:
             cursor.execute(f"""
-                INSERT INTO pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
+                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
                 OUTPUT INSERTED.id
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (
@@ -175,7 +175,7 @@ def crear_pedido(data):
             precio = to_decimal(item["precio"], "Precio")
 
             cursor.execute(f"""
-                INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio)
+                INSERT INTO restobar.detalle_pedidos (pedido_id, producto_id, cantidad, precio)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (pedido_id, producto_id, cantidad, precio))
 
@@ -207,8 +207,8 @@ def get_pedidos():
     try:
         cursor.execute("""
             SELECT p.id, p.mesa, p.tipo, p.cliente, p.total, p.fecha, p.estado, u.nombre AS usuario
-            FROM pedidos p
-            LEFT JOIN usuarios u ON p.usuario_id = u.id
+            FROM restobar.pedidos p
+            LEFT JOIN restobar.usuarios u ON p.usuario_id = u.id
             ORDER BY p.id DESC
         """)
 
@@ -240,9 +240,9 @@ def get_pedido_detalle(pedido_id):
 
         cursor.execute(f"""
             SELECT pe.mesa, dp.producto_id, p.nombre, dp.cantidad, dp.precio
-            FROM detalle_pedidos dp
-            JOIN pedidos pe ON dp.pedido_id = pe.id
-            JOIN productos p ON dp.producto_id = p.id
+            FROM restobar.detalle_pedidos dp
+            JOIN restobar.pedidos pe ON dp.pedido_id = pe.id
+            JOIN restobar.productos p ON dp.producto_id = p.id
             WHERE dp.pedido_id = {placeholder}
         """, (pedido_id,))
 
@@ -279,7 +279,7 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
 
         cursor.execute(f"""
             SELECT id, estado, mesa, cliente, cliente_id
-            FROM pedidos
+            FROM restobar.pedidos
             WHERE id = {placeholder}
         """, (pedido_id,))
 
@@ -293,7 +293,7 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
 
         cursor.execute(f"""
             SELECT producto_id, cantidad, precio
-            FROM detalle_pedidos
+            FROM restobar.detalle_pedidos
             WHERE pedido_id = {placeholder}
         """, (pedido_id,))
 
@@ -322,7 +322,7 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
         resultado = crear_venta(data_venta)
 
         cursor.execute(f"""
-            UPDATE pedidos
+            UPDATE restobar.pedidos
             SET estado = 'facturado'
             WHERE id = {placeholder}
         """, (pedido_id,))

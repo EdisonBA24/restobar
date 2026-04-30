@@ -52,13 +52,13 @@ def crear_compra(data):
         # =========================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO compras (proveedor, total, usuario_id)
+                INSERT INTO restobar.compras (proveedor, total, usuario_id)
                 VALUES ({placeholder}, 0, {placeholder})
                 RETURNING id
             """, (proveedor, usuario_id))
         else:
             cursor.execute(f"""
-                INSERT INTO compras (proveedor, total, usuario_id)
+                INSERT INTO restobar.compras (proveedor, total, usuario_id)
                 OUTPUT INSERTED.id
                 VALUES ({placeholder}, 0, {placeholder})
             """, (proveedor, usuario_id))
@@ -88,7 +88,7 @@ def crear_compra(data):
             # INSERT DETALLE
             # =========================
             cursor.execute(f"""
-                INSERT INTO detalle_compras (compra_id, producto_id, cantidad, precio)
+                INSERT INTO restobar.detalle_compras (compra_id, producto_id, cantidad, precio)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (compra_id, producto_id, cantidad, precio))
 
@@ -97,7 +97,7 @@ def crear_compra(data):
             # =========================
             cursor.execute(f"""
                 SELECT stock, costo
-                FROM productos
+                FROM restobar.productos
                 WHERE id = {placeholder}
             """, (producto_id,))
 
@@ -127,7 +127,7 @@ def crear_compra(data):
             # 🔥 ACTUALIZAR PRODUCTO
             # =========================
             cursor.execute(f"""
-                UPDATE productos
+                UPDATE restobar.productos
                 SET 
                     stock = {null_fn}(stock, 0) + {placeholder},
                     costo = {placeholder}
@@ -138,7 +138,7 @@ def crear_compra(data):
         # ACTUALIZAR TOTAL COMPRA
         # =========================
         cursor.execute(f"""
-            UPDATE compras
+            UPDATE restobar.compras
             SET total = {placeholder}
             WHERE id = {placeholder}
         """, (total, compra_id))
@@ -169,7 +169,7 @@ def get_compras():
     try:
         cursor.execute("""
             SELECT id, proveedor, total, fecha
-            FROM compras
+            FROM restobar.compras
             ORDER BY id DESC
         """)
 
@@ -207,8 +207,8 @@ def get_detalle_compra(compra_id):
 
         cursor.execute(f"""
             SELECT dc.producto_id, p.nombre, dc.cantidad, dc.precio
-            FROM detalle_compras dc
-            JOIN productos p ON dc.producto_id = p.id
+            FROM restobar.detalle_compras dc
+            JOIN restobar.productos p ON dc.producto_id = p.id
             WHERE dc.compra_id = {placeholder}
         """, (compra_id,))
 

@@ -4,7 +4,7 @@ const isLocal = window.location.hostname.includes("localhost")
 
 const API_URL = isLocal
     ? "http://127.0.0.1:5000/api"
-    : "https://restobar.onrender.com";
+    : "https://restobar.onrender.com/api"; // 🔥 AJUSTE: agregar /api
 
 // ==============================
 // 🔥 FETCH CENTRALIZADO
@@ -26,8 +26,10 @@ export async function apiFetch(url, method = "GET", data = null) {
     try {
         const res = await fetch(`${API_URL}${url}`, options);
 
-        // 🔐 sesión expirada
-        if (res.status === 401) {
+        // 🔐 sesión expirada por status
+        if (res.status === 401 || res.status === 403) {
+            console.warn("Sesión expirada (status)");
+
             localStorage.removeItem("usuario");
             window.location.href = "login.html";
             return;
@@ -41,7 +43,18 @@ export async function apiFetch(url, method = "GET", data = null) {
             throw new Error(`Error ${res.status}`);
         }
 
-        return await res.json();
+        const json = await res.json();
+
+        // 🔥 VALIDAR SESIÓN POR RESPUESTA (CLAVE)
+        if (json.status === "unauthorized") {
+            console.warn("Sesión expirada (respuesta)");
+
+            localStorage.removeItem("usuario");
+            window.location.href = "login.html";
+            return;
+        }
+
+        return json;
 
     } catch (error) {
         console.error("FETCH ERROR:", error);
@@ -70,7 +83,18 @@ export async function enviarVenta(data) {
             throw new Error("Error enviando venta");
         }
 
-        return await res.json();
+        const json = await res.json();
+
+        // 🔥 VALIDAR SESIÓN TAMBIÉN AQUÍ
+        if (json.status === "unauthorized") {
+            console.warn("Sesión expirada (venta)");
+
+            localStorage.removeItem("usuario");
+            window.location.href = "login.html";
+            return;
+        }
+
+        return json;
 
     } catch (error) {
         console.error("FETCH ERROR VENTA:", error);

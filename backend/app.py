@@ -2,6 +2,9 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import os
 
+# 🔥 NUEVO: importar tu script
+import init_admin
+
 from routes.productos import productos_bp
 from routes.unidades import unidades_bp
 from routes.health import health_bp
@@ -37,7 +40,7 @@ def create_app():
             app,
             supports_credentials=True,
             origins=[
-                "https://restobar.onrender.com"  # 🔥 CAMBIA ESTO
+                "https://restobar.onrender.com"
             ]
         )
     else:
@@ -47,13 +50,24 @@ def create_app():
     # 🔥 COOKIES (CLAVE PARA LOGIN)
     # =============================
     if ENV == "production":
-        app.config["SESSION_COOKIE_SAMESITE"] = "None"   # 🔥 obligatorio cross-domain
-        app.config["SESSION_COOKIE_SECURE"] = True       # 🔥 obligatorio HTTPS
+        app.config["SESSION_COOKIE_SAMESITE"] = "None"
+        app.config["SESSION_COOKIE_SECURE"] = True
     else:
         app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
         app.config["SESSION_COOKIE_SECURE"] = False
 
     app.config["SESSION_COOKIE_HTTPONLY"] = True
+
+    # =============================
+    # 🔥 EJECUTAR INIT ADMIN (SOLO PRODUCCIÓN)
+    # =============================
+    if ENV == "production":
+        try:
+            print("🚀 Inicializando admin...")
+            # 🔥 se ejecuta el script automáticamente
+            # (ya se ejecuta al importarlo, esto es solo control)
+        except Exception as e:
+            print("❌ Error init admin:", e)
 
     # =============================
     # BLUEPRINTS

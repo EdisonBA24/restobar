@@ -145,10 +145,9 @@
     <script>
 
         // 🔥 CONFIG GLOBAL (LOCAL vs PRODUCCIÓN)
-        const API_URL = window.location.hostname.includes("localhost") ||
-                        window.location.hostname.includes("127.0.0.1")
-            ? "http://127.0.0.1:5000"
-            : "https://TU-BACKEND.onrender.com"; // 🔥 CAMBIAR
+        const API_URL = isLocal
+            ? "http://127.0.0.1:5000/api"
+            : "https://restobar.onrender.com/api";
 
         function formatoMoneda(valor) {
             return new Intl.NumberFormat("es-CO", {
@@ -158,9 +157,15 @@
         }
 
         async function cargarInventario() {
-            const res = await fetch(`${API_URL}/api/reportes/inventario`, {
-                credentials: "include"
+            const res = await fetch(`${API_URL}/ventas`, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
             });
+
             const data = await res.json();
 
             window.dataGlobal = data;

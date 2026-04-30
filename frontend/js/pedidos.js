@@ -264,6 +264,14 @@ window.verDetallePedido = async function (id, estado) {
 // =============================
 async function facturarPedido() {
 
+    const options = {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    };
+
     if (!pedidoActual) return;
 
     if (!window.metodoSeleccionado) {
@@ -277,7 +285,7 @@ async function facturarPedido() {
 
     try {
 
-        const data = await apiFetch(`/pedidos/${pedidoActual}/facturar`, "POST", {
+        const data = await apiFetch(`/pedidos/${pedidoActual}/facturar`, options, {
             metodo_pago: window.metodoSeleccionado
         });
 

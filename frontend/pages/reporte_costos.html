@@ -143,11 +143,14 @@
 
     <script>
 
-        // 🔥 CONFIG GLOBAL (LOCAL vs PRODUCCIÓN)
-        const API_URL = window.location.hostname.includes("localhost") ||
-                        window.location.hostname.includes("127.0.0.1")
-            ? "http://127.0.0.1:5000"
-            : "https://TU-BACKEND.onrender.com"; // 🔥 CAMBIAR
+        // 🔥 AGREGADO: detección correcta local
+        const isLocal = window.location.hostname.includes("localhost") ||
+            window.location.hostname.includes("127.0.0.1");
+
+        // 🔥 CONFIG GLOBAL CORREGIDA
+        const API_URL = isLocal
+            ? "http://127.0.0.1:5000/api"
+            : "https://restobar.onrender.com/api";
 
         function formatoMoneda(valor) {
             return new Intl.NumberFormat("es-CO", {
@@ -159,7 +162,7 @@
         async function cargarCostos() {
             try {
 
-                const res = await fetch(`${API_URL}/api/reportes/costos`, {
+                const res = await fetch(`${API_URL}/reportes/costos`, { // 🔥 FIX
                     credentials: "include"
                 });
 
@@ -169,6 +172,13 @@
                 }
 
                 const data = await res.json();
+
+                // 🔥 VALIDAR SESIÓN
+                if (data.status === "unauthorized") {
+                    localStorage.removeItem("usuario");
+                    window.location.href = "login.html";
+                    return;
+                }
 
                 if (!data || data.length === 0) {
                     mostrarMensaje("No hay datos ⚠️", "warning");
@@ -230,7 +240,7 @@
 
             try {
 
-                const res = await fetch(`${API_URL}/api/reportes/exportar`, {
+                const res = await fetch(`${API_URL}/reportes/exportar`, { // 🔥 FIX
                     method: "POST",
                     credentials: "include",
                     headers: { "Content-Type": "application/json" },

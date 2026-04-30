@@ -43,7 +43,8 @@ def create_app():
             app,
             supports_credentials=True,
             origins=[
-                "https://restobar.onrender.com"
+                "https://restobar.onrender.com",
+                "https://frontend-restobar.onrender.com"
             ]
         )
     else:

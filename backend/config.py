@@ -26,7 +26,7 @@ class Config:
     # 🔥 EXTRA (para uso directo si decides no usar DATABASE_URL)
     DB_HOST = os.environ.get("DB_HOST")
     DB_NAME = os.environ.get("DB_NAME")
-    DB_PORT = os.environ.get("DB_PORT", 5432)
+    DB_PORT = os.environ.get("DB_PORT", 6543)
 
     # =============================
     # 🔥 LOCAL (SQL SERVER)

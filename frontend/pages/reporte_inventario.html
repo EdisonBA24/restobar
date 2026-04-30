@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -144,6 +143,10 @@
 
     <script>
 
+        // 🔥 AGREGADO: definir isLocal (faltaba)
+        const isLocal = window.location.hostname.includes("localhost")
+            || window.location.hostname.includes("127.0.0.1");
+
         // 🔥 CONFIG GLOBAL (LOCAL vs PRODUCCIÓN)
         const API_URL = isLocal
             ? "http://127.0.0.1:5000/api"
@@ -157,16 +160,28 @@
         }
 
         async function cargarInventario() {
-            const res = await fetch(`${API_URL}/ventas`, {
+            const res = await fetch(`${API_URL}/reportes/inventario`, { // 🔥 FIX endpoint
                 method: "GET",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data)
+                }
+                // 🔥 QUITADO body en GET (rompía todo)
             });
 
+            if (!res.ok) {
+                console.error("Error cargando inventario");
+                return;
+            }
+
             const data = await res.json();
+
+            // 🔥 VALIDAR sesión
+            if (data.status === "unauthorized") {
+                localStorage.removeItem("usuario");
+                window.location.href = "login.html";
+                return;
+            }
 
             window.dataGlobal = data;
             renderTabla(data);
@@ -213,7 +228,7 @@
                 return;
             }
 
-            const res = await fetch(`${API_URL}/api/reportes/exportar`, {
+            const res = await fetch(`${API_URL}/reportes/exportar`, { // 🔥 FIX /api duplicado
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },

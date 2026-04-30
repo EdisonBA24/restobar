@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 
 # 🔥 NUEVO: importar tu script
-import init_admin
+from init_admin import init_admin
 
 from routes.productos import productos_bp
 from routes.unidades import unidades_bp
@@ -64,8 +64,7 @@ def create_app():
     if ENV == "production":
         try:
             print("🚀 Inicializando admin...")
-            # 🔥 se ejecuta el script automáticamente
-            # (ya se ejecuta al importarlo, esto es solo control)
+            init_admin()  # 🔥 ahora sí controlado
         except Exception as e:
             print("❌ Error init admin:", e)
 

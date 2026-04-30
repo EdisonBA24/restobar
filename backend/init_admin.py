@@ -23,7 +23,7 @@ def init_admin():
     # SELECT
     # =============================
     cursor.execute(
-        f"SELECT id FROM usuarios WHERE usuario = {param}",
+        f"SELECT id FROM restobar.usuarios WHERE usuario = {param}",
         ("admin",)
     )
     existing = cursor.fetchone()
@@ -32,7 +32,7 @@ def init_admin():
         print("⚠️ El usuario admin ya existe, se actualizará password...")
 
         cursor.execute(f"""
-            UPDATE usuarios
+            UPDATE restobar.usuarios
             SET password = {param}, nombre = {param}, perfil = {param}, activo = 1
             WHERE usuario = {param}
         """, (
@@ -44,7 +44,7 @@ def init_admin():
 
     else:
         cursor.execute(f"""
-            INSERT INTO usuarios (nombre, usuario, password, perfil, activo)
+            INSERT INTO restobar.usuarios (nombre, usuario, password, perfil, activo)
             VALUES ({param}, {param}, {param}, {param}, 1)
         """, (
             "Administrador",

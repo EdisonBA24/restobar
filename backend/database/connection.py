@@ -1,26 +1,29 @@
 from config import Config
-
-# 🔥 IMPORTS DINÁMICOS
 import os
 
-# 🔥 MEJORA: fallback inteligente (Config → ENV → default)
-DB_ENGINE = getattr(Config, "DB_ENGINE", os.environ.get("DB_ENGINE", "sqlserver")).lower()
+# =============================
+# 🔥 DETECTAR ENGINE
+# =============================
+DB_ENGINE = (
+    os.environ.get("DB_ENGINE") or
+    getattr(Config, "DB_ENGINE", "sqlserver")
+).lower()
 
 
 # =============================
-# 🔥 POSTGRES (RENDER)
+# 🔥 POSTGRES (RENDER / SUPABASE)
 # =============================
 def get_postgres_connection():
     import psycopg2
 
     try:
         return psycopg2.connect(
-            host=Config.DB_HOST,
-            database=Config.DB_NAME,
-            user=Config.DB_USER,
-            password=Config.DB_PASSWORD,
-            port=Config.DB_PORT,
-            sslmode="require"  # 🔥 obligatorio en Render
+            host=os.environ.get("DB_HOST", Config.DB_HOST),
+            database=os.environ.get("DB_NAME", Config.DB_NAME),
+            user=os.environ.get("DB_USER", Config.DB_USER),
+            password=os.environ.get("DB_PASSWORD", Config.DB_PASSWORD),
+            port=os.environ.get("DB_PORT", Config.DB_PORT),
+            sslmode="require"
         )
     except Exception as e:
         print("❌ ERROR REAL DB (POSTGRES):", e)
@@ -47,13 +50,14 @@ def get_sqlserver_connection():
 def get_connection():
 
     try:
-
-        print(f"🔌 DB_ENGINE detectado: {DB_ENGINE}")  # 🔥 DEBUG PRO
+        print(f"🔌 DB_ENGINE detectado: {DB_ENGINE}")
 
         if DB_ENGINE == "postgres":
+            print("🐘 Conectando a PostgreSQL (Supabase)...")
             return get_postgres_connection()
 
         elif DB_ENGINE == "sqlserver":
+            print("🟦 Conectando a SQL Server (Local)...")
             return get_sqlserver_connection()
 
         else:

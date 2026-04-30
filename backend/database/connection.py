@@ -23,7 +23,8 @@ def get_postgres_connection():
             user=os.environ.get("DB_USER", Config.DB_USER),
             password=os.environ.get("DB_PASSWORD", Config.DB_PASSWORD),
             port=os.environ.get("DB_PORT", Config.DB_PORT),
-            sslmode="require"
+            sslmode="require",
+            options="-c search_path=restobar"
         )
     except Exception as e:
         print("❌ ERROR REAL DB (POSTGRES):", e)

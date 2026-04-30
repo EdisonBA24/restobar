@@ -32,10 +32,13 @@ def create_app():
     # =============================
     ENV = os.environ.get("FLASK_ENV", "development")
 
+    # 🔥 NUEVO: detectar si está en Render
+    IS_RENDER = os.environ.get("RENDER", False)
+
     # =============================
     # 🔥 CORS CORRECTO
     # =============================
-    if ENV == "production":
+    if ENV == "production" or IS_RENDER:
         CORS(
             app,
             supports_credentials=True,
@@ -49,7 +52,7 @@ def create_app():
     # =============================
     # 🔥 COOKIES (CLAVE PARA LOGIN)
     # =============================
-    if ENV == "production":
+    if ENV == "production" or IS_RENDER:
         app.config["SESSION_COOKIE_SAMESITE"] = "None"
         app.config["SESSION_COOKIE_SECURE"] = True
     else:
@@ -59,12 +62,12 @@ def create_app():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
 
     # =============================
-    # 🔥 EJECUTAR INIT ADMIN (SOLO PRODUCCIÓN)
+    # 🔥 EJECUTAR INIT ADMIN (PRODUCCIÓN / RENDER)
     # =============================
-    if ENV == "production":
+    if ENV == "production" or IS_RENDER:
         try:
             print("🚀 Inicializando admin...")
-            init_admin()  # 🔥 ahora sí controlado
+            init_admin()
         except Exception as e:
             print("❌ Error init admin:", e)
 

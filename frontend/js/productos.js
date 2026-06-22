@@ -260,7 +260,7 @@ async function guardarProducto(e) {
 
     } catch (error) {
         console.error("ERROR REAL:", error);
-        mostrarMensaje("Error guardando producto ❌", "error");
+        mostrarMensaje(error.message || "Error guardando producto", "error");
     }
 }
 

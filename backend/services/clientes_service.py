@@ -2,6 +2,66 @@ from database.connection import get_connection
 from config import Config
 
 
+def _get_db_settings():
+    db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
+    is_postgres = db_engine == "postgres"
+    placeholder = "%s" if is_postgres else "?"
+    return is_postgres, placeholder
+
+
+def _normalizar_valor(valor):
+    valor = (valor or "").strip()
+    return valor or None
+
+
+def _buscar_cliente_duplicado(cursor, campo, valor, placeholder, is_postgres, excluir_id=None):
+    valor = _normalizar_valor(valor)
+
+    if not valor:
+        return None
+
+    campo_expr = (
+        f"LOWER(TRIM(COALESCE({campo}, '')))"
+        if is_postgres
+        else f"LOWER(LTRIM(RTRIM(ISNULL({campo}, ''))))"
+    )
+
+    query = f"""
+        SELECT id, nombre
+        FROM restobar.clientes
+        WHERE {campo_expr} = LOWER({placeholder})
+    """
+    params = [valor]
+
+    if excluir_id is not None:
+        query += f" AND id <> {placeholder}"
+        params.append(excluir_id)
+
+    cursor.execute(query, params)
+    return cursor.fetchone()
+
+
+def _validar_cliente_unico(cursor, data, placeholder, is_postgres, excluir_id=None):
+    for campo in ["documento", "telefono"]:
+        duplicado = _buscar_cliente_duplicado(
+            cursor,
+            campo,
+            data.get(campo),
+            placeholder,
+            is_postgres,
+            excluir_id
+        )
+
+        if duplicado:
+            return {
+                "status": "error",
+                "message": f"Ya existe un cliente registrado con ese {campo}",
+                "status_code": 409
+            }
+
+    return None
+
+
 def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
 
     offset = (page - 1) * limit
@@ -90,9 +150,14 @@ def create_cliente(data):
     try:
         print("📥 DATA CLIENTE:", data)
 
-        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
-        is_postgres = db_engine == "postgres"
-        placeholder = "%s" if is_postgres else "?"
+        is_postgres, placeholder = _get_db_settings()
+
+        data["documento"] = _normalizar_valor(data.get("documento"))
+        data["telefono"] = _normalizar_valor(data.get("telefono"))
+
+        duplicado = _validar_cliente_unico(cursor, data, placeholder, is_postgres)
+        if duplicado:
+            return duplicado
 
         cursor.execute(f"""
             INSERT INTO restobar.clientes (nombre, documento, telefono, direccion, usuario_id, activo)
@@ -130,9 +195,14 @@ def update_cliente(id, data):
     cursor = conn.cursor()
 
     try:
-        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
-        is_postgres = db_engine == "postgres"
-        placeholder = "%s" if is_postgres else "?"
+        is_postgres, placeholder = _get_db_settings()
+
+        data["documento"] = _normalizar_valor(data.get("documento"))
+        data["telefono"] = _normalizar_valor(data.get("telefono"))
+
+        duplicado = _validar_cliente_unico(cursor, data, placeholder, is_postgres, excluir_id=id)
+        if duplicado:
+            return duplicado
 
         cursor.execute(f"""
             UPDATE restobar.clientes
@@ -202,8 +272,26 @@ def activar_cliente(id):
     cursor = conn.cursor()
 
     try:
-        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
-        placeholder = "%s" if db_engine == "postgres" else "?"
+        is_postgres, placeholder = _get_db_settings()
+
+        cursor.execute(
+            f"SELECT documento, telefono FROM restobar.clientes WHERE id = {placeholder}",
+            (id,)
+        )
+        cliente = cursor.fetchone()
+
+        if not cliente:
+            return {"status": "error", "message": "Cliente no encontrado", "status_code": 404}
+
+        duplicado = _validar_cliente_unico(
+            cursor,
+            {"documento": cliente[0], "telefono": cliente[1]},
+            placeholder,
+            is_postgres,
+            excluir_id=id
+        )
+        if duplicado:
+            return duplicado
 
         cursor.execute(f"UPDATE restobar.clientes SET activo = 1 WHERE id = {placeholder}", (id,))
         conn.commit()

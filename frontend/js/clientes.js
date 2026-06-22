@@ -154,7 +154,7 @@ async function guardarCliente(e) {
         }
 
         if (res?.status === "error") {
-            mostrarMensaje("Error guardando cliente ❌", "error");
+            mostrarMensaje(res.message || "Error guardando cliente", "error");
             return;
         }
 
@@ -165,7 +165,7 @@ async function guardarCliente(e) {
 
     } catch (error) {
         console.error("Error guardando cliente:", error);
-        mostrarMensaje("Error en cliente ❌", "error");
+        mostrarMensaje(error.message || "Error en cliente", "error");
     }
 }
 

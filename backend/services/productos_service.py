@@ -38,6 +38,62 @@ def _to_int(value):
         return None
 
 
+def _placeholder():
+    return "%s" if DB_ENGINE == "postgres" else "?"
+
+
+def _normalizar_valor(valor):
+    valor = (valor or "").strip()
+    return valor or None
+
+
+def _buscar_producto_duplicado(cursor, campo, valor, excluir_id=None):
+    valor = _normalizar_valor(valor)
+
+    if not valor:
+        return None
+
+    placeholder = _placeholder()
+    campo_expr = (
+        f"LOWER(TRIM(COALESCE({campo}, '')))"
+        if DB_ENGINE == "postgres"
+        else f"LOWER(LTRIM(RTRIM(ISNULL({campo}, ''))))"
+    )
+
+    query = f"""
+        SELECT id, nombre
+        FROM restobar.productos
+        WHERE {campo_expr} = LOWER({placeholder})
+    """
+    params = [valor]
+
+    if excluir_id is not None:
+        query += f" AND id <> {placeholder}"
+        params.append(excluir_id)
+
+    cursor.execute(query, tuple(params))
+    return cursor.fetchone()
+
+
+def _validar_producto_unico(cursor, data, excluir_id=None):
+    for campo in ["codigo", "nombre"]:
+        duplicado = _buscar_producto_duplicado(
+            cursor,
+            campo,
+            data.get(campo),
+            excluir_id
+        )
+
+        if duplicado:
+            return {
+                "status": "error",
+                "message": f"Ya existe un producto registrado con ese {campo}",
+                "status_code": 409
+            }
+
+    return None
+
+
 def _base_query():
     return """
         SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
@@ -155,6 +211,12 @@ def create_producto(data):
         unidad_id = _to_int(data.get("unidad_id"))
         precio = _to_decimal(data.get("precio_venta"))
         stock = _to_decimal(data.get("stock"))
+        data["codigo"] = _normalizar_valor(data.get("codigo"))
+        data["nombre"] = _normalizar_valor(data.get("nombre"))
+
+        duplicado = _validar_producto_unico(cursor, data)
+        if duplicado:
+            return duplicado
 
         query = """
         INSERT INTO restobar.productos 
@@ -201,6 +263,12 @@ def update_producto(id, data):
         tipo = data.get("tipo") or "INSUMO"
         unidad_id = _to_int(data.get("unidad_id"))
         precio = _to_decimal(data.get("precio_venta"))
+        data["codigo"] = _normalizar_valor(data.get("codigo"))
+        data["nombre"] = _normalizar_valor(data.get("nombre"))
+
+        duplicado = _validar_producto_unico(cursor, data, excluir_id=id)
+        if duplicado:
+            return duplicado
 
         query = """
         UPDATE restobar.productos
@@ -275,6 +343,25 @@ def activar_producto(id):
     cursor = conn.cursor()
 
     try:
+        placeholder = _placeholder()
+
+        cursor.execute(
+            f"SELECT codigo, nombre FROM restobar.productos WHERE id = {placeholder}",
+            (id,)
+        )
+        producto = cursor.fetchone()
+
+        if not producto:
+            return {"status": "error", "message": "Producto no encontrado", "status_code": 404}
+
+        duplicado = _validar_producto_unico(
+            cursor,
+            {"codigo": producto[0], "nombre": producto[1]},
+            excluir_id=id
+        )
+        if duplicado:
+            return duplicado
+
         query = "UPDATE restobar.productos SET activo = 1 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE restobar.productos SET activo = 1 WHERE id = ?"
 
         cursor.execute(query, (id,))

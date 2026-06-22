@@ -38,9 +38,18 @@ export async function apiFetch(url, method = "GET", data = null) {
         // ❌ error backend (IMPORTANTE)
         if (!res.ok) {
             const text = await res.text();
+            let message = `Error ${res.status}`;
+
+            try {
+                const errorJson = JSON.parse(text);
+                message = errorJson.message || message;
+            } catch (_) {
+                message = text || message;
+            }
+
             console.error("API ERROR:", res.status, text);
 
-            throw new Error(`Error ${res.status}`);
+            throw new Error(message);
         }
 
         const json = await res.json();

@@ -10,6 +10,11 @@ from services.clientes_service import (
 clientes_bp = Blueprint("clientes", __name__)
 
 
+def responder_resultado(result):
+    status_code = result.pop("status_code", 200)
+    return jsonify(result), status_code
+
+
 # =============================
 # 🔐 HELPER AUTH
 # =============================
@@ -74,7 +79,7 @@ def crear_cliente():
 
         result = create_cliente(data)
 
-        return jsonify(result)
+        return responder_resultado(result)
 
     except Exception as e:
         print("❌ ERROR crear_cliente:", e)
@@ -98,7 +103,7 @@ def actualizar_cliente(id):
 
         result = update_cliente(id, data)
 
-        return jsonify(result)
+        return responder_resultado(result)
 
     except Exception as e:
         print("❌ ERROR actualizar_cliente:", e)
@@ -119,7 +124,7 @@ def eliminar_cliente(id):
 
     try:
         result = delete_cliente(id)
-        return jsonify(result)
+        return responder_resultado(result)
 
     except Exception as e:
         print("❌ ERROR eliminar_cliente:", e)
@@ -140,7 +145,7 @@ def activar(id):
 
     try:
         result = activar_cliente(id)
-        return jsonify(result)
+        return responder_resultado(result)
 
     except Exception as e:
         print("❌ ERROR activar_cliente:", e)

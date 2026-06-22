@@ -10,6 +10,11 @@ from services.productos_service import (
 productos_bp = Blueprint("productos", __name__)
 
 
+def responder_resultado(result):
+    status_code = result.pop("status_code", 200)
+    return jsonify(result), status_code
+
+
 # =============================
 # 🔐 HELPER AUTH
 # =============================
@@ -73,7 +78,7 @@ def crear_producto():
         # 🔥 trazabilidad
         data["usuario_id"] = session.get("user_id")
 
-        return jsonify(create_producto(data))
+        return responder_resultado(create_producto(data))
 
     except Exception as e:
         print("❌ ERROR CREAR:", e)
@@ -101,7 +106,7 @@ def actualizar_producto(id):
                 "message": "No se enviaron datos"
             }), 400
 
-        return jsonify(update_producto(id, data))
+        return responder_resultado(update_producto(id, data))
 
     except Exception as e:
         print("❌ ERROR UPDATE:", e)
@@ -121,7 +126,7 @@ def eliminar_producto(id):
         return jsonify({"status": "unauthorized"}), 401
     
     try:
-        return jsonify(delete_producto(id))
+        return responder_resultado(delete_producto(id))
     except Exception as e:
         print("❌ ERROR DELETE:", e)
         return jsonify({
@@ -140,7 +145,7 @@ def activar(id):
         return jsonify({"status": "unauthorized"}), 401
     
     try:
-        return jsonify(activar_producto(id))
+        return responder_resultado(activar_producto(id))
     except Exception as e:
         print("❌ ERROR ACTIVATE:", e)
         return jsonify({

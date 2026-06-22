@@ -572,7 +572,7 @@ function validarClienteDuplicado() {
 
 
 // =============================
-// IMPRIMIR COMANDA 80MM
+// IMPRIMIR COMANDA 80MM TERMICA
 // =============================
 function imprimirComanda() {
 

@@ -283,6 +283,7 @@ window.verDetallePedido = async function (id, estado, tipo) {
     }
 
     modal.classList.remove("hidden");
+    console.log("TIPO PEDIDO:", tipo);
 };
 
 // =============================

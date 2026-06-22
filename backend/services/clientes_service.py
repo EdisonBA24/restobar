@@ -2,45 +2,6 @@ from database.connection import get_connection
 from config import Config
 
 
-def _get_db_settings():
-    db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
-    is_postgres = db_engine == "postgres"
-    placeholder = "%s" if is_postgres else "?"
-    return is_postgres, placeholder
-
-
-def _normalizar_documento(documento):
-    documento = (documento or "").strip()
-    return documento or None
-
-
-def _documento_duplicado(cursor, documento, placeholder, is_postgres, excluir_id=None):
-    documento = _normalizar_documento(documento)
-
-    if not documento:
-        return None
-
-    documento_expr = (
-        "LOWER(TRIM(COALESCE(documento, '')))"
-        if is_postgres
-        else "LOWER(LTRIM(RTRIM(ISNULL(documento, ''))))"
-    )
-
-    query = f"""
-        SELECT id, nombre
-        FROM restobar.clientes
-        WHERE {documento_expr} = LOWER({placeholder})
-    """
-    params = [documento]
-
-    if excluir_id is not None:
-        query += f" AND id <> {placeholder}"
-        params.append(excluir_id)
-
-    cursor.execute(query, params)
-    return cursor.fetchone()
-
-
 def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
 
     offset = (page - 1) * limit

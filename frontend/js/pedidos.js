@@ -274,6 +274,9 @@ window.verDetallePedido = async function (id, estado, tipo) {
 
     if (btnComanda) {
 
+        console.log("BTN COMANDA:", btnComanda);
+        console.log("CATEGORIA:", tipoPedidoActual);
+
         const mostrarComanda =
             tipoPedidoActual === "DESAYUNO" ||
             tipoPedidoActual === "ALMUERZO" ||

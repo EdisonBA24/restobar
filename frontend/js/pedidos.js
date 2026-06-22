@@ -276,6 +276,9 @@ window.verDetallePedido = async function (id, estado, tipo) {
         "COMIDAS RAPIDAS"
     ];
 
+    console.log("BTN COMANDA:", btnComanda);
+    console.log("TIPO:", tipoPedidoActual);
+
     btnComanda.style.display =
         tiposComanda.includes(tipoPedidoActual)
             ? "inline-block"
@@ -283,7 +286,6 @@ window.verDetallePedido = async function (id, estado, tipo) {
     }
 
     modal.classList.remove("hidden");
-    console.log("TIPO PEDIDO:", tipo);
 };
 
 // =============================

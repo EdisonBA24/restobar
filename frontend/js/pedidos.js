@@ -153,6 +153,9 @@ window.guardarPedido = async function () {
 
     try {
 
+        const categoriaPedido =
+            document.body.dataset.categoria || "";
+
         const res = await apiFetch("/pedidos", "POST", {
             mesa: document.getElementById("mesa")?.value || "General",
             tipo: document.getElementById("tipoServicio")?.value || "MESA",

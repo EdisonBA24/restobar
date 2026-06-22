@@ -3,6 +3,8 @@ import { apiFetch } from "./api.js";
 let productos = [];
 let modo = "";
 let pedidoActual = null;
+let detallePedidoActual = [];
+let tipoPedidoActual = "";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -20,6 +22,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnFacturar) {
         btnFacturar.addEventListener("click", facturarPedido);
+    }
+
+    const btnComanda = document.getElementById("btnImprimirComanda");
+
+    if (btnComanda) {
+        btnComanda.addEventListener("click", imprimirComanda);
     }
 
 });
@@ -194,7 +202,7 @@ async function cargarPedidos() {
         }
 
         tabla.innerHTML += `
-            <tr onclick="verDetallePedido(${p.id}, '${p.estado}')" style="cursor:pointer; background:${colorEstado}">
+            <tr onclick="verDetallePedido(${p.id}, '${p.estado}', '${p.tipo}')" style="cursor:pointer; background:${colorEstado}">
                 <td>${p.tipo}</td>
                 <td>${p.mesa}</td>
                 <td>${p.cliente || ""}</td>
@@ -210,16 +218,20 @@ async function cargarPedidos() {
 // =============================
 // DETALLE
 // =============================
-window.verDetallePedido = async function (id, estado) {
+window.verDetallePedido = async function (id, estado, tipo) {
 
     pedidoActual = id;
+    tipoPedidoActual = (tipo || "").toUpperCase();
     window.metodoSeleccionado = null;
 
     const res = await apiFetch(`/pedidos/${id}`);
 
+    detallePedidoActual = res.data || [];
+
     const modal = document.getElementById("modalCompra");
     const body = document.getElementById("modalBody");
     const btnFacturar = document.getElementById("btnFacturar");
+    const btnComanda = document.getElementById("btnImprimirComanda");
 
     const header = `
         <div style="margin-bottom:10px;">
@@ -254,6 +266,20 @@ window.verDetallePedido = async function (id, estado) {
 
     if (btnFacturar) {
         btnFacturar.style.display = estado === "facturado" ? "none" : "inline-block";
+    }
+
+    if (btnComanda) {
+
+    const tiposComanda = [
+        "DESAYUNO",
+        "ALMUERZO",
+        "COMIDAS RAPIDAS"
+    ];
+
+    btnComanda.style.display =
+        tiposComanda.includes(tipoPedidoActual)
+            ? "inline-block"
+            : "none";
     }
 
     modal.classList.remove("hidden");
@@ -542,4 +568,118 @@ function validarClienteDuplicado() {
         warning.classList.add("hidden");
         return null;
     }
+}
+
+
+// =============================
+// IMPRIMIR COMANDA 80MM
+// =============================
+function imprimirComanda() {
+
+    const tiposPermitidos = [
+        "DESAYUNO",
+        "ALMUERZO",
+        "COMIDAS RAPIDAS"
+    ];
+
+    if (!tiposPermitidos.includes(tipoPedidoActual)) {
+        mostrarMensaje("Este pedido no requiere comanda", "warning");
+        return;
+    }
+
+    let html = `
+    <html>
+    <head>
+        <title>Comanda</title>
+
+        <style>
+
+            @page{
+                size:80mm auto;
+                margin:0;
+            }
+
+            body{
+                width:72mm;
+                font-family: monospace;
+                font-size:12px;
+                padding:5px;
+            }
+
+            .titulo{
+                text-align:center;
+                font-weight:bold;
+                margin-bottom:10px;
+            }
+
+            table{
+                width:100%;
+                border-collapse:collapse;
+            }
+
+            td{
+                padding:3px 0;
+            }
+
+            .cantidad{
+                width:20%;
+                font-weight:bold;
+            }
+
+            .linea{
+                border-top:1px dashed #000;
+                margin:8px 0;
+            }
+
+        </style>
+
+    </head>
+
+    <body>
+
+        <div class="titulo">
+            COMANDA COCINA
+        </div>
+
+        <div>Pedido #${pedidoActual}</div>
+
+        <div class="linea"></div>
+
+        <table>
+    `;
+
+    detallePedidoActual.forEach(item => {
+
+        html += `
+            <tr>
+                <td class="cantidad">${item.cantidad}</td>
+                <td>${item.nombre}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+        </table>
+
+        <div class="linea"></div>
+
+        <div style="text-align:center">
+            *** COCINA ***
+        </div>
+
+    </body>
+    </html>
+    `;
+
+    const ventana = window.open("", "", "width=350,height=700");
+
+    ventana.document.write(html);
+    ventana.document.close();
+
+    ventana.focus();
+
+    setTimeout(() => {
+        ventana.print();
+        ventana.close();
+    }, 300);
 }

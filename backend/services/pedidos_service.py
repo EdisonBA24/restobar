@@ -132,8 +132,8 @@ def crear_pedido(data):
         # =============================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                 RETURNING id
             """, (
                 data.get("mesa"),
@@ -142,13 +142,14 @@ def crear_pedido(data):
                 data.get("cliente_id"),
                 data.get("estado"),
                 usuario_id,
-                total
+                total,
+                data.get("categoria")
             ))
         else:
             cursor.execute(f"""
-                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total)
+                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
                 OUTPUT INSERTED.id
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (
                 data.get("mesa"),
                 data.get("tipo"),
@@ -156,7 +157,8 @@ def crear_pedido(data):
                 data.get("cliente_id"),
                 data.get("estado"),
                 usuario_id,
-                total
+                total,
+                data.get("categoria")
             ))
 
         pedido_row = cursor.fetchone()

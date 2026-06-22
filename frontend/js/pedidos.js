@@ -156,6 +156,7 @@ window.guardarPedido = async function () {
         const res = await apiFetch("/pedidos", "POST", {
             mesa: document.getElementById("mesa")?.value || "General",
             tipo: document.getElementById("tipoServicio")?.value || "MESA",
+            categoria: categoriaPedido,
             cliente: document.getElementById("cliente")?.value || "General",
             cliente_id: document.getElementById("cliente")?.dataset.id || null,
             estado: "pendiente",
@@ -202,7 +203,7 @@ async function cargarPedidos() {
         }
 
         tabla.innerHTML += `
-            <tr onclick="verDetallePedido(${p.id}, '${p.estado}', '${p.tipo}')" style="cursor:pointer; background:${colorEstado}">
+            <tr onclick="verDetallePedido(${p.id}, '${p.estado}', '${p.categoria || ""}')" style="cursor:pointer; background:${colorEstado}">
                 <td>${p.tipo}</td>
                 <td>${p.mesa}</td>
                 <td>${p.cliente || ""}</td>
@@ -270,19 +271,15 @@ window.verDetallePedido = async function (id, estado, tipo) {
 
     if (btnComanda) {
 
-    const tiposComanda = [
-        "DESAYUNO",
-        "ALMUERZO",
-        "COMIDAS RAPIDAS"
-    ];
+        const mostrarComanda =
+            tipoPedidoActual === "DESAYUNO" ||
+            tipoPedidoActual === "ALMUERZO" ||
+            tipoPedidoActual === "COMIDAS_RAPIDAS";
 
-    console.log("BTN COMANDA:", btnComanda);
-    console.log("TIPO:", tipoPedidoActual);
-
-    btnComanda.style.display =
-        tiposComanda.includes(tipoPedidoActual)
-            ? "inline-block"
-            : "none";
+        btnComanda.style.display =
+            mostrarComanda
+                ? "inline-block"
+                : "none";
     }
 
     modal.classList.remove("hidden");
@@ -477,12 +474,12 @@ window.guardarClienteRapido = async function () {
     const duplicado = validarClienteDuplicado();
 
     if (duplicado) {
-    const confirmar = confirm(
-        `El cliente ya existe (${duplicado.nombre}). ¿Deseas continuar?`
-    );
+        const confirmar = confirm(
+            `El cliente ya existe (${duplicado.nombre}). ¿Deseas continuar?`
+        );
 
-    if (!confirmar) return;
-}
+        if (!confirmar) return;
+    }
 
     if (!nombre) {
         mostrarMensaje("El nombre es obligatorio ⚠️", "warning");

@@ -41,7 +41,52 @@ def get_costo_producto(producto_id):
         placeholder = "%s" if is_postgres else "?"
 
         # =============================
-        # 🔥 INSUMOS RECETA
+        # 🔥 DATOS PRODUCTO
+        # =============================
+        cursor.execute(f"""
+            SELECT
+                tipo,
+                costo,
+                precio_venta
+            FROM restobar.productos
+            WHERE id = {placeholder}
+        """, (producto_id,))
+
+        producto = cursor.fetchone()
+
+        if not producto:
+            return {
+                "costo": 0,
+                "precio_venta": 0,
+                "utilidad": 0,
+                "margen": 0
+            }
+        
+        tipo = producto[0]
+        costo_directo = Decimal(producto[1] or 0)
+        precio_venta = Decimal(producto[2] or 0)
+
+        # =============================
+        # 🥃 LICORES / BEBIDAS
+        # =============================
+        if tipo in ["LICORES", "BEBIDAS"]:
+
+            utilidad = precio_venta - costo_directo
+
+            margen = Decimal("0")
+
+            if precio_venta > 0:
+                margen = (utilidad / precio_venta) * 100
+
+            return {
+                "costo": float(round(costo_directo, 2)),
+                "precio_venta": float(precio_venta),
+                "utilidad": float(round(utilidad, 2)),
+                "margen": float(round(margen, 2))
+            }
+        
+        # =============================
+        # 🍔 RECETAS
         # =============================
         cursor.execute(f"""
             SELECT rd.insumo_id, rd.cantidad, rd.unidad
@@ -53,11 +98,19 @@ def get_costo_producto(producto_id):
         insumos = cursor.fetchall()
 
         if not insumos:
+
+            utilidad = precio_venta
+
+            margen = Decimal("0")
+
+            if precio_venta > 0:
+                margen = Decimal("100")
+
             return {
                 "costo": 0,
-                "precio_venta": 0,
-                "utilidad": 0,
-                "margen": 0
+                "precio_venta": float(precio_venta),
+                "utilidad": float(utilidad),
+                "margen": float(margen)
             }
 
         costo_total = Decimal("0")

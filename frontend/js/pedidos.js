@@ -4,6 +4,9 @@ let productos = [];
 let modo = "";
 let pedidoActual = null;
 let detallePedidoActual = [];
+let clientePedidoActual = "";
+let mesaPedidoActual = "";
+let servicioPedidoActual = "";
 let tipoPedidoActual = "";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -225,12 +228,23 @@ async function cargarPedidos() {
 window.verDetallePedido = async function (id, estado, tipo) {
 
     pedidoActual = id;
-    tipoPedidoActual = (tipo || "").toUpperCase();
     window.metodoSeleccionado = null;
 
     const res = await apiFetch(`/pedidos/${id}`);
 
-    detallePedidoActual = res.data || [];
+    detallePedidoActual = res.data.detalle || [];
+
+    clientePedidoActual =
+        res.data.pedido?.cliente || "GENERAL";
+
+    mesaPedidoActual =
+        res.data.pedido?.mesa || "";
+
+    servicioPedidoActual =
+        res.data.pedido?.tipo || "";
+
+    tipoPedidoActual =
+        (res.data.pedido?.categoria || "").toUpperCase();
 
     const modal = document.getElementById("modalCompra");
     const body = document.getElementById("modalBody");
@@ -240,6 +254,22 @@ window.verDetallePedido = async function (id, estado, tipo) {
     const header = `
         <div style="margin-bottom:10px;">
             <strong>Pedido #${id}</strong>
+            <br>
+            <small>
+                Cliente: ${clientePedidoActual}
+            </small>
+            <br>
+            <small>
+                Mesa: ${mesaPedidoActual}
+            </small>
+            <br>
+            <small>
+                Servicio: ${servicioPedidoActual}
+            </small>
+            <br>
+            <small>
+                Categoría: ${tipoPedidoActual}
+            </small>
         </div>
     `;
 
@@ -254,7 +284,7 @@ window.verDetallePedido = async function (id, estado, tipo) {
                 </tr>
             </thead>
             <tbody>
-                ${res.data.map(d => `
+                ${detallePedidoActual.map(d => `
                     <tr>
                         <td>${d.nombre}</td>
                         <td>${d.cantidad}</td>
@@ -269,13 +299,13 @@ window.verDetallePedido = async function (id, estado, tipo) {
     body.innerHTML = header + detalle;
 
     if (btnFacturar) {
-        btnFacturar.style.display = estado === "facturado" ? "none" : "inline-block";
+        btnFacturar.style.display =
+            estado === "facturado"
+                ? "none"
+                : "inline-block";
     }
 
     if (btnComanda) {
-
-        console.log("BTN COMANDA:", btnComanda);
-        console.log("CATEGORIA:", tipoPedidoActual);
 
         const mostrarComanda =
             tipoPedidoActual === "DESAYUNO" ||
@@ -593,6 +623,8 @@ function imprimirComanda() {
         return;
     }
 
+    const fechaActual = new Date().toLocaleString();
+
     let html = `
     <html>
     <head>
@@ -610,17 +642,18 @@ function imprimirComanda() {
                 padding:5px;
                 font-family:monospace;
                 font-size:12px;
+                color:#000;
             }
 
             .titulo{
                 text-align:center;
                 font-weight:bold;
-                font-size:16px;
+                font-size:18px;
             }
 
             .subtitulo{
                 text-align:center;
-                font-size:11px;
+                font-size:12px;
                 margin-bottom:5px;
             }
 
@@ -630,44 +663,70 @@ function imprimirComanda() {
             }
 
             .info{
-                margin:2px 0;
+                margin:3px 0;
+                font-size:13px;
                 font-weight:bold;
             }
 
-            .item{
-                margin:8px 0;
-                font-size:15px;
+            .pedido{
+                text-align:center;
+                font-size:20px;
                 font-weight:bold;
+                margin:10px 0;
+            }
+
+            .item{
+                margin:10px 0;
+                font-size:16px;
+                font-weight:bold;
+            }
+
+            .cantidad{
+                display:inline-block;
+                min-width:45px;
+                font-size:20px;
             }
 
             .footer{
                 text-align:center;
+                font-size:14px;
                 font-weight:bold;
                 margin-top:10px;
             }
 
         </style>
-
     </head>
 
     <body>
 
         <div class="titulo">
-            🍳 COMANDA COCINA
+            🍳 PARCHE EL ANTOJO
         </div>
 
         <div class="subtitulo">
-            PARCHE EL ANTOJO
+            COMANDA DE COCINA
         </div>
 
         <div class="linea"></div>
 
-        <div class="info">
-            PEDIDO: #${pedidoActual}
+        <div class="pedido">
+            PEDIDO #${pedidoActual}
         </div>
 
         <div class="info">
-            FECHA: ${new Date().toLocaleString()}
+            FECHA: ${fechaActual}
+        </div>
+
+        <div class="info">
+            CLIENTE: ${clientePedidoActual || "GENERAL"}
+        </div>
+
+        <div class="info">
+            SERVICIO: ${servicioPedidoActual || ""}
+        </div>
+
+        <div class="info">
+            MESA: ${mesaPedidoActual || ""}
         </div>
 
         <div class="info">
@@ -676,7 +735,7 @@ function imprimirComanda() {
 
         <div class="linea"></div>
 
-        <div style="font-weight:bold;">
+        <div style="text-align:center;font-weight:bold;">
             PRODUCTOS
         </div>
 
@@ -687,8 +746,9 @@ function imprimirComanda() {
 
         html += `
             <div class="item">
-                x${item.cantidad}
-                &nbsp;&nbsp;
+                <span class="cantidad">
+                    x${item.cantidad}
+                </span>
                 ${item.nombre}
             </div>
         `;
@@ -705,7 +765,7 @@ function imprimirComanda() {
     </html>
     `;
 
-    const ventana = window.open("", "", "width=350,height=700");
+    const ventana = window.open("", "", "width=400,height=700");
 
     ventana.document.write(html);
     ventana.document.close();
@@ -715,5 +775,5 @@ function imprimirComanda() {
     setTimeout(() => {
         ventana.print();
         ventana.close();
-    }, 300);
+    }, 500);
 }

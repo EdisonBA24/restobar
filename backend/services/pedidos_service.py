@@ -237,27 +237,73 @@ def get_pedido_detalle(pedido_id):
     cursor = conn.cursor()
 
     try:
+
         is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
         placeholder = "%s" if is_postgres else "?"
 
+        # =============================
+        # CABECERA PEDIDO
+        # =============================
         cursor.execute(f"""
-            SELECT pe.mesa, dp.producto_id, p.nombre, dp.cantidad, dp.precio
+            SELECT
+                id,
+                mesa,
+                tipo,
+                cliente,
+                categoria,
+                estado,
+                fecha
+            FROM restobar.pedidos
+            WHERE id = {placeholder}
+        """, (pedido_id,))
+
+        pedido_row = cursor.fetchone()
+
+        if not pedido_row:
+            return None
+
+        pedido = {
+            "id": pedido_row[0],
+            "mesa": pedido_row[1],
+            "tipo": pedido_row[2],
+            "cliente": pedido_row[3],
+            "categoria": pedido_row[4],
+            "estado": pedido_row[5],
+            "fecha": str(pedido_row[6]) if pedido_row[6] else ""
+        }
+
+        # =============================
+        # DETALLE
+        # =============================
+        cursor.execute(f"""
+            SELECT
+                dp.producto_id,
+                p.nombre,
+                dp.cantidad,
+                dp.precio
             FROM restobar.detalle_pedidos dp
-            JOIN restobar.pedidos pe ON dp.pedido_id = pe.id
-            JOIN restobar.productos p ON dp.producto_id = p.id
+            JOIN restobar.productos p
+                ON dp.producto_id = p.id
             WHERE dp.pedido_id = {placeholder}
         """, (pedido_id,))
 
         columns = [c[0] for c in cursor.description]
-        data = []
+
+        detalle = []
 
         for r in cursor.fetchall():
+
             row = dict(zip(columns, r))
+
             row["cantidad"] = float(row.get("cantidad") or 0)
             row["precio"] = float(row.get("precio") or 0)
-            data.append(row)
 
-        return data
+            detalle.append(row)
+
+        return {
+            "pedido": pedido,
+            "detalle": detalle
+        }
 
     finally:
         conn.close()

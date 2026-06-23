@@ -220,12 +220,12 @@ def create_producto(data):
 
         query = """
         INSERT INTO restobar.productos 
-        (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock)
-        VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+        (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock, fecha_creacion)
+        VALUES (%s, %s, %s, %s, %s, 1, %s, %s, CURRENT_TIMESTAMP)
         """ if DB_ENGINE == "postgres" else """
         INSERT INTO restobar.productos 
-        (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock)
-        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+        (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock, fecha_creacion)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?, GETDATE())
         """
 
         cursor.execute(query, (

@@ -80,36 +80,51 @@ def get_utilidad_por_producto(cursor):
 
     is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
 
-    # 🔥 FECHA COMPATIBLE
     fecha_condition = "CURRENT_DATE" if is_postgres else "CAST(GETDATE() AS DATE)"
 
     query = f"""
-        SELECT 
+        SELECT
+            dv.producto_id,
             p.nombre,
             SUM(dv.cantidad) as cantidad,
-            SUM((dv.precio * dv.cantidad)) as total,
-            SUM((dv.precio - p.costo) * dv.cantidad) AS utilidad
+            AVG(dv.precio) as precio
         FROM restobar.detalle_ventas dv
-        JOIN restobar.productos p ON dv.producto_id = p.id
-        JOIN restobar.ventas v ON dv.venta_id = v.id
+        JOIN restobar.productos p
+            ON dv.producto_id = p.id
+        JOIN restobar.ventas v
+            ON dv.venta_id = v.id
         WHERE CAST(v.fecha AS DATE) = {fecha_condition}
-        GROUP BY p.nombre
+        GROUP BY dv.producto_id, p.nombre
     """
 
     cursor.execute(query)
+
     data = cursor.fetchall()
 
     resultado = []
 
-    for nombre, cantidad, total, utilidad in data:
+    for producto_id, nombre, cantidad, precio in data:
+
+        cantidad = Decimal(cantidad or 0)
+        precio = Decimal(precio or 0)
+
+        costo = calcular_costo_producto(
+            cursor,
+            producto_id
+        )
+
+        utilidad = (precio - costo) * cantidad
 
         resultado.append({
             "producto": nombre,
-            "cantidad": int(cantidad or 0),
-            "utilidad": float(round(utilidad or 0, 2))
+            "cantidad": int(cantidad),
+            "utilidad": float(round(utilidad, 2))
         })
 
-    resultado.sort(key=lambda x: x["utilidad"], reverse=True)
+    resultado.sort(
+        key=lambda x: x["utilidad"],
+        reverse=True
+    )
 
     return resultado
 

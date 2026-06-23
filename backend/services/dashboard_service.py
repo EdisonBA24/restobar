@@ -74,57 +74,46 @@ def calcular_costo_producto(cursor, producto_id):
 
 
 # =============================
-# 🔥 UTILIDAD POR PRODUCTO REAL
+# 🔥 UTILIDAD POR PRODUCTO REAL P
 # =============================
 def get_utilidad_por_producto(cursor):
 
     is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
 
-    fecha_condition = "CURRENT_DATE" if is_postgres else "CAST(GETDATE() AS DATE)"
+    fecha_condition = (
+        "CURRENT_DATE"
+        if is_postgres
+        else "CAST(GETDATE() AS DATE)"
+    )
 
     query = f"""
         SELECT
-            dv.producto_id,
             p.nombre,
-            SUM(dv.cantidad) as cantidad,
-            AVG(dv.precio) as precio
+            SUM(dv.cantidad) AS cantidad,
+            SUM(dv.precio * dv.cantidad) AS ventas
         FROM restobar.detalle_ventas dv
-        JOIN restobar.productos p
-            ON dv.producto_id = p.id
-        JOIN restobar.ventas v
-            ON dv.venta_id = v.id
+        INNER JOIN restobar.productos p
+            ON p.id = dv.producto_id
+        INNER JOIN restobar.ventas v
+            ON v.id = dv.venta_id
         WHERE CAST(v.fecha AS DATE) = {fecha_condition}
-        GROUP BY dv.producto_id, p.nombre
+        GROUP BY p.nombre
+        ORDER BY ventas DESC
     """
 
     cursor.execute(query)
 
-    data = cursor.fetchall()
+    rows = cursor.fetchall()
 
     resultado = []
 
-    for producto_id, nombre, cantidad, precio in data:
-
-        cantidad = Decimal(cantidad or 0)
-        precio = Decimal(precio or 0)
-
-        costo = calcular_costo_producto(
-            cursor,
-            producto_id
-        )
-
-        utilidad = (precio - costo) * cantidad
+    for nombre, cantidad, ventas in rows:
 
         resultado.append({
             "producto": nombre,
-            "cantidad": int(cantidad),
-            "utilidad": float(round(utilidad, 2))
+            "cantidad": int(cantidad or 0),
+            "utilidad": float(ventas or 0)
         })
-
-    resultado.sort(
-        key=lambda x: x["utilidad"],
-        reverse=True
-    )
 
     return resultado
 
@@ -140,71 +129,35 @@ def get_dashboard():
     try:
 
         is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
-        placeholder = "%s" if is_postgres else "?"
 
-        fecha_condition = "CURRENT_DATE" if is_postgres else "CAST(GETDATE() AS DATE)"
+        fecha_condition = (
+            "CURRENT_DATE"
+            if is_postgres
+            else "CAST(GETDATE() AS DATE)"
+        )
 
-        query_ventas = f"""
-            SELECT id, total
+        cursor.execute(f"""
+            SELECT
+                total,
+                utilidad
             FROM restobar.ventas
             WHERE CAST(fecha AS DATE) = {fecha_condition}
-        """
+        """)
 
-        cursor.execute(query_ventas)
         ventas = cursor.fetchall()
 
         total_ventas = Decimal("0")
         utilidad_total = Decimal("0")
 
-        productos = {}
-
-        for venta_id, total in ventas:
+        for total, utilidad in ventas:
 
             total_ventas += Decimal(total or 0)
+            utilidad_total += Decimal(utilidad or 0)
 
-            # 🔥 utilidad desde BD
-            cursor.execute(f"""
-                SELECT utilidad
-                FROM restobar.ventas
-                WHERE id = {placeholder}
-            """, (venta_id,))
-
-            utilidad_bd = cursor.fetchone()
-            utilidad_total += Decimal(utilidad_bd[0] or 0) if utilidad_bd else Decimal("0")
-
-            # 🔥 detalle
-            cursor.execute(f"""
-                SELECT producto_id, cantidad, precio
-                FROM restobar.detalle_ventas
-                WHERE venta_id = {placeholder}
-            """, (venta_id,))
-
-            detalles = cursor.fetchall()
-
-            for producto_id, cantidad, precio in detalles:
-
-                cantidad = Decimal(cantidad or 0)
-                precio = Decimal(precio or 0)
-
-                # 🔥 se mantiene lógica original
-                costo = calcular_costo_producto(cursor, producto_id)
-
-                utilidad = (precio - costo) * cantidad
-
-                if producto_id not in productos:
-                    productos[producto_id] = {
-                        "cantidad": 0,
-                        "utilidad": Decimal("0")
-                    }
-
-                productos[producto_id]["cantidad"] += int(cantidad)
-                productos[producto_id]["utilidad"] += utilidad
-
-        # 🔥 TOP PRODUCTOS
         top = get_utilidad_por_producto(cursor)
 
         return {
-            "ventas_dia": float(total_ventas),
+            "ventas_dia": float(round(total_ventas, 2)),
             "utilidad_dia": float(round(utilidad_total, 2)),
             "top_productos": top[:5]
         }

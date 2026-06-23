@@ -205,8 +205,8 @@ def crear_venta(data):
         # =============================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO restobar.ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                INSERT INTO restobar.ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id, categoria)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                 RETURNING id
             """, (
                 data.get("mesa"),
@@ -217,13 +217,14 @@ def crear_venta(data):
                 data.get("usuario", "admin"),
                 costo_total,
                 utilidad,
-                usuario_id
+                usuario_id,
+                data.get("categoria")
             ))
         else:
             cursor.execute(f"""
-                INSERT INTO restobar.ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id)
+                INSERT INTO restobar.ventas (mesa, cliente, cliente_id, total, metodo_pago, usuario, costo_total, utilidad, usuario_id, categoria)
                 OUTPUT INSERTED.id
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 data.get("mesa"),
                 data.get("cliente"),
@@ -233,8 +234,10 @@ def crear_venta(data):
                 data.get("usuario", "admin"),
                 costo_total,
                 utilidad,
-                usuario_id
-            ))
+                usuario_id,
+                data.get("categoria")
+            ))  
+            
 
         venta_id = cursor.fetchone()[0]
 

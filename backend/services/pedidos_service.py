@@ -326,7 +326,7 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
         placeholder = "%s" if is_postgres else "?"
 
         cursor.execute(f"""
-            SELECT id, estado, mesa, cliente, cliente_id
+            SELECT id, estado, mesa, cliente, cliente_id, categoria
             FROM restobar.pedidos
             WHERE id = {placeholder}
         """, (pedido_id,))
@@ -354,6 +354,7 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
             "cliente": pedido[3] or f"Mesa {pedido[2]}",
             "cliente_id": pedido[4],
             "mesa": pedido[2],
+            "categoria": pedido[5],
             "metodo_pago": metodo_pago,
             "usuario": session.get("nombreUsuario") or f"user_{usuario_id}",
             "usuario_id": usuario_id,  # 🔥 clave

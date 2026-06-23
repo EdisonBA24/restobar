@@ -84,7 +84,7 @@ def reporte_ventas():
         placeholder = get_placeholder()
 
         query = """
-            SELECT fecha, total, utilidad
+            SELECT fecha, categoria, total, utilidad
             FROM restobar.ventas
         """
 
@@ -101,8 +101,9 @@ def reporte_ventas():
 
         data = [{
             "Fecha": r[0].strftime("%Y-%m-%d") if r[0] else "",
-            "Total": float(r[1] or 0),
-            "Utilidad": float(r[2] or 0)
+            "Categoria": r[1] or "",
+            "Total": float(r[2] or 0),
+            "Utilidad": float(r[3] or 0)
         } for r in rows]
 
         return jsonify(data)

@@ -596,7 +596,7 @@ function imprimirComanda() {
     let html = `
     <html>
     <head>
-        <title>Comanda</title>
+        <title>Comanda Cocina</title>
 
         <style>
 
@@ -607,34 +607,43 @@ function imprimirComanda() {
 
             body{
                 width:72mm;
-                font-family: monospace;
-                font-size:12px;
                 padding:5px;
+                font-family:monospace;
+                font-size:12px;
             }
 
             .titulo{
                 text-align:center;
                 font-weight:bold;
-                margin-bottom:10px;
+                font-size:16px;
             }
 
-            table{
-                width:100%;
-                border-collapse:collapse;
-            }
-
-            td{
-                padding:3px 0;
-            }
-
-            .cantidad{
-                width:20%;
-                font-weight:bold;
+            .subtitulo{
+                text-align:center;
+                font-size:11px;
+                margin-bottom:5px;
             }
 
             .linea{
                 border-top:1px dashed #000;
+                margin:6px 0;
+            }
+
+            .info{
+                margin:2px 0;
+                font-weight:bold;
+            }
+
+            .item{
                 margin:8px 0;
+                font-size:15px;
+                font-weight:bold;
+            }
+
+            .footer{
+                text-align:center;
+                font-weight:bold;
+                margin-top:10px;
             }
 
         </style>
@@ -644,33 +653,52 @@ function imprimirComanda() {
     <body>
 
         <div class="titulo">
-            COMANDA COCINA
+            🍳 COMANDA COCINA
         </div>
 
-        <div>Pedido #${pedidoActual}</div>
+        <div class="subtitulo">
+            PARCHE EL ANTOJO
+        </div>
 
         <div class="linea"></div>
 
-        <table>
+        <div class="info">
+            PEDIDO: #${pedidoActual}
+        </div>
+
+        <div class="info">
+            FECHA: ${new Date().toLocaleString()}
+        </div>
+
+        <div class="info">
+            CATEGORÍA: ${tipoPedidoActual}
+        </div>
+
+        <div class="linea"></div>
+
+        <div style="font-weight:bold;">
+            PRODUCTOS
+        </div>
+
+        <div class="linea"></div>
     `;
 
     detallePedidoActual.forEach(item => {
 
         html += `
-            <tr>
-                <td class="cantidad">${item.cantidad}</td>
-                <td>${item.nombre}</td>
-            </tr>
+            <div class="item">
+                x${item.cantidad}
+                &nbsp;&nbsp;
+                ${item.nombre}
+            </div>
         `;
     });
 
     html += `
-        </table>
-
         <div class="linea"></div>
 
-        <div style="text-align:center">
-            *** COCINA ***
+        <div class="footer">
+            *** PREPARAR PEDIDO ***
         </div>
 
     </body>

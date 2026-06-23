@@ -280,7 +280,7 @@ window.verDetallePedido = async function (id, estado, tipo) {
         const mostrarComanda =
             tipoPedidoActual === "DESAYUNO" ||
             tipoPedidoActual === "ALMUERZO" ||
-            tipoPedidoActual === "COMIDAS_RAPIDAS";
+            tipoPedidoActual === "COMIDAS RAPIDAS";
 
         btnComanda.style.display =
             mostrarComanda

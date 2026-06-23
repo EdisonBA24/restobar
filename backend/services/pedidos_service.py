@@ -208,7 +208,7 @@ def get_pedidos():
 
     try:
         cursor.execute("""
-            SELECT p.id, p.mesa, p.tipo, p.cliente, p.total, p.fecha, p.estado, u.nombre AS usuario
+            SELECT p.id, p.mesa, p.tipo, p.cliente, p.total, p.fecha, p.estado, u.nombre AS usuario, p.categoria
             FROM restobar.pedidos p
             LEFT JOIN restobar.usuarios u ON p.usuario_id = u.id
             ORDER BY p.id DESC

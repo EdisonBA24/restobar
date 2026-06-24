@@ -321,18 +321,23 @@ function formatearFecha(fecha) {
 
     if (!fecha) return "";
 
-    const f = new Date(fecha);
+    try {
 
-    const offset = 5 * 60;
-    const local = new Date(f.getTime() + offset * 60000);
+        return new Intl.DateTimeFormat("es-CO", {
+            timeZone: "America/Bogota",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false
+        }).format(new Date(fecha));
 
-    const dia = String(local.getDate()).padStart(2, "0");
-    const mes = String(local.getMonth() + 1).padStart(2, "0");
-    const anio = local.getFullYear();
+    } catch (error) {
 
-    const horas = String(local.getHours()).padStart(2, "0");
-    const minutos = String(local.getMinutes()).padStart(2, "0");
-    const segundos = String(local.getSeconds()).padStart(2, "0");
+        console.error("Error formateando fecha:", error);
 
-    return `${dia}/${mes}/${anio} ${horas}:${minutos}:${segundos}`;
+        return fecha;
+    }
 }

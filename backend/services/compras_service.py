@@ -52,15 +52,15 @@ def crear_compra(data):
         # =========================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO restobar.compras (proveedor, total, usuario_id)
-                VALUES ({placeholder}, 0, {placeholder})
+                INSERT INTO restobar.compras (proveedor, total, usuario_id, fecha)
+                VALUES ({placeholder}, 0, {placeholder}, CURRENT_TIMESTAMP)
                 RETURNING id
             """, (proveedor, usuario_id))
         else:
             cursor.execute(f"""
-                INSERT INTO restobar.compras (proveedor, total, usuario_id)
+                INSERT INTO restobar.compras (proveedor, total, usuario_id, fecha)
                 OUTPUT INSERTED.id
-                VALUES ({placeholder}, 0, {placeholder})
+                VALUES ({placeholder}, 0, {placeholder}, GETDATE())
             """, (proveedor, usuario_id))
 
         compra_id = cursor.fetchone()[0]

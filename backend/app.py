@@ -41,11 +41,15 @@ def create_app():
     if ENV == "production" or IS_RENDER:
         CORS(
             app,
-            supports_credentials=True#,
-            #origins=[
-            #    "https://restobar.onrender.com",
-            #    "https://frontend-restobar.onrender.com"
-            #]
+            supports_credentials=True,
+            origins=[
+                "https://restobar.onrender.com",
+                "https://frontend-restobar.onrender.com",
+                "http://localhost:5500",
+                "http://localhost:5000",
+                "http://127.0.0.1:5500",
+                "http://127.0.0.1:5000"
+            ]
         )
     else:
         CORS(app, supports_credentials=True)

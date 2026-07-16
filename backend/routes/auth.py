@@ -83,6 +83,8 @@ def login():
         # =============================
         session.clear()
 
+        session.permanent = True  # 🔥 Habilitar sesión persistente
+
         session["user_id"] = user_id
         session["nombre"] = nombre
         session["nombreUsuario"] = nombre

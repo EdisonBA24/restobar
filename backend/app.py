@@ -60,11 +60,13 @@ def create_app():
     if ENV == "production" or IS_RENDER:
         app.config["SESSION_COOKIE_SAMESITE"] = "None"
         app.config["SESSION_COOKIE_SECURE"] = True
+        app.config["SESSION_COOKIE_NAME"] = "restobar_session"
     else:
         app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
         app.config["SESSION_COOKIE_SECURE"] = False
 
     app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_REFRESH_EACH_REQUEST"] = False
 
     # =============================
     # 🔥 EJECUTAR INIT ADMIN (PRODUCCIÓN / RENDER)

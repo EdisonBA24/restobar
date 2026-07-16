@@ -1,4 +1,5 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
+from pathlib import Path
 from flask_cors import CORS
 import os
 
@@ -21,9 +22,19 @@ from routes.clientes import clientes_bp
 from routes.usuarios import usuarios_bp
 from routes.pagos import pagos_bp
 
+# =============================
+# FRONTEND
+# =============================
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = BASE_DIR / "frontend"
+
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(
+        __name__,
+    static_folder=str(FRONTEND_DIR),
+    static_url_path=""
+    )
     app.json.sort_keys = False
     app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
 
@@ -38,7 +49,7 @@ def create_app():
     ENV = os.environ.get("FLASK_ENV", "development")
 
     # 🔥 NUEVO: detectar si está en Render
-    IS_RENDER = os.environ.get("RENDER", False)
+    IS_RENDER = os.environ.get("RENDER_SERVICE_ID") is not None
 
     # =============================
     # 🔥 CORS CORRECTO
@@ -66,7 +77,7 @@ def create_app():
         app.config["SESSION_COOKIE_SAMESITE"] = "None"
         app.config["SESSION_COOKIE_SECURE"] = True
         #app.config["SESSION_COOKIE_NAME"] = "restobar_session"
-        app.config["SESSION_COOKIE_DOMAIN"] = ".onrender.com"
+        #app.config["SESSION_COOKIE_DOMAIN"] = ".onrender.com"
     else:
         app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
         app.config["SESSION_COOKIE_SECURE"] = False
@@ -104,13 +115,57 @@ def create_app():
     app.register_blueprint(pagos_bp, url_prefix="/api")
 
     # =============================
+    # 🔥 SERVIR FRONTEND
+    # =============================
+
+    @app.route("/")
+    def frontend_index():
+        return send_from_directory(FRONTEND_DIR, "index.html")
+    
+    @app.route("/pages/<path:filename>")
+    def frontend_pages(filename):
+        return send_from_directory(FRONTEND_DIR / "pages", filename)
+    
+    @app.route("/js/<path:filename>")
+    def frontend_js(filename):
+        return send_from_directory(FRONTEND_DIR / "js", filename)
+    
+    @app.route("/css/<path:filename>")
+    def frontend_css(filename):
+        return send_from_directory(FRONTEND_DIR / "css", filename)
+    
+    @app.route("/assets/<path:filename>")
+    def frontend_assets(filename):
+        return send_from_directory(FRONTEND_DIR / "assets", filename)
+    
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(FRONTEND_DIR / "assets", "logo.ico")
+    
+    @app.route("/<path:path>")
+    def frontend(path):
+
+        archivo = FRONTEND_DIR / path
+
+        if archivo.exists():
+            return send_from_directory(FRONTEND_DIR, path)
+
+        return send_from_directory(FRONTEND_DIR, "index.html")
+
+    # =============================
     # ROOT
     # =============================
-    @app.route("/")
-    def home():
+    @app.route("/health")
+    def health():
         return jsonify({
+            "status": "ok",
             "message": "ERP Backend funcionando"
         })
+    # @app.route("/")
+    # def home():
+    #    return jsonify({
+    #        "message": "ERP Backend funcionando"
+    #    })
 
     # =============================
     # ERROR GLOBAL

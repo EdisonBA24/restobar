@@ -90,6 +90,9 @@ def login():
         session["nombreUsuario"] = nombre
         session["perfil"] = perfil
 
+        print("SESSION DESPUES DEL LOGIN:")
+        print(dict(session))
+
         return jsonify({
             "status": "success",
             "user": {
@@ -121,6 +124,9 @@ def session_check():
         return jsonify({
             "status": "unauthorized"
         }), 401
+    
+    print("SESSION DESPUÉS DEL LOGIN:")
+    print(dict(session))
 
     return jsonify({
         "status": "success",

@@ -27,6 +27,11 @@ def create_app():
     app.json.sort_keys = False
     app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
 
+    from datetime import timedelta
+
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+    app.config["SESSION_USE_SIGNER"] = True
+
     # =============================
     # 🔥 DETECTAR ENTORNO
     # =============================

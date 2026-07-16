@@ -120,14 +120,19 @@ def login():
 @auth_bp.route("/session", methods=["GET"])
 def session_check():
 
+    print("\n========== SESSION CHECK ==========")
+    print("SESSION:", dict(session))
+    print("COOKIES:", request.cookies)
+    print("HEADERS COOKIE:", request.headers.get("Cookie"))
+    print("ORIGIN:", request.headers.get("Origin"))
+    print("USER-AGENT:", request.headers.get("User-Agent"))
+    print("===================================\n")
+
     if "user_id" not in session:
         return jsonify({
             "status": "unauthorized"
         }), 401
     
-    print("SESSION DESPUÉS DEL LOGIN:")
-    print(dict(session))
-
     return jsonify({
         "status": "success",
         "user": {

@@ -224,7 +224,7 @@
                 try {
 
                     // Espera un momento para que Safari procese la cookie
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    //await new Promise(resolve => setTimeout(resolve, 500));
 
                     // Verifica que la sesión realmente exista
                     const sessionRes = await fetch(`${API_URL}/api/session`, {

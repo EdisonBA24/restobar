@@ -40,7 +40,7 @@ def create_app():
 
     from datetime import timedelta
 
-    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=1)
     app.config["SESSION_USE_SIGNER"] = True
 
     # =============================
@@ -74,7 +74,7 @@ def create_app():
     # 🔥 COOKIES (CLAVE PARA LOGIN)
     # =============================
     if ENV == "production" or IS_RENDER:
-        app.config["SESSION_COOKIE_SAMESITE"] = "None"
+        app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
         app.config["SESSION_COOKIE_SECURE"] = True
         #app.config["SESSION_COOKIE_NAME"] = "restobar_session"
         #app.config["SESSION_COOKIE_DOMAIN"] = ".onrender.com"

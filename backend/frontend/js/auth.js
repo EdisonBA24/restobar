@@ -33,7 +33,7 @@ export async function apiFetch(url, method = "GET", data = null) {
             console.warn("Sesión expirada (status)");
 
             localStorage.removeItem("usuario");
-            window.location.href = "login.html";
+            window.location.href = "/pages/login.html";
             return;
         }
 
@@ -51,7 +51,7 @@ export async function apiFetch(url, method = "GET", data = null) {
             console.warn("Sesión expirada (respuesta)");
 
             localStorage.removeItem("usuario");
-            window.location.href = "login.html";
+            window.location.href = "/pages/login.html";
             return;
         }
 
@@ -117,7 +117,7 @@ export async function logout() {
     }
 
     localStorage.removeItem("usuario");
-    window.location.href = "login.html";
+    window.location.href = "/pages/login.html";
 }
 
 // ==============================
@@ -148,7 +148,7 @@ export async function enviarVenta(data) {
             console.warn("Sesión expirada (venta)");
 
             localStorage.removeItem("usuario");
-            window.location.href = "login.html";
+            window.location.href = "/pages/login.html";
             return;
         }
 

@@ -152,10 +152,11 @@
 
     <script>
         // 🔥 CONFIG DINÁMICA (LOCAL vs PRODUCCIÓN)
-        const API_URL = window.location.hostname.includes("localhost") ||
-            window.location.hostname.includes("127.0.0.1")
-            ? "http://127.0.0.1:5000"
-            : "https://restobar.onrender.com"; // 🔥 CAMBIAR POR TU URL REAL
+        const API_URL =
+            window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1"
+                ? "http://127.0.0.1:5000"
+                : window.location.origin;
 
         function togglePassword() {
             const input = document.getElementById("password");

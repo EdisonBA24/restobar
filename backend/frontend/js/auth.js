@@ -1,10 +1,12 @@
 // 🔥 DETECCIÓN INTELIGENTE DE ENTORNO
-const isLocal = window.location.hostname.includes("localhost") 
-             || window.location.hostname.includes("127.0.0.1");
+const isLocal = window.location.hostname.includes("localhost")
+    || window.location.hostname.includes("127.0.0.1");
 
-const API_URL = isLocal
-    ? "http://127.0.0.1:5000/api"
-    : "https://restobar.onrender.com/api";
+const API_URL =
+    location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1"
+        ? "http://127.0.0.1:5000/api"
+        : `${location.origin}/api`;
 
 // ==============================
 // 🔥 FETCH CENTRALIZADO

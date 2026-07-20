@@ -2,6 +2,7 @@ from database.connection import get_connection
 from flask import session
 from decimal import Decimal, InvalidOperation
 from config import Config
+from database.db_objects import COMPRAS, DETALLE_COMPRAS, PRODUCTOS, USUARIOS
 
 
 # =============================
@@ -16,6 +17,39 @@ def to_decimal(value, field):
 
     except (InvalidOperation, Exception):
         raise Exception(f"{field} inválido: {value}")
+
+
+# =============================
+# 💰 CALCULAR COSTO PROMEDIO
+# =============================
+def calcular_costo_promedio_compra(
+    stock_actual,
+    costo_actual,
+    cantidad_compra,
+    precio_compra
+):
+    """
+    Calcula el nuevo costo promedio ponderado del producto.
+
+    Este método es utilizado únicamente por el módulo Compras,
+    ya que las compras representan la entrada oficial de inventario.
+
+    Fórmula:
+        ((Stock Actual × Costo Actual) +
+         (Cantidad Comprada × Precio Compra))
+        /
+        (Stock Actual + Cantidad Comprada)
+    """
+
+    if (stock_actual + cantidad_compra) <= 0:
+        return precio_compra.quantize(Decimal("0.0001"))
+
+    nuevo_costo = (
+        (stock_actual * costo_actual) +
+        (cantidad_compra * precio_compra)
+    ) / (stock_actual + cantidad_compra)
+
+    return nuevo_costo.quantize(Decimal("0.0001"))
 
 
 # =============================
@@ -52,13 +86,13 @@ def crear_compra(data):
         # =========================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO restobar.compras (proveedor, total, usuario_id, fecha)
+                INSERT INTO {COMPRAS} (proveedor, total, usuario_id, fecha)
                 VALUES ({placeholder}, 0, {placeholder}, CURRENT_TIMESTAMP)
                 RETURNING id
             """, (proveedor, usuario_id))
         else:
             cursor.execute(f"""
-                INSERT INTO restobar.compras (proveedor, total, usuario_id, fecha)
+                INSERT INTO {COMPRAS} (proveedor, total, usuario_id, fecha)
                 OUTPUT INSERTED.id
                 VALUES ({placeholder}, 0, {placeholder}, GETDATE())
             """, (proveedor, usuario_id))
@@ -88,7 +122,7 @@ def crear_compra(data):
             # INSERT DETALLE
             # =========================
             cursor.execute(f"""
-                INSERT INTO restobar.detalle_compras (compra_id, producto_id, cantidad, precio)
+                INSERT INTO {DETALLE_COMPRAS} (compra_id, producto_id, cantidad, precio)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (compra_id, producto_id, cantidad, precio))
 
@@ -97,7 +131,7 @@ def crear_compra(data):
             # =========================
             cursor.execute(f"""
                 SELECT stock, costo
-                FROM restobar.productos
+                FROM {PRODUCTOS}
                 WHERE id = {placeholder}
             """, (producto_id,))
 
@@ -110,24 +144,20 @@ def crear_compra(data):
             costo_actual = Decimal(row[1] or 0)
 
             # =========================
-            # 🔥 COSTO PROMEDIO
+            # 💰 CALCULAR COSTO PROMEDIO
             # =========================
-            if (stock_actual + cantidad) > 0:
-                nuevo_costo = (
-                    (stock_actual * costo_actual) +
-                    (cantidad * precio)
-                ) / (stock_actual + cantidad)
-            else:
-                nuevo_costo = precio
-
-            # 🔥 redondeo controlado (evita decimales infinitos en DB)
-            nuevo_costo = nuevo_costo.quantize(Decimal("0.0001"))
+            nuevo_costo = calcular_costo_promedio_compra(
+                stock_actual=stock_actual,
+                costo_actual=costo_actual,
+                cantidad_compra=cantidad,
+                precio_compra=precio
+            )
 
             # =========================
             # 🔥 ACTUALIZAR PRODUCTO
             # =========================
             cursor.execute(f"""
-                UPDATE restobar.productos
+                UPDATE {PRODUCTOS}
                 SET 
                     stock = {null_fn}(stock, 0) + {placeholder},
                     costo = {placeholder}
@@ -138,7 +168,7 @@ def crear_compra(data):
         # ACTUALIZAR TOTAL COMPRA
         # =========================
         cursor.execute(f"""
-            UPDATE restobar.compras
+            UPDATE {COMPRAS}
             SET total = {placeholder}
             WHERE id = {placeholder}
         """, (total, compra_id))
@@ -167,10 +197,11 @@ def get_compras():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-            SELECT id, proveedor, total, fecha
-            FROM restobar.compras
-            ORDER BY id DESC
+        cursor.execute(f"""
+            SELECT co.id, co.proveedor, co.total, co.fecha, u.nombre AS usuario
+            FROM {COMPRAS} co
+            INNER JOIN {USUARIOS} u ON co.usuario_id = u.id
+            ORDER BY co.id DESC
         """)
 
         columns = [c[0] for c in cursor.description]
@@ -207,8 +238,8 @@ def get_detalle_compra(compra_id):
 
         cursor.execute(f"""
             SELECT dc.producto_id, p.nombre, dc.cantidad, dc.precio
-            FROM restobar.detalle_compras dc
-            JOIN restobar.productos p ON dc.producto_id = p.id
+            FROM {DETALLE_COMPRAS} dc
+            INNER JOIN {PRODUCTOS} p ON dc.producto_id = p.id
             WHERE dc.compra_id = {placeholder}
         """, (compra_id,))
 

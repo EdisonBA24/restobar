@@ -1,6 +1,41 @@
 from database.connection import get_connection
 from config import Config
+from database.db_objects import USUARIOS
 from werkzeug.security import generate_password_hash
+
+
+# =============================
+# 📋 LISTA SIMPLE DE USUARIOS
+# =============================
+def get_usuarios_select():
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute(f"""
+            SELECT
+                id,
+                nombre
+            FROM {USUARIOS}
+            WHERE activo = 1
+            ORDER BY nombre
+        """)
+
+        columns = [c[0] for c in cursor.description]
+
+        return [
+            dict(zip(columns, row))
+            for row in cursor.fetchall()
+        ]
+
+    except Exception as e:
+        print("❌ ERROR LISTA USUARIOS:", e)
+        raise
+
+    finally:
+        conn.close()
 
 
 # =============================
@@ -25,7 +60,7 @@ def crear_usuario(data):
 
         # 🔥 VALIDAR USUARIO ÚNICO
         cursor.execute(f"""
-            SELECT id FROM restobar.usuarios WHERE usuario = {placeholder}
+            SELECT id FROM {USUARIOS} WHERE usuario = {placeholder}
         """, (data["usuario"],))
 
         if cursor.fetchone():
@@ -35,7 +70,7 @@ def crear_usuario(data):
         password_hash = generate_password_hash(data["password"])
 
         cursor.execute(f"""
-            INSERT INTO restobar.usuarios (nombre, usuario, password, perfil, activo)
+            INSERT INTO {USUARIOS} (nombre, usuario, password, perfil, activo)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, 1)
         """, (
             data["nombre"],
@@ -66,9 +101,9 @@ def get_usuarios():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT id, nombre, usuario, perfil, activo
-            FROM restobar.usuarios
+            FROM {USUARIOS}
             ORDER BY id DESC
         """)
 
@@ -102,7 +137,7 @@ def update_usuario(id, data):
 
         # 🔥 VALIDAR USUARIO ÚNICO (excepto él mismo)
         cursor.execute(f"""
-            SELECT id FROM restobar.usuarios
+            SELECT id FROM {USUARIOS}
             WHERE usuario = {placeholder} AND id != {placeholder}
         """, (data["usuario"], id))
 
@@ -116,7 +151,7 @@ def update_usuario(id, data):
             password_hash = generate_password_hash(password)
 
             query = f"""
-                UPDATE restobar.usuarios
+                UPDATE {USUARIOS}
                 SET nombre = {placeholder}, usuario = {placeholder}, password = {placeholder}, perfil = {placeholder}, activo = {placeholder}
                 WHERE id = {placeholder}
             """
@@ -133,7 +168,7 @@ def update_usuario(id, data):
         else:
             # 🔥 no tocar password
             query = f"""
-                UPDATE restobar.usuarios
+                UPDATE {USUARIOS}
                 SET nombre = {placeholder}, usuario = {placeholder}, perfil = {placeholder}, activo = {placeholder}
                 WHERE id = {placeholder}
             """
@@ -178,7 +213,7 @@ def activar_usuario(id, activo):
         placeholder = "%s" if is_postgres else "?"
 
         cursor.execute(f"""
-            UPDATE restobar.usuarios
+            UPDATE {USUARIOS}
             SET activo = {placeholder}
             WHERE id = {placeholder}
         """, (activo, id))

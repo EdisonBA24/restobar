@@ -1,6 +1,7 @@
 from database.connection import get_connection
 from decimal import Decimal
 from config import Config
+from database.db_objects import PRODUCTOS, UNIDADES_MEDIDA
 
 
 # =============================
@@ -62,7 +63,7 @@ def _buscar_producto_duplicado(cursor, campo, valor, excluir_id=None):
 
     query = f"""
         SELECT id, nombre
-        FROM restobar.productos
+        FROM {PRODUCTOS}
         WHERE {campo_expr} = LOWER({placeholder})
     """
     params = [valor]
@@ -95,10 +96,10 @@ def _validar_producto_unico(cursor, data, excluir_id=None):
 
 
 def _base_query():
-    return """
+    return f"""
         SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-        FROM restobar.productos p
-        LEFT JOIN restobar.unidades_medida u ON p.unidad_id = u.id
+        FROM {PRODUCTOS} p
+        LEFT JOIN {UNIDADES_MEDIDA} u ON p.unidad_id = u.id
     """
 
 
@@ -120,17 +121,17 @@ def get_all_productos(page=1, limit=10, solo_inactivos=False, search=None):
 
         # 🔥 BASE SEGÚN MOTOR
         if DB_ENGINE == "postgres":
-            query = """
+            query = f"""
             SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-            FROM restobar.productos p
-            LEFT JOIN restobar.unidades_medida u ON p.unidad_id = u.id
+            FROM {PRODUCTOS} p
+            LEFT JOIN {UNIDADES_MEDIDA} u ON p.unidad_id = u.id
             WHERE p.activo = %s
             """
         else:
-            query = """
+            query = f"""
             SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-            FROM restobar.productos p
-            LEFT JOIN restobar.unidades_medida u ON p.unidad_id = u.id
+            FROM {PRODUCTOS} p
+            LEFT JOIN {UNIDADES_MEDIDA} u ON p.unidad_id = u.id
             WHERE p.activo = ?
             """
 
@@ -218,12 +219,12 @@ def create_producto(data):
         if duplicado:
             return duplicado
 
-        query = """
-        INSERT INTO restobar.productos 
+        query = f"""
+        INSERT INTO {PRODUCTOS} 
         (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock, fecha_creacion)
         VALUES (%s, %s, %s, %s, %s, 1, %s, %s, CURRENT_TIMESTAMP)
-        """ if DB_ENGINE == "postgres" else """
-        INSERT INTO restobar.productos 
+        """ if DB_ENGINE == "postgres" else f"""
+        INSERT INTO {PRODUCTOS} 
         (nombre, codigo, precio_venta, categoria, unidad_id, activo, tipo, stock, fecha_creacion)
         VALUES (?, ?, ?, ?, ?, 1, ?, ?, GETDATE())
         """
@@ -270,12 +271,12 @@ def update_producto(id, data):
         if duplicado:
             return duplicado
 
-        query = """
-        UPDATE restobar.productos
+        query = f"""
+        UPDATE {PRODUCTOS}
         SET nombre=%s, codigo=%s, precio_venta=%s, categoria=%s, unidad_id=%s, tipo=%s
         WHERE id=%s AND activo=1
-        """ if DB_ENGINE == "postgres" else """
-        UPDATE restobar.productos
+        """ if DB_ENGINE == "postgres" else f"""
+        UPDATE {PRODUCTOS}
         SET nombre=?, codigo=?, precio_venta=?, categoria=?, unidad_id=?, tipo=?
         WHERE id=? AND activo=1
         """
@@ -315,7 +316,7 @@ def delete_producto(id):
     cursor = conn.cursor()
 
     try:
-        query = "UPDATE restobar.productos SET activo = 0 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE restobar.productos SET activo = 0 WHERE id = ?"
+        query = f"UPDATE {PRODUCTOS} SET activo = 0 WHERE id = %s" if DB_ENGINE == "postgres" else f"UPDATE {PRODUCTOS} SET activo = 0 WHERE id = ?"
 
         cursor.execute(query, (id,))
         conn.commit()
@@ -346,7 +347,7 @@ def activar_producto(id):
         placeholder = _placeholder()
 
         cursor.execute(
-            f"SELECT codigo, nombre FROM restobar.productos WHERE id = {placeholder}",
+            f"SELECT codigo, nombre FROM {PRODUCTOS} WHERE id = {placeholder}",
             (id,)
         )
         producto = cursor.fetchone()
@@ -362,7 +363,7 @@ def activar_producto(id):
         if duplicado:
             return duplicado
 
-        query = "UPDATE restobar.productos SET activo = 1 WHERE id = %s" if DB_ENGINE == "postgres" else "UPDATE restobar.productos SET activo = 1 WHERE id = ?"
+        query = f"UPDATE {PRODUCTOS} SET activo = 1 WHERE id = %s" if DB_ENGINE == "postgres" else f"UPDATE {PRODUCTOS} SET activo = 1 WHERE id = ?"
 
         cursor.execute(query, (id,))
         conn.commit()

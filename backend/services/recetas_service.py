@@ -1,6 +1,6 @@
 from database.connection import get_connection
 from config import Config
-
+from database.db_objects import RECETAS, RECETAS_DETALLE
 
 def crear_receta(data):
 
@@ -28,7 +28,7 @@ def crear_receta(data):
         # =============================
         cursor.execute(f"""
             SELECT id
-            FROM restobar.recetas
+            FROM {RECETAS}
             WHERE producto_id = {placeholder}
         """, (producto_id,))
 
@@ -43,7 +43,7 @@ def crear_receta(data):
             # 🧹 BORRAR DETALLE
             # =============================
             cursor.execute(f"""
-                DELETE FROM restobar.recetas_detalle
+                DELETE FROM {RECETAS_DETALLE}
                 WHERE receta_id = {placeholder}
             """, (receta_id,))
 
@@ -55,13 +55,13 @@ def crear_receta(data):
 
             if is_postgres:
                 cursor.execute(f"""
-                    INSERT INTO restobar.recetas (producto_id, activo)
+                    INSERT INTO {RECETAS} (producto_id, activo)
                     VALUES ({placeholder}, 1)
                     RETURNING id
                 """, (producto_id,))
             else:
                 cursor.execute(f"""
-                    INSERT INTO restobar.recetas (producto_id, activo)
+                    INSERT INTO {RECETAS} (producto_id, activo)
                     OUTPUT INSERTED.id
                     VALUES ({placeholder}, 1)
                 """, (producto_id,))
@@ -81,7 +81,7 @@ def crear_receta(data):
                 raise Exception("insumo_id requerido")
 
             cursor.execute(f"""
-                INSERT INTO restobar.recetas_detalle (receta_id, insumo_id, cantidad, unidad)
+                INSERT INTO {RECETAS_DETALLE} (receta_id, insumo_id, cantidad, unidad)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (
                 receta_id,
@@ -123,7 +123,7 @@ def obtener_receta(producto_id):
         # =============================
         cursor.execute(f"""
             SELECT r.id
-            FROM restobar.recetas r
+            FROM {RECETAS} r
             WHERE r.producto_id = {placeholder}
             AND r.activo = 1
         """, (producto_id,))
@@ -142,7 +142,7 @@ def obtener_receta(producto_id):
         # =============================
         cursor.execute(f"""
             SELECT insumo_id, cantidad, unidad
-            FROM restobar.recetas_detalle
+            FROM {RECETAS_DETALLE}
             WHERE receta_id = {placeholder}
             ORDER BY id
         """, (receta_id,))

@@ -3,6 +3,7 @@ from flask import session
 from decimal import Decimal, InvalidOperation
 from services.ventas_service import crear_venta
 from config import Config
+from database.db_objects import PEDIDOS, DETALLE_PEDIDOS, PRODUCTOS, USUARIOS
 
 
 # =============================
@@ -22,84 +23,84 @@ def to_decimal(value, field):
 # =============================
 # 🔁 CONVERSIÓN UNIDADES
 # =============================
-def convertir_cantidad(cantidad, unidad):
+#def convertir_cantidad(cantidad, unidad):
 
-    cantidad = Decimal(cantidad or 0)
+#    cantidad = Decimal(cantidad or 0)
 
-    if not unidad:
-        return cantidad
+#    if not unidad:
+#        return cantidad
 
-    unidad = str(unidad).lower()
+#    unidad = str(unidad).lower()
 
-    if unidad in ["g", "gr", "gramos"]:
-        return cantidad / Decimal(1000)
+#    if unidad in ["g", "gr", "gramos"]:
+#        return cantidad / Decimal(1000)
 
-    if unidad in ["kg", "kilogramo", "kilogramos"]:
-        return cantidad
+#    if unidad in ["kg", "kilogramo", "kilogramos"]:
+#        return cantidad
 
-    return cantidad
+#    return cantidad
 
 
 # =============================
 # 📦 VALIDAR STOCK (SOLO VALIDAR)
 # =============================
-def validar_stock_pedido(data):
+#def validar_stock_pedido(data):
 
-    conn = get_connection()
-    cursor = conn.cursor()
+#    conn = get_connection()
+#    cursor = conn.cursor()
 
-    try:
-        detalles = data.get("detalles", [])
+#    try:
+#        detalles = data.get("detalles", [])
 
-        if not detalles:
-            return {"ok": True}  # 🔥 evita error innecesario
+#        if not detalles:
+#            return {"ok": True}  # 🔥 evita error innecesario
 
-        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
-        placeholder = "%s" if is_postgres else "?"
+#        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+#        placeholder = "%s" if is_postgres else "?"
 
-        for item in detalles:
+#        for item in detalles:
 
-            producto_id = item["producto_id"]
-            cantidad = to_decimal(item["cantidad"], "Cantidad")
+#            producto_id = item["producto_id"]
+#            cantidad = to_decimal(item["cantidad"], "Cantidad")
 
-            cursor.execute(f"""
-                SELECT rd.insumo_id, rd.cantidad, rd.unidad
-                FROM restobar.recetas r
-                JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
-                WHERE r.producto_id = {placeholder}
-            """, (producto_id,))
+#            cursor.execute(f"""
+#                SELECT rd.insumo_id, rd.cantidad, rd.unidad
+#                FROM restobar.recetas r
+#                JOIN restobar.recetas_detalle rd ON r.id = rd.receta_id
+#                WHERE r.producto_id = {placeholder}
+#            """, (producto_id,))
 
-            insumos = cursor.fetchall()
+#            insumos = cursor.fetchall()
 
-            for insumo_id, cantidad_base, unidad in insumos:
+#            for insumo_id, cantidad_base, unidad in insumos:
 
-                cantidad_total = Decimal(cantidad_base or 0) * cantidad
-                cantidad_real = convertir_cantidad(cantidad_total, unidad)
+#                cantidad_total = Decimal(cantidad_base or 0) * cantidad
+#                cantidad_real = convertir_cantidad(cantidad_total, unidad)
 
-                cursor.execute(f"""
-                    SELECT stock, nombre 
-                    FROM restobar.productos 
-                    WHERE id = {placeholder}
-                """, (insumo_id,))
+#                cursor.execute(f"""
+#                    SELECT stock, nombre 
+#                    FROM restobar.productos 
+#                    WHERE id = {placeholder}
+#                """, (insumo_id,))
 
-                result = cursor.fetchone()
+#                result = cursor.fetchone()
 
-                if not result:
-                    continue
+#                if not result:
+#                    continue
 
-                stock = Decimal(result[0] or 0)
-                nombre = result[1]
+#                stock = Decimal(result[0] or 0)
+#                nombre = result[1]
 
-                if stock < cantidad_real:
-                    return {
-                        "ok": False,
-                        "message": f"Stock insuficiente: {nombre}"
-                    }
+#                if stock < cantidad_real:
+#                    return {
+#                        "ok": False,
+#                        "message": f"Stock insuficiente: {nombre}"
+#                    }
 
-        return {"ok": True}
+#        return {"ok": True}
 
-    finally:
-        conn.close()
+#    finally:
+#        conn.close()
 
 
 # =============================
@@ -132,7 +133,7 @@ def crear_pedido(data):
         # =============================
         if is_postgres:
             cursor.execute(f"""
-                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
+                INSERT INTO {PEDIDOS} (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                 RETURNING id
             """, (
@@ -147,7 +148,7 @@ def crear_pedido(data):
             ))
         else:
             cursor.execute(f"""
-                INSERT INTO restobar.pedidos (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
+                INSERT INTO {PEDIDOS} (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
                 OUTPUT INSERTED.id
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (
@@ -177,7 +178,7 @@ def crear_pedido(data):
             precio = to_decimal(item["precio"], "Precio")
 
             cursor.execute(f"""
-                INSERT INTO restobar.detalle_pedidos (pedido_id, producto_id, cantidad, precio)
+                INSERT INTO {DETALLE_PEDIDOS} (pedido_id, producto_id, cantidad, precio)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (pedido_id, producto_id, cantidad, precio))
 
@@ -207,10 +208,10 @@ def get_pedidos():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT p.id, p.mesa, p.tipo, p.cliente, p.total, p.fecha, p.estado, u.nombre AS usuario, p.categoria
-            FROM restobar.pedidos p
-            LEFT JOIN restobar.usuarios u ON p.usuario_id = u.id
+            FROM {PEDIDOS} p
+            LEFT JOIN {USUARIOS} u ON p.usuario_id = u.id
             ORDER BY p.id DESC
         """)
 
@@ -253,7 +254,7 @@ def get_pedido_detalle(pedido_id):
                 categoria,
                 estado,
                 fecha
-            FROM restobar.pedidos
+            FROM {PEDIDOS}
             WHERE id = {placeholder}
         """, (pedido_id,))
 
@@ -281,8 +282,8 @@ def get_pedido_detalle(pedido_id):
                 p.nombre,
                 dp.cantidad,
                 dp.precio
-            FROM restobar.detalle_pedidos dp
-            JOIN restobar.productos p
+            FROM {DETALLE_PEDIDOS} dp
+            JOIN {PRODUCTOS} p
                 ON dp.producto_id = p.id
             WHERE dp.pedido_id = {placeholder}
         """, (pedido_id,))
@@ -320,14 +321,14 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
     try:
         usuario_id = usuario_id or session.get("user_id") or 1
 
-        print(f"🧾 FACTURAR PEDIDO | id={pedido_id} | metodo={metodo_pago} | usuario_id={usuario_id}")
+        #print(f"🧾 FACTURAR PEDIDO | id={pedido_id} | metodo={metodo_pago} | usuario_id={usuario_id}")
 
         is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
         placeholder = "%s" if is_postgres else "?"
 
         cursor.execute(f"""
             SELECT id, estado, mesa, cliente, cliente_id, categoria
-            FROM restobar.pedidos
+            FROM {PEDIDOS}
             WHERE id = {placeholder}
         """, (pedido_id,))
 
@@ -341,7 +342,7 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
 
         cursor.execute(f"""
             SELECT producto_id, cantidad, precio
-            FROM restobar.detalle_pedidos
+            FROM {DETALLE_PEDIDOS}
             WHERE pedido_id = {placeholder}
         """, (pedido_id,))
 
@@ -371,7 +372,7 @@ def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, *
         resultado = crear_venta(data_venta)
 
         cursor.execute(f"""
-            UPDATE restobar.pedidos
+            UPDATE {PEDIDOS}
             SET estado = 'facturado'
             WHERE id = {placeholder}
         """, (pedido_id,))

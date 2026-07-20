@@ -181,12 +181,12 @@ window.guardarVenta = async function () {
     try {
 
         // 🔥 VALIDAR STOCK
-        const validacion = await apiFetch("/ventas/validar-stock", "POST", { detalles });
+        //const validacion = await apiFetch("/ventas/validar-stock", "POST", { detalles });
 
-        if (validacion?.status === "error") {
-            mostrarMensaje(validacion.message || "Error de stock ❌", "error");
-            return;
-        }
+        //if (validacion?.status === "error") {
+        //    mostrarMensaje(validacion.message || "Error de stock ❌", "error");
+        //    return;
+        //
 
         // 🔥 USAR apiFetch (consistencia)
         const res = await apiFetch("/ventas", "POST", {

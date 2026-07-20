@@ -1,10 +1,39 @@
-const API = window.location.hostname === "localhost"
-    ? "http://127.0.0.1:5000"
-    : "https://restobar.onrender.com"; // 🔥 MEJORA: dinámico
+// =============================
+// 🌐 CONFIGURACIÓN
+// =============================
+
+// Utiliza siempre el mismo origen donde está cargada la aplicación
+const API = "";
+
+// Datos completos del reporte
+window.dataGlobal = [];
+
+// Configuración de paginación
+const REGISTROS_POR_PAGINA = 10;
+let paginaActual = 1;
+
+// =============================
+// 🚀 INICIALIZACIÓN AUTOMÁTICA
+// =============================
+document.addEventListener("DOMContentLoaded", () => {
+
+    const pagina = window.location.pathname.toLowerCase();
+
+    if (pagina.includes("reporte_inventario")) {
+        abrirReporte("inventario");
+    }
+    else if (pagina.includes("reporte_ventas")) {
+        abrirReporte("ventas");
+    }
+    else if (pagina.includes("reporte_costos")) {
+        abrirReporte("costos");
+    }
+
+});
 
 
 // =============================
-// 🔥 ABRIR REPORTE
+// 🚀 ABRIR REPORTE
 // =============================
 async function abrirReporte(tipo) {
 
@@ -12,44 +41,58 @@ async function abrirReporte(tipo) {
 
     if (tipo === "ventas") {
 
-        const inicio = document.getElementById("fecha_inicio")?.value || document.getElementById("inicio")?.value;
-        const fin = document.getElementById("fecha_fin")?.value || document.getElementById("fin")?.value;
+        const inicio =
+            document.getElementById("fecha_inicio")?.value ||
+            document.getElementById("inicio")?.value;
+
+        const fin =
+            document.getElementById("fecha_fin")?.value ||
+            document.getElementById("fin")?.value;
 
         if (inicio && fin) {
-            url += `?inicio=${encodeURIComponent(inicio)}&fin=${encodeURIComponent(fin)}`; // 🔥 FIX seguridad URL
+            url += `?inicio=${encodeURIComponent(inicio)}&fin=${encodeURIComponent(fin)}`;
         }
     }
 
     try {
 
-        mostrarLoader(); // 🔥 UX
+        mostrarLoader();
 
         const res = await fetch(url, {
             credentials: "include"
         });
 
         if (res.status === 401) {
+
             localStorage.removeItem("usuario");
-            window.location.href = "login.html";
+            window.location.href = "../pages/login.html";
             return;
         }
 
         if (!res.ok) {
-            mostrarMensaje("Error en backend ❌", "error");
+
+            mostrarMensaje("Error consultando el reporte", "error");
             limpiarTabla();
             return;
         }
 
         const data = await res.json();
 
-        window.dataGlobal = data || []; // 🔥 FIX null safe
+        window.dataGlobal = Array.isArray(data) ? data : [];
+
+        paginaActual = 1;
 
         renderTabla(window.dataGlobal);
 
-    } catch (e) {
-        console.error(e);
-        mostrarMensaje("Error cargando datos ❌", "error");
+    } catch (error) {
+
+        console.error(error);
+
+        window.dataGlobal = [];
+
         limpiarTabla();
+
+        mostrarMensaje("Error cargando el reporte", "error");
     }
 }
 
@@ -66,71 +109,212 @@ function formatoMoneda(valor) {
 
 
 // =============================
-// 📊 TABLA
+// 📊 RENDER TABLA
 // =============================
 function renderTabla(data) {
 
-    const contenedor = document.getElementById("contenido");
+    const thead = document.getElementById("thead");
+    const tbody = document.getElementById("tbody");
 
-    if (!contenedor) return;
+    if (!thead || !tbody) return;
+
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
 
     if (!data || data.length === 0) {
-        contenedor.innerHTML = "Sin datos";
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="100%" class="text-center">
+                    Sin datos
+                </td>
+            </tr>
+        `;
+
+        renderPaginacion(0);
+
         return;
     }
 
-    let html = "<table border='1'><tr>";
+    // =============================
+    // PAGINACIÓN
+    // =============================
+    const inicio = (paginaActual - 1) * REGISTROS_POR_PAGINA;
+    const fin = inicio + REGISTROS_POR_PAGINA;
 
-    Object.keys(data[0]).forEach(k => {
-        html += `<th>${k}</th>`;
+    const datosPagina = data.slice(inicio, fin);
+
+    // =============================
+    // ENCABEZADOS
+    // =============================
+    const columnas = Object.keys(data[0]);
+
+    let header = "<tr>";
+
+    columnas.forEach(columna => {
+        header += `<th>${columna}</th>`;
     });
 
-    html += "</tr>";
+    header += "</tr>";
 
-    data.forEach(row => {
-        html += "<tr>";
+    thead.innerHTML = header;
 
-        Object.entries(row).forEach(([key, value]) => {
+    // =============================
+    // FILAS
+    // =============================
+    let filas = "";
 
-            const k = key.toLowerCase();
+    datosPagina.forEach(row => {
 
-            // 💰 MONEDA
-            if (k.includes("costo") || k.includes("precio") || k.includes("utilidad") || k.includes("total") || k.includes("valor")) {
+        filas += "<tr>";
+
+        columnas.forEach(columna => {
+
+            let value = row[columna];
+            const key = columna.toLowerCase();
+
+            // 💰 Moneda
+            if (
+                key.includes("precio") ||
+                key.includes("costo") ||
+                key.includes("valor") ||
+                key.includes("utilidad") ||
+                key.includes("total")
+            ) {
+
                 value = formatoMoneda(value);
             }
 
-            // 📅 FECHA
-            if (k.includes("fecha") && value) {
-                const f = new Date(value);
-                if (!isNaN(f)) {
-                    value = `${String(f.getDate()).padStart(2, "0")}/${String(f.getMonth() + 1).padStart(2, "0")}/${f.getFullYear()}`;
+            // 📅 Fecha
+            else if (key.includes("fecha") && value) {
+
+                const fecha = new Date(value);
+
+                if (!isNaN(fecha)) {
+
+                    value =
+                        `${String(fecha.getDate()).padStart(2, "0")}/` +
+                        `${String(fecha.getMonth() + 1).padStart(2, "0")}/` +
+                        `${fecha.getFullYear()}`;
                 }
             }
 
             // %
-            if (k.includes("margen")) {
+            else if (key.includes("margen")) {
+
                 value = `${value} %`;
             }
 
-            // stock
-            if (k.includes("stock")) {
-                value = Number(value).toLocaleString("es-CO");
+            // Stock
+            else if (key.includes("stock")) {
+
+                value = Number(value || 0).toLocaleString("es-CO");
             }
 
-            html += `<td>${value ?? ""}</td>`; // 🔥 FIX null
+            filas += `<td>${value ?? ""}</td>`;
+
         });
 
-        html += "</tr>";
+        filas += "</tr>";
+
     });
 
-    html += "</table>";
+    tbody.innerHTML = filas;
 
+    // =============================
+    // PAGINACIÓN
+    // =============================
+    renderPaginacion(data.length);
+
+}
+
+// =============================
+// 📄 PAGINACIÓN
+// =============================
+function renderPaginacion(totalRegistros) {
+
+    const contenedor = document.getElementById("paginacion");
+
+    if (!contenedor) return;
+
+    contenedor.innerHTML = "";
+
+    // Si no hay datos o solo existe una página
+    const totalPaginas = Math.ceil(totalRegistros / REGISTROS_POR_PAGINA);
+
+    if (totalPaginas <= 1) {
+        return;
+    }
+
+    let html = "";
+
+    // =============================
+    // BOTÓN ANTERIOR
+    // =============================
     html += `
-        <br>
-        <button onclick='exportarExcel()'>Exportar Excel</button>
+        <button
+            class="btn-page"
+            ${paginaActual === 1 ? "disabled" : ""}
+            onclick="cambiarPagina(${paginaActual - 1})">
+            ◀ Anterior
+        </button>
+    `;
+
+    // =============================
+    // NÚMEROS DE PÁGINA
+    // =============================
+    for (let i = 1; i <= totalPaginas; i++) {
+
+        html += `
+            <button
+                class="btn-page ${i === paginaActual ? "active" : ""}"
+                onclick="cambiarPagina(${i})">
+                ${i}
+            </button>
+        `;
+    }
+
+    // =============================
+    // BOTÓN SIGUIENTE
+    // =============================
+    html += `
+        <button
+            class="btn-page"
+            ${paginaActual === totalPaginas ? "disabled" : ""}
+            onclick="cambiarPagina(${paginaActual + 1})">
+            Siguiente ▶
+        </button>
+    `;
+
+    // =============================
+    // INFORMACIÓN
+    // =============================
+    html += `
+        <span class="page-info">
+            Página ${paginaActual} de ${totalPaginas}
+            (${totalRegistros} registros)
+        </span>
     `;
 
     contenedor.innerHTML = html;
+}
+
+// =============================
+// 📄 CAMBIAR PÁGINA
+// =============================
+function cambiarPagina(pagina) {
+
+    const totalPaginas = Math.ceil(
+        window.dataGlobal.length / REGISTROS_POR_PAGINA
+    );
+
+    if (pagina < 1 || pagina > totalPaginas) {
+        return;
+    }
+
+    paginaActual = pagina;
+
+    renderTabla(window.dataGlobal);
 }
 
 
@@ -217,22 +401,32 @@ async function exportarExcel() {
     }
 }
 
+function mostrarEstadoTabla(mensaje) {
 
-// =============================
-// 🔄 LOADER
-// =============================
+    const thead = document.getElementById("thead");
+    const tbody = document.getElementById("tbody");
+
+    if (!thead || !tbody) return;
+
+    thead.innerHTML = "";
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="100%" class="text-center">
+                ${mensaje}
+            </td>
+        </tr>
+    `;
+}
+
+
 function mostrarLoader() {
-    const contenedor = document.getElementById("contenido");
-    if (contenedor) {
-        contenedor.innerHTML = "Cargando...";
-    }
+    mostrarEstadoTabla("Cargando...");
 }
 
 function limpiarTabla() {
-    const contenedor = document.getElementById("contenido");
-    if (contenedor) {
-        contenedor.innerHTML = "";
-    }
+    window.dataGlobal = [];
+    mostrarEstadoTabla("Sin datos");
 }
 
 
@@ -254,3 +448,7 @@ function mostrarMensaje(msg, tipo = "success") {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+window.abrirReporte = abrirReporte;
+window.exportarExcel = exportarExcel;
+window.cambiarPagina = cambiarPagina;

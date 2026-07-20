@@ -45,11 +45,10 @@ def listar_pagos():
 def crear():
 
     if not login_required():
-        return jsonify({"status": "unauthorized"}), 401  # 🔥 FIX
+        return jsonify({"status": "unauthorized"}), 401
 
     data = request.json
 
-    # 🔥 VALIDACIÓN REAL
     if not data:
         return jsonify({
             "status": "error",
@@ -57,9 +56,6 @@ def crear():
         }), 400
 
     try:
-
-        # 🔥 agregar usuario desde sesión
-        data["usuario_id"] = session.get("user_id")
 
         result = crear_pago(data)
 
@@ -69,7 +65,7 @@ def crear():
         })
 
     except Exception as e:
-        print("❌ ERROR CREAR PAGO:", e)  # 🔥 LOG CLAVE
+        print("❌ ERROR CREAR PAGO:", e)
 
         return jsonify({
             "status": "error",

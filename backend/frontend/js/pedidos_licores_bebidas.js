@@ -34,8 +34,7 @@ async function cargarProductos() {
     const res = await apiFetch("/productos?page=1&limit=100&inactivos=false");
 
     productos = res.data.filter(p =>
-        (p.tipo === "LICORES" || p.tipo === "BEBIDAS") &&
-        (!categoria || p.categoria === categoria)
+        (p.tipo === "LICORES" || p.tipo === "BEBIDAS")
     );
 }
 
@@ -160,6 +159,11 @@ window.guardarPedido = async function () {
         }
 
         mostrarMensaje("Pedido registrado ✅", "success");
+
+        // Redirigir a la lista de pedidos después de 1 segundo
+        setTimeout(() => {
+            window.location.href = "../pages/pedidos.html";
+        }, 1000);
 
         document.getElementById("productosPedido").innerHTML = "";
         document.getElementById("totalPedido").innerText = "$0";

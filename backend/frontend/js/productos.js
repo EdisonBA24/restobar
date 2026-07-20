@@ -255,6 +255,11 @@ async function guardarProducto(e) {
             "success"
         );
 
+        // Redirigir a la página de productos después de guardar
+        setTimeout(() => {
+            window.location.href = "../pages/productos.html";
+        }, 1000);
+
         cancelarEdicion();
         cargarProductos();
 

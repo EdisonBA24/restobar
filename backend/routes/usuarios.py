@@ -3,8 +3,10 @@ from services.usuarios_service import (
     crear_usuario,
     get_usuarios,
     update_usuario,
-    activar_usuario as activar_usuario_service
+    activar_usuario as activar_usuario_service,
+    get_usuarios_select
 )
+
 
 usuarios_bp = Blueprint("usuarios", __name__)
 
@@ -18,6 +20,32 @@ def es_admin():
 
 def validar_admin():
     return "user_id" in session and es_admin()
+
+
+# =============================
+# 📋 SELECT DE USUARIOS
+# =============================
+@usuarios_bp.route("/usuarios/select", methods=["GET"])
+def usuarios_select():
+
+    if not validar_admin():
+        return jsonify({"status": "unauthorized"}), 403
+
+    try:
+
+        return jsonify({
+            "status": "success",
+            "data": get_usuarios_select()
+        })
+
+    except Exception as e:
+
+        print(e)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }),500
 
 
 # =============================

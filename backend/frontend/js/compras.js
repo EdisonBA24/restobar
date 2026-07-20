@@ -7,6 +7,27 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+// ======================================================
+// MÓDULO COMPRAS
+//
+// Este módulo únicamente registra compras de proveedores.
+//
+// La lógica de negocio (actualización de stock y cálculo
+// del costo promedio) se ejecuta exclusivamente en el
+// backend.
+//
+// En el futuro, el módulo Inventario será responsable de:
+// - Kardex
+// - Movimientos
+// - Ajustes
+// - Transferencias
+// - Consumos por recetas
+//
+// Este frontend continuará enviando únicamente los datos
+// de la compra.
+// ======================================================
+
+
 // =============================
 // CARGAR PRODUCTOS
 // =============================
@@ -148,7 +169,7 @@ window.guardarCompra = async function () {
 
         const res = await apiFetch("/compras", "POST", {
             proveedor,
-            usuario: "admin",
+            //usuario: "admin",
             detalles
         });
 
@@ -158,6 +179,11 @@ window.guardarCompra = async function () {
         }
 
         mostrarMensaje("Compra registrada correctamente ✅", "success");
+
+        // Redirigir a la lista de compras después de 1 segundo
+        setTimeout(() => {
+            window.location.href = "../pages/compras.html";
+        }, 1000);
 
         document.getElementById("productosCompra").innerHTML = "";
         document.getElementById("totalCompra").innerText = "$0";

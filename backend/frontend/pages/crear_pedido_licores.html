@@ -17,14 +17,20 @@
             <ul>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">🏠 Dashboard</div>
+                    <div class="menu-title">
+                        <span>🏠 Dashboard</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('dashboard')">📋 Resumen del día</li>
                     </ul>
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">👥 Clientes</div>
+                    <div class="menu-title">
+                        <span>👥 Clientes</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
                         <li onclick="ir('clientes')">📋 Consultar clientes</li>
@@ -32,7 +38,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">📦 Productos</div>
+                    <div class="menu-title">
+                        <span>📦 Productos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_producto')">➕ Crear producto</li>
                         <li onclick="ir('productos')">📋 Consultar productos</li>
@@ -40,7 +49,10 @@
                 </li>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">👤 Usuarios</div>
+                    <div class="menu-title">
+                        <span>👤 Usuarios</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_usuario')">➕ Crear Usuario</li>
                         <li onclick="ir('usuarios')">📋 Consultar Usuarios</li>
@@ -48,7 +60,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">🍳 Recetas</div>
+                    <div class="menu-title">
+                        <span>🍳 Recetas</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_receta')">➕ Crear Receta</li>
                         <li onclick="ir('recetas')">📋 Consultar Recetas</li>
@@ -56,7 +71,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">🛒 Compras</div>
+                    <div class="menu-title">
+                        <span>🛒 Compras</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_compra')">➕ Crear Compra</li>
                         <li onclick="ir('compras')">📋 Consultar Compras</li>
@@ -64,7 +82,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">🧾 Pedidos</div>
+                    <div class="menu-title">
+                        <span>🧾 Pedidos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_pedido_desayuno')">🥞 Desayunos</li>
                         <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
@@ -75,17 +96,20 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">💰 Ventas</div>
+                    <div class="menu-title">
+                        <span>💰 Ventas</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
-                        <!-- <li onclick="ir('crear_venta_desayuno')">🥞 Desayunos</li>
-                        <li onclick="ir('crear_venta_almuerzo')">🍛 Almuerzos</li>
-                        <li onclick="ir('crear_venta_comidas_rapidas')">🍔 Comidas rápidas</li> -->
                         <li onclick="ir('ventas')">📋 Consultar Ventas</li>
                     </ul>
                 </li>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">📊 Reportes</div>
+                    <div class="menu-title">
+                        <span>📊 Reportes</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('reporte_inventario')">📦 Inventario</li>
                         <li onclick="ir('reporte_ventas')">💰 Ventas</li>
@@ -94,7 +118,10 @@
                 </li>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">💰 Pagos</div>
+                    <div class="menu-title">
+                        <span>💰 Pagos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_pago')">➕ Registrar Pago</li>
                         <li onclick="ir('pagos')">📋 Consultar Pagos</li>
@@ -104,9 +131,16 @@
             </ul>
         </aside>
 
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
         <main class="main">
 
-            <header class="header header-user">
+            <header class="header header-user app-header">
+
+                <button id="menuToggle" class="menu-toggle" aria-label="Abrir menú">
+                    ☰
+                </button>
+
                 <h1>Pedido - Licores / Bebidas</h1>
 
                 <div class="user-box">
@@ -207,6 +241,7 @@
     <script type="module" src="../js/auth.js"></script>
     <script type="module" src="../js/pedidos_licores_bebidas.js"></script>
     <script type="module" src="../js/menu.js" defer></script>
+    <script type="module" src="../js/layout.js"></script>
 
     <script>
         function ir(p) {

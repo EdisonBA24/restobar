@@ -160,6 +160,11 @@ async function guardarCliente(e) {
 
         mostrarMensaje("Cliente guardado correctamente ✅", "success");
 
+        // Redirigir a la página de clientes después de guardar
+        setTimeout(() => {
+            window.location.href = "../pages/clientes.html";
+        }, 1000);
+
         cancelarEdicion();
         cargarClientes();
 

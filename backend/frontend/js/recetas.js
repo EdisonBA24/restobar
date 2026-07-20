@@ -272,6 +272,11 @@ window.guardarReceta = async function () {
 
         mostrarMensaje("Receta guardada exitosamente ✅", "success");
 
+        // redirigir a la lista de recetas después de 1 segundo
+        setTimeout(() => {
+            window.location.href = "../pages/recetas.html";
+        }, 1000);
+
         detalle = [];
         renderEditable();
 

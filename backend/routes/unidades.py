@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, session
 from database.connection import get_connection
+from database.db_objects import UNIDADES_MEDIDA
 
 unidades_bp = Blueprint("unidades", __name__)
 
@@ -23,11 +24,11 @@ def listar_unidades():
 
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT id, nombre, abreviatura
-            FROM restobar.unidades_medida
-            WHERE activo = 1
-            ORDER BY nombre
+        cursor.execute(f"""
+            SELECT um.id, um.nombre, um.abreviatura
+            FROM {UNIDADES_MEDIDA} um
+            WHERE um.activo = 1
+            ORDER BY um.nombre
         """)
 
         columns = [column[0] for column in cursor.description]

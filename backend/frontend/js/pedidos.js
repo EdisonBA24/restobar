@@ -176,6 +176,11 @@ window.guardarPedido = async function () {
 
         mostrarMensaje("Pedido registrado ✅", "success");
 
+        // Redirigir a la lista de pedidos después de 1 segundo
+        setTimeout(() => {
+            window.location.href = "../pages/pedidos.html";
+        }, 1000);
+
         document.getElementById("productosPedido").innerHTML = "";
         document.getElementById("totalPedido").innerText = "$0";
 

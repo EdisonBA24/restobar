@@ -1,5 +1,6 @@
 from database.connection import get_connection
 from config import Config
+from database.db_objects import CLIENTES
 
 
 def _get_db_settings():
@@ -27,14 +28,14 @@ def _buscar_cliente_duplicado(cursor, campo, valor, placeholder, is_postgres, ex
     )
 
     query = f"""
-        SELECT id, nombre
-        FROM restobar.clientes
+        SELECT c.id, c.nombre
+        FROM {CLIENTES} c
         WHERE {campo_expr} = LOWER({placeholder})
     """
     params = [valor]
 
     if excluir_id is not None:
-        query += f" AND id <> {placeholder}"
+        query += f" AND c.id <> {placeholder}"
         params.append(excluir_id)
 
     cursor.execute(query, params)
@@ -81,9 +82,9 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
         placeholder = "%s" if is_postgres else "?"
 
         query = f"""
-        SELECT *
-        FROM restobar.clientes
-        WHERE activo = {placeholder}
+        SELECT c.*
+        FROM {CLIENTES} c
+        WHERE c.activo = {placeholder}
         """
 
         params = [estado]
@@ -93,10 +94,10 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
 
             query += f"""
             AND (
-                LOWER({null_fn}(nombre, '')) LIKE {placeholder} OR
-                LOWER({null_fn}(documento, '')) LIKE {placeholder} OR
-                LOWER({null_fn}(telefono, '')) LIKE {placeholder} OR
-                LOWER({null_fn}(direccion, '')) LIKE {placeholder}
+                LOWER({null_fn}(c.nombre, '')) LIKE {placeholder} OR
+                LOWER({null_fn}(c.documento, '')) LIKE {placeholder} OR
+                LOWER({null_fn}(c.telefono, '')) LIKE {placeholder} OR
+                LOWER({null_fn}(c.direccion, '')) LIKE {placeholder}
             )
             """
 
@@ -105,13 +106,13 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
         # 🔥 paginación compatible
         if is_postgres:
             query += f"""
-            ORDER BY id DESC
+            ORDER BY c.id DESC
             LIMIT {placeholder} OFFSET {placeholder}
             """
             params.extend([limit, offset])
         else:
             query += f"""
-            ORDER BY id DESC
+            ORDER BY c.id DESC
             OFFSET {placeholder} ROWS FETCH NEXT {placeholder} ROWS ONLY
             """
             params.extend([offset, limit])
@@ -160,7 +161,7 @@ def create_cliente(data):
             return duplicado
 
         cursor.execute(f"""
-            INSERT INTO restobar.clientes (nombre, documento, telefono, direccion, usuario_id, activo)
+            INSERT INTO {CLIENTES} (nombre, documento, telefono, direccion, usuario_id, activo)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 1)
         """, (
             data.get("nombre"),
@@ -205,7 +206,7 @@ def update_cliente(id, data):
             return duplicado
 
         cursor.execute(f"""
-            UPDATE restobar.clientes
+            UPDATE {CLIENTES}
             SET nombre={placeholder}, documento={placeholder}, telefono={placeholder}, direccion={placeholder}
             WHERE id={placeholder} AND activo=1
         """, (
@@ -245,7 +246,7 @@ def delete_cliente(id):
         db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
         placeholder = "%s" if db_engine == "postgres" else "?"
 
-        cursor.execute(f"UPDATE restobar.clientes SET activo = 0 WHERE id = {placeholder}", (id,))
+        cursor.execute(f"UPDATE {CLIENTES} SET activo = 0 WHERE id = {placeholder}", (id,))
         conn.commit()
 
         if cursor.rowcount == 0:
@@ -275,7 +276,7 @@ def activar_cliente(id):
         is_postgres, placeholder = _get_db_settings()
 
         cursor.execute(
-            f"SELECT documento, telefono FROM restobar.clientes WHERE id = {placeholder}",
+            f"SELECT documento, telefono FROM {CLIENTES} WHERE id = {placeholder}",
             (id,)
         )
         cliente = cursor.fetchone()
@@ -293,7 +294,7 @@ def activar_cliente(id):
         if duplicado:
             return duplicado
 
-        cursor.execute(f"UPDATE restobar.clientes SET activo = 1 WHERE id = {placeholder}", (id,))
+        cursor.execute(f"UPDATE {CLIENTES} SET activo = 1 WHERE id = {placeholder}", (id,))
         conn.commit()
 
         if cursor.rowcount == 0:

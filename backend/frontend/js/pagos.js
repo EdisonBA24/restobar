@@ -7,6 +7,10 @@ let modo = "";
 // =============================
 document.addEventListener("DOMContentLoaded", () => {
 
+    if (document.getElementById("usuario_id")) {
+        cargarUsuarios();
+    }
+
     if (document.getElementById("tablaPagos")) {
         modo = "consultar";
         cargarPagos();
@@ -15,17 +19,72 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // =============================
+// 👥 CARGAR EMPLEADOS
+// =============================
+async function cargarUsuarios() {
+
+    try {
+
+        const res = await apiFetch("/usuarios/select");
+
+        if (!res || res.status === "error") {
+
+            mostrarMensaje(
+                "Error cargando empleados",
+                "error"
+            );
+
+            return;
+
+        }
+
+        const select = document.getElementById("usuario_id");
+
+        select.innerHTML = `
+            <option value="">
+                Seleccione un empleado
+            </option>
+        `;
+
+        console.table(res.data);
+
+        res.data.forEach(usuario => {
+
+            console.log(usuario.id, usuario.nombre);
+
+            select.innerHTML += `
+                <option value="${usuario.id}">
+                    ${usuario.nombre}
+                </option>
+            `;
+
+        });
+
+    } catch (e) {
+
+        console.error(e);
+
+        mostrarMensaje(
+            "Error cargando empleados",
+            "error"
+        );
+
+    }
+
+}
+
+
+// =============================
 // 💾 GUARDAR PAGO
 // =============================
 window.guardarPago = async function () {
 
-    const empleado = document.getElementById("empleado").value.trim();
+    const usuario_id = document.getElementById("usuario_id").value;
     const monto = parseFloat(document.getElementById("monto").value);
     const concepto = document.getElementById("concepto").value.trim();
     const fecha = document.getElementById("fecha").value;
 
-    // 🔥 VALIDACIÓN MEJORADA
-    if (!empleado || isNaN(monto) || monto <= 0 || !concepto || !fecha) {
+    if (!usuario_id || isNaN(monto) || monto <= 0 || !concepto || !fecha) {
         mostrarMensaje("Completa todos los campos correctamente ⚠️", "warning");
         return;
     }
@@ -33,13 +92,12 @@ window.guardarPago = async function () {
     try {
 
         const res = await apiFetch("/pagos", "POST", {
-            empleado,
+            usuario_id,
             monto,
             concepto,
             fecha
         });
 
-        // 🔥 MANEJO DEFENSIVO
         if (!res || res.status === "error") {
             mostrarMensaje(res?.message || "Error guardando pago ❌", "error");
             return;
@@ -47,16 +105,17 @@ window.guardarPago = async function () {
 
         mostrarMensaje("Pago registrado correctamente ✅");
 
-        // limpiar form
-        document.getElementById("empleado").value = "";
-        document.getElementById("monto").value = "";
-        document.getElementById("concepto").value = "";
-        document.getElementById("fecha").value = "";
+        setTimeout(() => {
+            window.location.href = "../pages/pagos.html";
+        }, 1000);
 
     } catch (e) {
+
         console.error(e);
         mostrarMensaje("Error en servidor ❌", "error");
+
     }
+
 };
 
 // =============================
@@ -68,7 +127,6 @@ async function cargarPagos() {
 
         const res = await apiFetch("/pagos");
 
-        // 🔥 PROTECCIÓN
         if (!res || res.status === "error") {
             mostrarMensaje("Error cargando pagos ❌", "error");
             return;
@@ -77,10 +135,10 @@ async function cargarPagos() {
         const tabla = document.getElementById("tablaPagos");
         tabla.innerHTML = "";
 
-        const data = res.data || []; // 🔥 FIX
+        const data = res.data || [];
 
         if (data.length === 0) {
-            tabla.innerHTML = `<tr><td colspan="5">Sin registros</td></tr>`;
+            tabla.innerHTML = `<tr><td colspan="4">Sin registros</td></tr>`;
             return;
         }
 
@@ -92,15 +150,18 @@ async function cargarPagos() {
                     <td>${formatoMoneda(p.monto)}</td>
                     <td>${p.concepto}</td>
                     <td>${formatearFecha(p.fecha)}</td>
-                    <td>${p.usuario || ""}</td>
                 </tr>
             `;
+
         });
 
     } catch (e) {
+
         console.error(e);
         mostrarMensaje("Error cargando pagos ❌", "error");
+
     }
+
 }
 
 // =============================

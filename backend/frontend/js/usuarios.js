@@ -148,6 +148,11 @@ async function guardarUsuario(e) {
 
             await apiFetch("/usuarios", "POST", data);
             mostrarMensaje("Usuario creado ✅");
+
+            // redirigir a la lista de usuarios después de 1 segundo
+            setTimeout(() => {
+                window.location.href = "../pages/usuarios.html";
+            }, 1000);
         }
 
         cancelarEdicion();

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, session
 from database.connection import get_connection
 from werkzeug.security import check_password_hash
 import logging
+from database.db_objects import USUARIOS
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -32,9 +33,9 @@ def login():
         cursor = conn.cursor()
 
         # 🔥 QUERY SEGURA (solo usuario)
-        query = """
+        query = f"""
             SELECT id, nombre, perfil, activo, password
-            FROM restobar.usuarios
+            FROM {USUARIOS}
             WHERE LOWER(usuario) = %s
         """
 

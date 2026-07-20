@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from services.ventas_service import crear_venta, validar_stock
+from services.ventas_service import crear_venta#, validar_stock
 from services.ventas_service import get_ventas, get_venta_detalle
 
 ventas_bp = Blueprint("ventas", __name__)
@@ -63,30 +63,30 @@ def crear():
 # =============================
 # 📦 VALIDAR STOCK
 # =============================
-@ventas_bp.route("/ventas/validar-stock", methods=["POST"])
-def validar():
+#@ventas_bp.route("/ventas/validar-stock", methods=["POST"])
+#def validar():
 
-    if not validar_sesion():
-        return jsonify({"status": "unauthorized"}), 401
+#    if not validar_sesion():
+#        return jsonify({"status": "unauthorized"}), 401
 
-    try:
-        data = request.json or {}
+#    try:
+#        data = request.json or {}
 
-        if not data or "detalles" not in data:
-            return jsonify({
-                "ok": False,
-                "message": "Datos inválidos"
-            }), 400
+#        if not data or "detalles" not in data:
+#            return jsonify({
+#                "ok": False,
+#                "message": "Datos inválidos"
+#            }), 400
 
-        return jsonify(validar_stock(data))
+#        return jsonify(validar_stock(data))
 
-    except Exception as e:
-        print("❌ ERROR VALIDAR STOCK:", e)
+#    except Exception as e:
+#        print("❌ ERROR VALIDAR STOCK:", e)
 
-        return jsonify({
-            "ok": False,
-            "message": "Error validando stock"
-        }), 500
+#        return jsonify({
+#            "ok": False,
+#            "message": "Error validando stock"
+#        }), 500
 
 
 # =============================

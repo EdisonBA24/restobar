@@ -93,13 +93,12 @@
 
         .table tbody td {
             padding: 10px 0;
-            border-top: 1px solid rgba(0,0,0,0.05);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .table tbody tr:hover {
-            background: rgba(0,0,0,0.02);
+            background: rgba(0, 0, 0, 0.02);
         }
-
     </style>
 </head>
 
@@ -110,23 +109,26 @@
         <!-- ===================== SIDEBAR ===================== -->
         <aside class="sidebar">
 
-            <img src="../assets/logo.ico"
-                 alt="Logo"
-                 class="logo"
-                 width="80%"
-                 style="margin: 20px auto; display: block;">
+            <img src="../assets/logo.ico" alt="Logo" class="logo" width="80%"
+                style="margin: 20px auto; display: block;">
 
             <ul>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">🏠 Dashboard</div>
+                    <div class="menu-title">
+                        <span>🏠 Dashboard</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li class="active">📋 Resumen del día</li>
                     </ul>
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">👥 Clientes</div>
+                    <div class="menu-title">
+                        <span>👥 Clientes</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
                         <li onclick="ir('clientes')">📋 Consultar clientes</li>
@@ -134,7 +136,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">📦 Productos</div>
+                    <div class="menu-title">
+                        <span>📦 Productos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_producto')">➕ Crear producto</li>
                         <li onclick="ir('productos')">📋 Consultar productos</li>
@@ -142,7 +147,10 @@
                 </li>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">👤 Usuarios</div>
+                    <div class="menu-title">
+                        <span>👤 Usuarios</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_usuario')">➕ Crear Usuario</li>
                         <li onclick="ir('usuarios')">📋 Consultar Usuarios</li>
@@ -150,7 +158,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">🍳 Recetas</div>
+                    <div class="menu-title">
+                        <span>🍳 Recetas</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_receta')">➕ Crear Receta</li>
                         <li onclick="ir('recetas')">📋 Consultar Recetas</li>
@@ -158,7 +169,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">🛒 Compras</div>
+                    <div class="menu-title">
+                        <span>🛒 Compras</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_compra')">➕ Crear Compra</li>
                         <li onclick="ir('compras')">📋 Consultar Compras</li>
@@ -166,7 +180,10 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">🧾 Pedidos</div>
+                    <div class="menu-title">
+                        <span>🧾 Pedidos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_pedido_desayuno')">🥞 Desayunos</li>
                         <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
@@ -177,14 +194,20 @@
                 </li>
 
                 <li class="menu-item">
-                    <div class="menu-title">💰 Ventas</div>
+                    <div class="menu-title">
+                        <span>💰 Ventas</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('ventas')">📋 Consultar Ventas</li>
                     </ul>
                 </li>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">📊 Reportes</div>
+                    <div class="menu-title">
+                        <span>📊 Reportes</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('reporte_inventario')">📦 Inventario</li>
                         <li onclick="ir('reporte_ventas')">💰 Ventas</li>
@@ -193,7 +216,10 @@
                 </li>
 
                 <li class="menu-item solo-admin">
-                    <div class="menu-title">💰 Pagos</div>
+                    <div class="menu-title">
+                        <span>💰 Pagos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
                     <ul class="submenu">
                         <li onclick="ir('crear_pago')">➕ Registrar Pago</li>
                         <li onclick="ir('pagos')">📋 Consultar Pagos</li>
@@ -203,10 +229,16 @@
             </ul>
         </aside>
 
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
         <!-- ===================== MAIN ===================== -->
         <main class="main">
 
-            <header class="header header-user">
+            <header class="header header-user app-header">
+
+                <button id="menuToggle" class="menu-toggle" aria-label="Abrir menú">
+                    ☰
+                </button>
 
                 <h1>📊 Resumen del Día</h1>
 
@@ -226,8 +258,8 @@
                 </div>
 
                 <div class="card card-kpi success">
-                    <h3>📈 Utilidad del día</h3>
-                    <h1 id="utilidad">$0</h1>
+                    <h3>🧾 Ventas realizadas</h3>
+                    <h1 id="cantidadVentas">0</h1>
                 </div>
 
             </div>
@@ -236,16 +268,21 @@
             <div class="card">
                 <h2>🔥 Top productos</h2>
 
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Cantidad</th>
-                            <th>Venta</th>
-                        </tr>
-                    </thead>
-                    <tbody id="topProductos"></tbody>
-                </table>
+                <div class="table-container">
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Venta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topProductos"></tbody>
+                    </table>
+
+                </div>
+
             </div>
 
         </main>
@@ -257,6 +294,7 @@
     <script type="module" src="../js/auth.js"></script>
     <script type="module" src="../js/menu.js" defer></script>
     <script type="module" src="../js/dashboard.js" defer></script>
+    <script type="module" src="../js/layout.js"></script>
 
     <script>
         function ir(p) {

@@ -2,6 +2,7 @@ from database.connection import get_connection
 from flask import session
 from decimal import Decimal, InvalidOperation
 from config import Config
+from database.db_objects import PAGOS, USUARIOS
 
 
 # =============================
@@ -28,17 +29,14 @@ def crear_pago(data):
 
     try:
 
-        empleado = data.get("empleado")
+        usuario_id = data.get("usuario_id")
         concepto = data.get("concepto")
         fecha = data.get("fecha")
-
         monto = to_decimal(data.get("monto", 0), "Monto")
 
-        usuario_id = session.get("user_id")
-
-        # 🔥 VALIDACIONES MÁS ROBUSTAS
-        if not empleado or not str(empleado).strip():
-            raise Exception("Empleado requerido")
+        # VALIDACIONES
+        if not usuario_id:
+            raise Exception("Debe seleccionar un empleado")
 
         if not concepto or not str(concepto).strip():
             raise Exception("Concepto requerido")
@@ -46,28 +44,58 @@ def crear_pago(data):
         if monto <= 0:
             raise Exception("Monto inválido")
 
-        # 🔥 MOTOR DINÁMICO
+        # MOTOR DINÁMICO
         is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
         placeholder = "%s" if is_postgres else "?"
 
+        # =============================
+        # OBTENER NOMBRE DEL EMPLEADO
+        # =============================
+        query_usuario = f"""
+            SELECT nombre
+            FROM {USUARIOS}
+            WHERE id = {placeholder}
+              AND activo = 1
+        """
+
+        cursor.execute(query_usuario, (usuario_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            raise Exception("El empleado seleccionado no existe o está inactivo")
+
+        empleado = row[0]
+
+        # =============================
+        # INSERTAR PAGO
+        # =============================
         query = f"""
-            INSERT INTO restobar.pagos (
+            INSERT INTO {PAGOS} (
                 empleado,
                 monto,
                 concepto,
                 fecha,
                 usuario_id
             )
-            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            VALUES (
+                {placeholder},
+                {placeholder},
+                {placeholder},
+                {placeholder},
+                {placeholder}
+            )
         """
 
-        cursor.execute(query, (
-            empleado,
-            monto,
-            concepto,
-            fecha,
-            usuario_id
-        ))
+        cursor.execute(
+            query,
+            (
+                empleado,
+                monto,
+                concepto,
+                fecha,
+                usuario_id
+            )
+        )
 
         conn.commit()
 
@@ -76,7 +104,7 @@ def crear_pago(data):
     except Exception as e:
         conn.rollback()
         print("❌ ERROR PAGO:", e)
-        raise e
+        raise
 
     finally:
         conn.close()
@@ -92,35 +120,33 @@ def get_pagos():
 
     try:
 
-        cursor.execute("""
-            SELECT 
+        cursor.execute(f"""
+            SELECT
                 p.id,
-                p.empleado,
+                u.nombre AS empleado,
                 p.monto,
                 p.concepto,
-                p.fecha,
-                u.nombre AS usuario
-            FROM restobar.pagos p
-            LEFT JOIN restobar.usuarios u ON p.usuario_id = u.id
+                p.fecha
+            FROM {PAGOS} p
+            INNER JOIN {USUARIOS} u
+                ON p.usuario_id = u.id
             ORDER BY p.id DESC
         """)
 
         columns = [c[0] for c in cursor.description]
 
         data = []
+
         for r in cursor.fetchall():
             row = dict(zip(columns, r))
-
-            # 🔥 NORMALIZACIÓN SEGURA
             row["monto"] = float(row.get("monto") or 0)
-
             data.append(row)
 
         return data
 
     except Exception as e:
         print("❌ ERROR GET PAGOS:", e)
-        raise e
+        raise
 
     finally:
         conn.close()

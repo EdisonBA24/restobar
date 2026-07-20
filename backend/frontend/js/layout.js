@@ -47,14 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
     =========================================
     */
 
-    sidebar.querySelectorAll("li").forEach(item => {
+    sidebar.querySelectorAll(".submenu li").forEach(item => {
 
         item.addEventListener("click", () => {
 
             if (window.innerWidth <= MOBILE_BREAKPOINT) {
-
                 cerrarMenu();
-
             }
 
         });

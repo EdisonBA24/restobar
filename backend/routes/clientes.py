@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from services.clientes_service import (
     get_all_clientes,
+    get_cliente_por_id,
     create_cliente,
     update_cliente,
     delete_cliente,
@@ -11,8 +12,17 @@ clientes_bp = Blueprint("clientes", __name__)
 
 
 def responder_resultado(result):
-    status_code = result.pop("status_code", 200)
-    return jsonify(result), status_code
+
+    if result is None:
+
+        return jsonify({
+            "status": "error",
+            "message": "Registro no encontrado."
+        }),404
+
+    status_code = result.pop("status_code",200)
+
+    return jsonify(result),status_code
 
 
 # =============================
@@ -54,6 +64,50 @@ def listar_clientes():
             "status": "error",
             "message": "Error obteniendo clientes"
         }), 500
+    
+
+# =============================
+# OBTENER CLIENTE
+# =============================
+@clientes_bp.route("/clientes/<int:id>", methods=["GET"])
+def obtener_cliente(id):
+
+    if not validar_sesion():
+        return jsonify({"status": "unauthorized"}), 401
+
+    try:
+
+        cliente = get_cliente_por_id(id)
+
+        if not cliente:
+
+            return jsonify({
+
+                "status": "error",
+
+                "message": "Cliente no encontrado"
+
+            }),404
+
+        return jsonify({
+
+            "status":"success",
+
+            "data":cliente
+
+        })
+
+    except Exception as e:
+
+        print(e)
+
+        return jsonify({
+
+            "status":"error",
+
+            "message":"Error obteniendo cliente"
+
+        }),500
 
 
 # =============================
@@ -67,6 +121,8 @@ def crear_cliente():
 
     try:
         data = request.get_json(silent=True) or {}
+
+        data["usuario_id"] = session.get("user_id")
 
         # 🔥 validar mínimo
         if not data.get("nombre"):
@@ -100,6 +156,8 @@ def actualizar_cliente(id):
 
     try:
         data = request.get_json(silent=True) or {}
+
+        data["usuario_id"] = session.get("user_id")
 
         result = update_cliente(id, data)
 

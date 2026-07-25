@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, send_from_directory
 from pathlib import Path
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 import os
 
 # 🔥 NUEVO: importar tu script
@@ -21,6 +22,7 @@ from routes.pedidos import pedidos_bp
 from routes.clientes import clientes_bp
 from routes.usuarios import usuarios_bp
 from routes.pagos import pagos_bp
+from routes.proveedores import proveedores_bp
 
 # =============================
 # FRONTEND
@@ -113,6 +115,7 @@ def create_app():
     app.register_blueprint(clientes_bp, url_prefix="/api")
     app.register_blueprint(usuarios_bp, url_prefix="/api")
     app.register_blueprint(pagos_bp, url_prefix="/api")
+    app.register_blueprint(proveedores_bp, url_prefix="/api")
 
     # =============================
     # 🔥 SERVIR FRONTEND
@@ -129,6 +132,10 @@ def create_app():
     @app.route("/js/<path:filename>")
     def frontend_js(filename):
         return send_from_directory(FRONTEND_DIR / "js", filename)
+    
+    @app.route("/js/models/<path:filename>")
+    def frontend_js_models(filename):
+        return send_from_directory(FRONTEND_DIR / "js/models", filename)
     
     @app.route("/css/<path:filename>")
     def frontend_css(filename):
@@ -170,8 +177,25 @@ def create_app():
     # =============================
     # ERROR GLOBAL
     # =============================
+
     @app.errorhandler(Exception)
     def handle_exception(e):
+
+        # Permitir que los errores HTTP (404, 405, etc.)
+        # mantengan su código original.
+        if isinstance(e, HTTPException):
+            return jsonify({
+                "status": "error",
+                "message": e.description
+            }), e.code
+
+        # Errores reales del servidor
+        import traceback
+
+        print("\n========== ERROR ==========")
+        traceback.print_exc()
+        print("===========================\n")
+
         return jsonify({
             "status": "error",
             "message": str(e)

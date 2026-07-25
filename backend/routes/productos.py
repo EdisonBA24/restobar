@@ -4,7 +4,10 @@ from services.productos_service import (
     create_producto,
     update_producto,
     delete_producto,
-    activar_producto
+    activar_producto,
+    get_producto_por_id,
+    get_productos_por_categoria,
+    get_componentes_almuerzo
 )
 
 productos_bp = Blueprint("productos", __name__)
@@ -152,3 +155,107 @@ def activar(id):
             "status": "error",
             "message": str(e)
         }), 500
+    
+
+# =============================
+# GET PRODUCTOS POR CATEGORIA
+# =============================
+@productos_bp.route("/productos/categoria/<string:categoria>", methods=["GET"])
+def listar_por_categoria(categoria):
+
+    if not validar_sesion():
+        return jsonify({"status": "unauthorized"}), 401
+
+    try:
+
+        data = get_productos_por_categoria(categoria)
+
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR PRODUCTOS CATEGORIA:", e)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }),500
+    
+
+# =============================
+# COMPONENTES ALMUERZO
+# =============================
+@productos_bp.route("/productos/almuerzo", methods=["GET"])
+def componentes_almuerzo():
+
+    if not validar_sesion():
+        return jsonify({"status":"unauthorized"}),401
+
+    try:
+
+        return jsonify({
+
+            "status":"success",
+
+            "data":get_componentes_almuerzo()
+
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR COMPONENTES:",e)
+
+        return jsonify({
+
+            "status":"error",
+
+            "message":str(e)
+
+        }),500
+ 
+
+# =============================
+# GET PRODUCTO
+# =============================
+@productos_bp.route("/productos/<int:id>", methods=["GET"])
+def producto(id):
+
+    if not validar_sesion():
+        return jsonify({"status":"unauthorized"}),401
+
+    try:
+
+        data = get_producto_por_id(id)
+
+        if not data:
+
+            return jsonify({
+
+                "status":"error",
+
+                "message":"Producto no encontrado"
+
+            }),404
+
+        return jsonify({
+
+            "status":"success",
+
+            "data":data
+
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR PRODUCTO:",e)
+
+        return jsonify({
+
+            "status":"error",
+
+            "message":str(e)
+
+        }),500

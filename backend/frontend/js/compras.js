@@ -180,15 +180,19 @@ window.guardarCompra = async function () {
 
         mostrarMensaje("Compra registrada correctamente ✅", "success");
 
-        // Redirigir a la lista de compras después de 1 segundo
         setTimeout(() => {
-            window.location.href = "../pages/compras.html";
-        }, 1000);
+
+            cerrarModalCompra();
+
+            cargarCompras();
+
+        }, 600);
 
         document.getElementById("productosCompra").innerHTML = "";
         document.getElementById("totalCompra").innerText = "$0";
         document.getElementById("proveedor").value = "";
         document.getElementById("mensajeVacio").style.display = "block";
+        calcularTotal();
 
     } catch (error) {
         console.error("Error compra:", error);
@@ -367,3 +371,15 @@ function formatearFecha(fecha) {
         return fecha;
     }
 }
+
+window.abrirModalCompra = function () {
+    document
+        .getElementById("modalNuevaCompra")
+        .classList.remove("hidden");
+};
+
+window.cerrarModalCompra = function () {
+    document
+        .getElementById("modalNuevaCompra")
+        .classList.add("hidden");
+};

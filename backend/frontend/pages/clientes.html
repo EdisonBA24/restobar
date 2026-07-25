@@ -33,8 +33,17 @@
                         <span class="menu-arrow">▾</span>
                     </div>
                     <ul class="submenu">
-                        <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
-                        <li class="active">📋 Consultar clientes</li>
+                        <li class="active">📋 Gestión de Clientes</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>🚚 Proveedores</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('proveedores')">📋 Gestión de Proveedores</li>
                     </ul>
                 </li>
 
@@ -153,35 +162,139 @@
 
             </header>
 
-            <!-- FORMULARIO OCULTO -->
-            <div id="formContainer" class="card hidden">
+            <div id="formContainer" class="hidden">
                 <h2 id="formTitle">Nuevo Cliente</h2>
 
-                <form id="formCliente" class="form-grid">
-                    <input type="text" id="nombre" placeholder="Nombre" required>
-                    <input type="text" id="documento" placeholder="Documento">
-                    <input type="text" id="telefono" placeholder="Teléfono">
-                    <input type="text" id="direccion" placeholder="Dirección">
+                <form id="formCliente">
 
-                    <div>
-                        <button type="submit" class="btn-primary" id="btnGuardar">Guardar</button>
-                        <button type="button" class="btn-primary" onclick="cancelarEdicion()">Cancelar</button>
+                    <!-- ========================= -->
+                    <!-- DATOS DEL CLIENTE -->
+                    <!-- ========================= -->
+
+                    <h3 class="section-title">
+                        Información General
+                    </h3>
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label for="nombre">Nombre *</label>
+
+                            <input id="nombre" type="text" required>
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label for="documento">Documento</label>
+
+                            <input id="documento" type="text">
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label for="telefono">Teléfono</label>
+
+                            <input id="telefono" type="text">
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label for="email">Email</label>
+
+                            <input id="email" type="email">
+
+                        </div>
+
                     </div>
+
+                    <!-- ========================= -->
+                    <!-- DIRECCIONES -->
+                    <!-- ========================= -->
+
+                    <hr>
+
+                    <div class="direcciones-section">
+
+                        <div class="direcciones-toolbar">
+
+                            <div>
+
+                                <h3>Direcciones</h3>
+
+                                <span class="section-description">
+                                    Registre una o varias direcciones del cliente.
+                                </span>
+
+                            </div>
+
+                            <button id="btnAgregarDireccion" type="button" class="btn-primary">
+
+                                <i class="fas fa-plus"></i>
+
+                                Agregar dirección
+
+                            </button>
+
+                        </div>
+
+                        <div id="contenedorDirecciones"></div>
+
+                    </div>
+
+                    <hr>
+
+                    <div class="form-actions">
+
+                        <button type="submit" class="btn-primary" id="btnGuardar">
+
+                            Guardar
+
+                        </button>
+
+                        <button type="button" class="btn-secondary" onclick="cancelarEdicion()">
+
+                            Cancelar
+
+                        </button>
+
+                    </div>
+
                 </form>
+
             </div>
+
+            <hr>
 
             <div class="card">
 
                 <div class="top-bar">
+
+                    <button id="btnNuevoCliente" class="btn-primary" onclick="mostrarFormularioCliente()">
+
+                        ➕ Nuevo Cliente
+
+                    </button>
+
                     <div class="search-container">
+
                         <span class="search-icon">🔍</span>
+
                         <input type="text" id="busqueda" placeholder="Buscar..." onkeyup="filtrarClientes()">
+
                     </div>
 
                     <label class="switch">
+
                         <input type="checkbox" id="verInactivos">
+
                         <span>Ver inactivos</span>
+
                     </label>
+
                 </div>
 
                 <div class="table-container">
@@ -199,15 +312,15 @@
                         </thead>
                         <tbody id="tablaClientes"></tbody>
                     </table>
-                    
-                </div>
-
-                    <div class="pagination">
-                        <button onclick="prevPage()">⬅</button>
-                        <button onclick="nextPage()">➡</button>
-                    </div>
 
                 </div>
+
+                <div class="pagination">
+                    <button onclick="prevPage()">⬅</button>
+                    <button onclick="nextPage()">➡</button>
+                </div>
+
+            </div>
 
         </main>
 

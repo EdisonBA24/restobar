@@ -3,7 +3,7 @@ from flask import session
 from decimal import Decimal, InvalidOperation
 from services.ventas_service import crear_venta
 from config import Config
-from database.db_objects import PEDIDOS, DETALLE_PEDIDOS, PRODUCTOS, USUARIOS
+from database.db_objects import PEDIDOS, DETALLE_PEDIDOS, PRODUCTOS, USUARIOS, DETALLE_PEDIDO_COMPONENTES
 
 
 # =============================
@@ -132,9 +132,13 @@ def crear_pedido(data):
         # INSERT PEDIDO
         # =============================
         if is_postgres:
+
             cursor.execute(f"""
-                INSERT INTO {PEDIDOS} (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                INSERT INTO {PEDIDOS}
+                (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
+                VALUES
+                ({placeholder}, {placeholder}, {placeholder}, {placeholder},
+                 {placeholder}, {placeholder}, {placeholder}, {placeholder})
                 RETURNING id
             """, (
                 data.get("mesa"),
@@ -146,11 +150,16 @@ def crear_pedido(data):
                 total,
                 data.get("categoria")
             ))
+
         else:
+
             cursor.execute(f"""
-                INSERT INTO {PEDIDOS} (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
+                INSERT INTO {PEDIDOS}
+                (mesa, tipo, cliente, cliente_id, estado, usuario_id, total, categoria)
                 OUTPUT INSERTED.id
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                VALUES
+                ({placeholder}, {placeholder}, {placeholder}, {placeholder},
+                 {placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, (
                 data.get("mesa"),
                 data.get("tipo"),
@@ -163,6 +172,7 @@ def crear_pedido(data):
             ))
 
         pedido_row = cursor.fetchone()
+
         if not pedido_row:
             raise Exception("Error creando pedido")
 
@@ -173,14 +183,88 @@ def crear_pedido(data):
         # =============================
         for item in detalles:
 
-            producto_id = item["producto_id"]
+            tipo_item = item.get("tipo_item", "").upper()
             cantidad = to_decimal(item["cantidad"], "Cantidad")
             precio = to_decimal(item["precio"], "Precio")
 
-            cursor.execute(f"""
-                INSERT INTO {DETALLE_PEDIDOS} (pedido_id, producto_id, cantidad, precio)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
-            """, (pedido_id, producto_id, cantidad, precio))
+            # =====================================
+            # ALMUERZO
+            # =====================================
+            if tipo_item == "ALMUERZO":
+
+                if is_postgres:
+
+                    cursor.execute(f"""
+                        INSERT INTO {DETALLE_PEDIDOS}
+                        (pedido_id, tipo_item, producto_id, cantidad, precio)
+                        VALUES
+                        ({placeholder}, {placeholder}, NULL, {placeholder}, {placeholder})
+                        RETURNING id
+                    """, (
+                        pedido_id,
+                        tipo_item,
+                        cantidad,
+                        precio
+                    ))
+
+                else:
+
+                    cursor.execute(f"""
+                        INSERT INTO {DETALLE_PEDIDOS}
+                        (pedido_id, tipo_item, producto_id, cantidad, precio)
+                        OUTPUT INSERTED.id
+                        VALUES
+                        ({placeholder}, {placeholder}, NULL, {placeholder}, {placeholder})
+                    """, (
+                        pedido_id,
+                        tipo_item,
+                        cantidad,
+                        precio
+                    ))
+
+                detalle_pedido = cursor.fetchone()
+
+                if not detalle_pedido:
+                    raise Exception("No fue posible crear el detalle del almuerzo")
+
+                detalle_pedido_id = detalle_pedido[0]
+
+                componentes = item.get("componentes", [])
+
+                if not componentes:
+                    raise Exception("El almuerzo no tiene componentes")
+
+                for componente in componentes:
+
+                    cursor.execute(f"""
+                        INSERT INTO {DETALLE_PEDIDO_COMPONENTES}
+                        (detalle_pedido_id, producto_id)
+                        VALUES
+                        ({placeholder}, {placeholder})
+                    """, (
+                        detalle_pedido_id,
+                        componente["producto_id"]
+                    ))
+
+            # =====================================
+            # PRODUCTOS NORMALES
+            # =====================================
+            else:
+
+                producto_id = item["producto_id"]
+
+                cursor.execute(f"""
+                    INSERT INTO {DETALLE_PEDIDOS}
+                    (pedido_id, tipo_item, producto_id, cantidad, precio)
+                    VALUES
+                    ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                """, (
+                    pedido_id,
+                    tipo_item,
+                    producto_id,
+                    cantidad,
+                    precio
+                ))
 
         conn.commit()
 

@@ -2,6 +2,14 @@ from database.connection import get_connection
 from decimal import Decimal
 from config import Config
 from database.db_objects import PRODUCTOS, UNIDADES_MEDIDA
+from constants.category import (
+    SOPA,
+    PROTEINA,
+    SECO,
+    ENSALADA,
+    JUGO,
+    CATEGORIAS_ALMUERZO
+)
 
 
 # =============================
@@ -102,6 +110,187 @@ def _base_query():
         LEFT JOIN {UNIDADES_MEDIDA} u ON p.unidad_id = u.id
     """
 
+
+# =============================
+# GET PRODUCTO
+# =============================
+def _get_producto(cursor, producto_id):
+
+    placeholder = _placeholder()
+
+    query = f"""
+        SELECT
+            p.id,
+            p.nombre,
+            p.categoria,
+            p.tipo,
+            p.precio_venta,
+            p.activo
+        FROM {PRODUCTOS} p
+        WHERE p.id = {placeholder}
+    """
+
+    cursor.execute(query, (producto_id,))
+
+    row = cursor.fetchone()
+
+    if not row:
+        return None
+
+    columns = [c[0] for c in cursor.description]
+
+    producto = dict(zip(columns, row))
+
+    producto["precio_venta"] = float(producto.get("precio_venta") or 0)
+
+    return producto
+
+# =============================
+# GET PRODUCTO POR ID
+# =============================
+def get_producto_por_id(producto_id):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        return _get_producto(cursor, producto_id)
+
+    finally:
+        conn.close()
+
+# =============================
+# GET PRODUCTOS POR CATEGORIA
+# =============================
+def get_productos_por_categoria(categoria):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        placeholder = _placeholder()
+
+        activo = True if DB_ENGINE == "postgres" else 1
+
+        print(f"Buscando categoría: {categoria}")
+
+        cursor.execute(f"""
+            SELECT
+                id,
+                nombre,
+                categoria,
+                tipo,
+                precio_venta
+            FROM {PRODUCTOS}
+            WHERE
+                activo = {placeholder}
+                AND tipo='RECETA'
+                AND UPPER(categoria)=UPPER({placeholder})
+            ORDER BY nombre
+        """,(activo,categoria))
+
+        columns=[c[0] for c in cursor.description]
+
+        data=[]
+
+        rows = cursor.fetchall()
+        print(f"Filas encontradas: {len(rows)}")
+
+        for row in cursor.fetchall():
+
+            r=dict(zip(columns,row))
+
+            r["precio_venta"]=float(r.get("precio_venta") or 0)
+
+            data.append(r)
+
+        return data
+
+    finally:
+        conn.close()
+
+# =============================
+# GET COMPONENTES ALMUERZO
+# =============================
+#def get_componentes_almuerzo():
+
+#    return {
+
+#        "sopas":get_productos_por_categoria(SOPA),
+
+#        "proteinas":get_productos_por_categoria(PROTEINA),
+
+#        "secos":get_productos_por_categoria(SECO),
+
+#        "ensaladas":get_productos_por_categoria(ENSALADA),
+
+#        "jugos":get_productos_por_categoria(JUGO)
+
+#    }
+def get_componentes_almuerzo():
+
+    print("===== INICIO COMPONENTES =====")
+
+    print("Consultando SOPAS...")
+    sopas = get_productos_por_categoria(SOPA)
+    print(f"SOPAS: {len(sopas)}")
+
+    print("Consultando PROTEINAS...")
+    proteinas = get_productos_por_categoria(PROTEINA)
+    print(f"PROTEINAS: {len(proteinas)}")
+
+    print("Consultando SECOS...")
+    secos = get_productos_por_categoria(SECO)
+    print(f"SECOS: {len(secos)}")
+
+    print("Consultando ENSALADAS...")
+    ensaladas = get_productos_por_categoria(ENSALADA)
+    print(f"ENSALADAS: {len(ensaladas)}")
+
+    print("Consultando JUGOS...")
+    jugos = get_productos_por_categoria(JUGO)
+    print(f"JUGOS: {len(jugos)}")
+
+    print("===== FIN COMPONENTES =====")
+
+    return {
+        "sopas": sopas,
+        "proteinas": proteinas,
+        "secos": secos,
+        "ensaladas": ensaladas,
+        "jugos": jugos
+    }
+
+# =============================
+# VALIDAR PRODUCTO CATEGORIA
+# =============================
+def validar_producto_categoria(producto_id,categoria):
+
+    producto=get_producto_por_id(producto_id)
+
+    if not producto:
+
+        return False
+
+    if not producto["activo"]:
+
+        return False
+
+    if str(producto["tipo"]).upper()!="RECETA":
+
+        return False
+
+    categoria = str(categoria).upper()
+
+    if categoria not in CATEGORIAS_ALMUERZO:
+        return False
+
+    if str(producto["categoria"]).upper() != categoria:
+        return False
+
+    return True
 
 # =============================
 # GET PRODUCTOS

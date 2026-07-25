@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../css/styles.css?v=2">
 </head>
 
-<body data-categoria="ALMUERZO">
+<body data-categoria="ALMUERZO" || data-categoria="PROTEINA">
 
     <div class="layout">
 
@@ -32,8 +32,17 @@
                         <span class="menu-arrow">▾</span>
                     </div>
                     <ul class="submenu">
-                        <li onclick="ir('crear_cliente')">➕ Crear cliente</li>
-                        <li onclick="ir('clientes')">📋 Consultar clientes</li>
+                        <li onclick="ir('clientes')">📋 Gestión de Clientes</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>🚚 Proveedores</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('proveedores')">📋 Gestión de Proveedores</li>
                     </ul>
                 </li>
 
@@ -155,96 +164,647 @@
 
             <div class="card">
 
-                <div class="compra-header">
-                    <select id="tipoServicio">
-                        <option value="LLEVAR">LLEVAR</option>
-                        <option value="DOMICILIO">DOMICILIO</option>
-                        <option value="MESA">MESAS</option>
-                    </select>
-                </div>
+                <!-- ============================================= -->
+                <!-- DATOS DEL PEDIDO -->
+                <!-- ============================================= -->
 
-                <div class="compra-header">
-                    <input type="text" id="mesa" placeholder="Mesa">
-                </div>
+                <h2 class="section-title">
+                    🍛 Registrar Pedido
+                </h2>
 
-                <div class="compra-header">
-                    <div style="position:relative;">
-                        <input type="text" id="cliente" placeholder="Buscar cliente..." autocomplete="off">
-                        <div id="listaClientes" class="autocomplete-list hidden"></div>
-                    </div>
-                </div>
+                <div class="form-grid">
 
-                <div class="compra-grid header-grid">
-                    <div>Producto</div>
-                    <div>Cantidad</div>
-                    <div>Precio</div>
-                    <div>Subtotal</div>
-                    <div></div>
-                </div>
+                    <!-- Tipo de servicio -->
+                    <div class="form-group">
 
-                <div id="productosPedido"></div>
+                        <label>Tipo de servicio</label>
 
-                <p id="mensajeVacio">No hay productos agregados</p>
+                        <select id="tipoServicio">
 
-                <button class="btn-primary" onclick="agregarProducto()">+ Agregar producto</button>
+                            <option value="LLEVAR">
+                                LLEVAR
+                            </option>
 
-                <div class="resumen-compra">
-                    Total: <span id="totalPedido">$0</span>
-                </div>
+                            <option value="DOMICILIO">
+                                DOMICILIO
+                            </option>
 
-                <button class="btn-primary" onclick="guardarPedido()">Guardar Pedido</button>
+                            <option value="MESA">
+                                MESA
+                            </option>
 
-            </div>
+                        </select>
 
-            <div id="modalCliente" class="modal hidden">
-                <div class="modal-content modal-cliente">
-
-                    <div class="modal-header">
-                        <h3>👤 Nuevo Cliente</h3>
-                        <button class="btn-close" onclick="cerrarModalCliente()">✖</button>
                     </div>
 
-                    <div class="form-grid">
+                    <!-- Mesa -->
+                    <div class="form-group" id="grupoMesa">
 
-                        <div class="form-group">
-                            <label>Nombre</label>
-                            <input type="text" id="nuevoNombre" placeholder="Nombre completo">
-                        </div>
+                        <label>Mesa</label>
 
-                        <div class="form-group">
-                            <label>Documento</label>
-                            <input type="text" id="nuevoDocumento" placeholder="Cédula / NIT">
-                        </div>
+                        <input id="mesa" type="text" placeholder="Número de mesa">
 
-                        <div class="form-group">
-                            <label>Teléfono</label>
-                            <input type="text" id="nuevoTelefono" placeholder="Número">
-                        </div>
+                    </div>
 
-                        <div class="form-group full">
-                            <label>Dirección</label>
-                            <input type="text" id="nuevoDireccion" placeholder="Dirección completa">
+                    <!-- Cliente -->
+                    <div class="form-group full">
+
+                        <label>Cliente</label>
+
+                        <div style="position:relative">
+
+                            <input id="cliente" type="text" placeholder="Buscar cliente..." autocomplete="off">
+
+                            <div id="listaClientes" class="autocomplete-list hidden">
+                            </div>
+
                         </div>
 
                     </div>
 
-                    <div class="modal-footer">
-                        <button class="btn-primary" onclick="guardarClienteRapido()">
-                            💾 Guardar Cliente
-                        </button>
+                    <!-- Dirección -->
+                    <div class="form-group full hidden" id="grupoDireccion">
+
+                        <label>Dirección de entrega</label>
+
+                        <select id="direccionEntrega">
+
+                            <option value="">
+                                Seleccione una dirección...
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <!-- Otra dirección -->
+                    <div class="form-group full hidden" id="grupoOtraDireccion">
+
+                        <label>Otra dirección</label>
+
+                        <input id="otraDireccion" type="text" maxlength="250"
+                            placeholder="Ingrese la dirección de entrega">
+
+                    </div>
+
+                    <!-- Observaciones de entrega -->
+                    <div class="form-group full hidden" id="grupoObservacionesEntrega">
+
+                        <label>Observaciones de entrega</label>
+
+                        <textarea id="observacionesEntrega" rows="2"
+                            placeholder="Ej: Portería Torre 2, entregar al vigilante, apartamento 503..."></textarea>
+
                     </div>
 
                 </div>
 
-                <div id="warningCliente" class="warning-cliente hidden"></div>
+                <hr>
+
+                <!-- ============================================= -->
+                <!-- ÁREA DE CAPTURA -->
+                <!-- ============================================= -->
+
+                <div class="pedido-builder">
+
+                    <!-- ============================================= -->
+                    <!-- TIPOS DE PEDIDO -->
+                    <!-- ============================================= -->
+
+                    <div class="tipo-pedido-grid">
+
+                        <div class="tipo-pedido-card active" data-panel="panelConstruir">
+
+                            <div class="tipo-icono">
+
+                                🍽
+
+                            </div>
+
+                            <h3>
+
+                                Almuerzo Tradicional
+
+                            </h3>
+
+                            <p>
+
+                                Construya un almuerzo seleccionando
+                                sopa, proteína, seco, ensalada y jugo.
+
+                            </p>
+
+                        </div>
+
+                        <div class="tipo-pedido-card" data-panel="panelMenus">
+
+                            <div class="tipo-icono">
+
+                                📋
+
+                            </div>
+
+                            <h3>
+
+                                Menús
+
+                            </h3>
+
+                            <p>
+
+                                Menú Ejecutivo y
+                                Menú Premium.
+
+                            </p>
+
+                        </div>
+
+                        <div class="tipo-pedido-card" data-panel="panelEspeciales">
+
+                            <div class="tipo-icono">
+
+                                🥘
+
+                            </div>
+
+                            <h3>
+
+                                Especiales
+
+                            </h3>
+
+                            <p>
+
+                                Cazuela de Frijoles
+                                y demás platos especiales.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================================= -->
+                    <!-- CONTENIDO CONSTRUIR -->
+                    <!-- ============================================= -->
+
+                    <div id="contenidoPedido" class="hidden">
+
+                        <div id="panelConstruir" class="tab-panel active">
+
+                            <h2 class="section-title">
+
+                                🍽️ Construir Almuerzo
+
+                            </h2>
+
+                            <div class="panel-info">
+
+                                <span class="panel-badge">
+
+                                    Almuerzo Tradicional
+
+                                </span>
+
+                                <p>
+
+                                    Seleccione cada uno de los componentes que conforman el almuerzo.
+
+                                </p>
+
+                            </div>
+
+                            <div class="form-grid">
+
+                                <div class="form-group">
+
+                                    <label>Sopa</label>
+
+                                    <select id="cboSopa">
+
+                                        <option value="">
+                                            Seleccione...
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>Proteína</label>
+
+                                    <select id="cboProteina">
+
+                                        <option value="">
+                                            Seleccione...
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>Seco</label>
+
+                                    <select id="cboSeco">
+
+                                        <option value="">
+                                            Seleccione...
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>Ensalada</label>
+
+                                    <select id="cboEnsalada">
+
+                                        <option value="">
+                                            Seleccione...
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>Jugo</label>
+
+                                    <select id="cboJugo">
+
+                                        <option value="">
+                                            Seleccione...
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                                <div class="form-group full">
+
+                                    <label>Observaciones</label>
+
+                                    <textarea id="txtObservaciones" rows="3"
+                                        placeholder="Observaciones del almuerzo..."></textarea>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <!-- ============================================= -->
+                            <!-- RESUMEN DEL ALMUERZO -->
+                            <!-- ============================================= -->
+
+                            <div id="divResumen" class="resumen-compra">
+
+                                <strong>
+
+                                    Subtotal del almuerzo:
+
+                                </strong>
+
+                                <span id="lblSubtotal">
+
+                                    $0
+
+                                </span>
+
+                            </div>
+
+                            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+
+                                <button id="btnAgregar" class="btn-primary">
+
+                                    ➕ Agregar al pedido
+
+                                </button>
+
+                                <button id="btnCancelar" class="btn-secondary" style="display:none;">
+
+                                    Cancelar edición
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div id="panelMenus" class="tab-panel hidden">
+
+                            <h2 class="section-title">
+                                📋 Menús
+                            </h2>
+
+                            <div class="panel-info">
+
+                                <span class="panel-badge">
+                                    Menús del día
+                                </span>
+
+                                <p>
+                                    Seleccione el menú que desea agregar al pedido.
+                                </p>
+
+                            </div>
+
+                            <div class="menu-grid">
+
+                                <!-- MENÚ EJECUTIVO -->
+
+                                <div class="menu-card">
+
+                                    <div class="menu-card-header">
+
+                                        🍽 Menú Ejecutivo
+
+                                    </div>
+
+                                    <div class="menu-price">
+
+                                        $17.000
+
+                                    </div>
+
+                                    <div class="menu-description">
+
+                                        Incluye sopa, proteína, seco,
+                                        ensalada y jugo.
+
+                                    </div>
+
+                                    <button class="btn-primary btn-menu" id="btnMenuEjecutivo">
+
+                                        Seleccionar
+
+                                    </button>
+
+                                </div>
+
+                                <!-- MENÚ PREMIUM -->
+
+                                <div class="menu-card">
+
+                                    <div class="menu-card-header">
+
+                                        🥘 Menú Premium
+
+                                    </div>
+
+                                    <div class="menu-price">
+
+                                        $23.000
+
+                                    </div>
+
+                                    <div class="menu-description">
+
+                                        Sancocho, Mondongo y
+                                        demás platos premium.
+
+                                    </div>
+
+                                    <button class="btn-primary btn-menu" id="btnMenuPremium">
+
+                                        Seleccionar
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div id="panelEspeciales" class="tab-panel hidden">
+
+                            <h2 class="section-title">
+                                🥘 Especiales
+                            </h2>
+
+                            <div class="panel-info">
+
+                                <span class="panel-badge">
+
+                                    Platos Especiales
+
+                                </span>
+
+                                <p>
+
+                                    Platos preparados disponibles.
+
+                                </p>
+
+                            </div>
+
+                            <div class="menu-grid">
+
+                                <div class="menu-card">
+
+                                    <div class="menu-card-header">
+
+                                        🥘 Cazuela de Frijoles
+
+                                    </div>
+
+                                    <div class="menu-price">
+
+                                        $25.000
+
+                                    </div>
+
+                                    <div class="menu-description">
+
+                                        Plato preparado.
+
+                                    </div>
+
+                                    <button class="btn-primary btn-menu" id="btnCazuela">
+
+                                        Agregar
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="pedido-workspace">
+
+                        <hr>
+
+                        <!-- ============================================= -->
+                        <!-- PEDIDO -->
+                        <!-- ============================================= -->
+
+                        <h2 class="section-title">
+
+                            🧾 Pedido
+
+                        </h2>
+
+                        <div class="pedido-info">
+
+                            <strong>
+
+                                Items del pedido:
+
+                            </strong>
+
+                            <span id="lblCantidadAlmuerzos">
+
+                                0
+
+                            </span>
+
+                        </div>
+
+                        <div id="divPedido">
+
+                        </div>
+
+                        <div id="mensajeVacio" class="text-center">
+
+                            No hay almuerzos agregados.
+
+                        </div>
+
+                        <div class="resumen-compra" style="margin-top:25px;">
+
+                            <strong>
+
+                                TOTAL PEDIDO
+
+                            </strong>
+
+                            <span id="lblTotal">
+
+                                $0
+
+                            </span>
+
+                            <div class="pedido-resumen">
+
+                                <div>
+
+                                    Productos:
+
+                                    <strong id="lblCantidadProductos">
+
+                                        0
+
+                                    </strong>
+
+                                </div>
+
+                                <div>
+
+                                    Almuerzos:
+
+                                    <strong id="lblCantidadAlmuerzosResumen">
+
+                                        0
+
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+
+                            <button id="btnGuardar" class="btn-primary">
+
+                                💾 Guardar Pedido
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================================= -->
+                    <!-- LOADING -->
+                    <!-- ============================================= -->
+
+                    <div id="loading" class="hidden">
+
+                        Procesando...
+
+                    </div>
+
+                    <div id="modalCliente" class="modal hidden">
+                        <div class="modal-content modal-cliente">
+
+                            <div class="modal-header">
+                                <h3>👤 Nuevo Cliente</h3>
+                                <button class="btn-close" onclick="cerrarModalCliente()">✖</button>
+                            </div>
+
+                            <div class="form-grid">
+
+                                <div class="form-group">
+                                    <label>Nombre</label>
+                                    <input type="text" id="nuevoNombre" placeholder="Nombre completo">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Documento</label>
+                                    <input type="text" id="nuevoDocumento" placeholder="Cédula / NIT">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Teléfono</label>
+                                    <input type="text" id="nuevoTelefono" placeholder="Número">
+                                </div>
+
+                                <div class="form-group full">
+                                    <label>Dirección</label>
+                                    <input type="text" id="nuevoDireccion" placeholder="Dirección completa">
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button class="btn-primary" onclick="guardarClienteRapido()">
+                                    💾 Guardar Cliente
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <div id="warningCliente" class="warning-cliente hidden"></div>
+
+                        <div id="toastContainer"></div>
 
         </main>
 
     </div>
 
     <script type="module" src="../js/auth.js"></script>
+
+    <script type="module" src="../js/api.js"></script>
+
+    <script type="module" src="../js/almuerzo.js"></script>
+
     <script type="module" src="../js/pedidos.js"></script>
+
     <script type="module" src="../js/menu.js" defer></script>
+
     <script type="module" src="../js/layout.js"></script>
 
     <script>
@@ -253,32 +813,21 @@
         }
     </script>
 
-    <script>
-        window.seleccionarCliente = function (nombre, id) {
+    <div id="loadingOverlay" class="hidden">
 
-            const input = document.getElementById("cliente");
+        <div class="loading-content">
 
-            input.value = nombre;
-            input.dataset.id = id;
+            <div class="spinner"></div>
 
-            input.style.borderColor = "#28a745";
-            input.style.background = "#f0fff4";
+            <span>
 
-            document.getElementById("listaClientes").classList.add("hidden");
-        };
+                Guardando pedido...
 
-        document.addEventListener("click", function (e) {
+            </span>
 
-            const lista = document.getElementById("listaClientes");
-            const input = document.getElementById("cliente");
+        </div>
 
-            if (!lista || !input) return;
-
-            if (!input.contains(e.target) && !lista.contains(e.target)) {
-                lista.classList.add("hidden");
-            }
-        });
-    </script>
+    </div>
 
 </body>
 

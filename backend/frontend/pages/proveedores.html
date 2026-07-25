@@ -3,16 +3,17 @@
 
 <head>
     <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Pedido Comidas Rápidas</title>
+    <title>Proveedores</title>
     <link rel="stylesheet" href="../css/styles.css?v=2">
 </head>
 
-<body data-categoria="LICORES">
+<body>
 
     <div class="layout">
 
         <aside class="sidebar">
-            <img src="../assets/logo.ico" class="logo" width="80%" style="margin:20px auto;display:block;">
+            <img src="../assets/logo.ico" alt="Logo" class="logo" width="80%"
+                style="margin: 20px auto; display: block;">
 
             <ul>
 
@@ -42,7 +43,7 @@
                         <span class="menu-arrow">▾</span>
                     </div>
                     <ul class="submenu">
-                        <li onclick="ir('proveedores')">📋 Gestión de Proveedores</li>
+                        <li class="active">📋 Gestión de Proveedores</li>
                     </ul>
                 </li>
 
@@ -99,7 +100,7 @@
                         <li onclick="ir('crear_pedido_desayuno')">🥞 Desayunos</li>
                         <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
                         <li onclick="ir('crear_pedido_comidas_rapidas')">🍔 Comidas rápidas</li>
-                        <li class="active">🥃 Licores / Bebidas</li>
+                        <li onclick="ir('crear_pedido_licores')">🥃 Licores / Bebidas</li>
                         <li onclick="ir('pedidos')">📋 Consultar Pedidos</li>
                     </ul>
                 </li>
@@ -147,10 +148,12 @@
             <header class="header header-user app-header">
 
                 <button id="menuToggle" class="menu-toggle" aria-label="Abrir menú">
+
                     ☰
+
                 </button>
 
-                <h1>Pedido - Licores / Bebidas</h1>
+                <h1>Gestión de Proveedores</h1>
 
                 <div class="user-box">
                     <span id="nombreUsuario">👤 Usuario</span>
@@ -159,97 +162,148 @@
 
             </header>
 
-            <div class="card">
+            <div id="formContainer" class="hidden">
+                <h2 id="formTitle">Nuevo Proveedor</h2>
 
-                <div class="compra-header">
-                    <select id="tipoServicio">
-                        <option value="LLEVAR">LLEVAR</option>
-                        <option value="DOMICILIO">DOMICILIO</option>
-                        <option value="MESA">MESAS</option>
-                    </select>
-                </div>
+                <form id="formProveedor">
 
-                <div class="compra-header">
-                    <input type="text" id="mesa" placeholder="Mesa">
-                </div>
+                    <!-- ========================= -->
+                    <!-- DATOS DEL PROVEEDOR -->
+                    <!-- ========================= -->
 
-                <div class="compra-header">
-                    <div style="position:relative;">
-                        <input type="text" id="cliente" placeholder="Buscar cliente..." autocomplete="off">
-                        <div id="listaClientes" class="autocomplete-list hidden"></div>
-                    </div>
-                </div>
-
-                <div class="compra-grid header-grid">
-                    <div>Producto</div>
-                    <div>Cantidad</div>
-                    <div>Precio</div>
-                    <div>Subtotal</div>
-                    <div></div>
-                </div>
-
-                <div id="productosPedido"></div>
-
-                <p id="mensajeVacio">No hay productos agregados</p>
-
-                <button class="btn-primary" onclick="agregarProducto()">+ Agregar producto</button>
-
-                <div class="resumen-compra">
-                    Total: <span id="totalPedido">$0</span>
-                </div>
-
-                <button class="btn-primary" onclick="guardarPedido()">Guardar Pedido</button>
-
-            </div>
-
-            <div id="modalCliente" class="modal hidden">
-                <div class="modal-content modal-cliente">
-
-                    <div class="modal-header">
-                        <h3>👤 Nuevo Cliente</h3>
-                        <button class="btn-close" onclick="cerrarModalCliente()">✖</button>
-                    </div>
+                    <h3 class="section-title">
+                        Información General
+                    </h3>
 
                     <div class="form-grid">
 
                         <div class="form-group">
-                            <label>Nombre</label>
-                            <input type="text" id="nuevoNombre" placeholder="Nombre completo">
+                            <label for="nombre">Nombre *</label>
+                            <input id="nombre" type="text" maxlength="150" required>
                         </div>
 
                         <div class="form-group">
-                            <label>Documento</label>
-                            <input type="text" id="nuevoDocumento" placeholder="Cédula / NIT">
+                            <label for="nit">NIT</label>
+                            <input id="nit" type="text" maxlength="30">
                         </div>
 
                         <div class="form-group">
-                            <label>Teléfono</label>
-                            <input type="text" id="nuevoTelefono" placeholder="Número">
+                            <label for="contacto">Contacto</label>
+                            <input id="contacto" type="text" maxlength="120">
                         </div>
 
-                        <div class="form-group full">
-                            <label>Dirección</label>
-                            <input type="text" id="nuevoDireccion" placeholder="Dirección completa">
+                        <div class="form-group">
+                            <label for="telefono">Teléfono</label>
+                            <input id="telefono" type="text" maxlength="50">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input id="email" type="email" maxlength="150">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ciudad">Ciudad</label>
+                            <input id="ciudad" type="text" maxlength="100">
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="direccion">Dirección</label>
+                            <input id="direccion" type="text" maxlength="255">
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="observaciones">Observaciones</label>
+
+                            <textarea id="observaciones" rows="4" maxlength="500"
+                                placeholder="Información adicional del proveedor"></textarea>
                         </div>
 
                     </div>
 
-                    <div class="modal-footer">
-                        <button class="btn-primary" onclick="guardarClienteRapido()">
-                            💾 Guardar Cliente
+                    <div class="form-actions">
+
+                        <button type="submit" class="btn-primary" id="btnGuardar">
+
+                            Guardar
+
                         </button>
+
+                        <button type="button" class="btn-secondary" onclick="cancelarEdicion()">
+
+                            Cancelar
+
+                        </button>
+
                     </div>
 
-                    <div id="warningCliente" class="warning-cliente hidden"></div>
+                </form>
+
+            </div>
+
+            <hr>
+
+            <div class="card">
+
+                <div class="top-bar">
+
+                    <button id="btnNuevoProveedor" class="btn-primary" onclick="mostrarFormularioProveedor()">
+
+                        ➕ Nuevo Proveedor
+
+                    </button>
+
+                    <div class="search-container">
+
+                        <span class="search-icon">🔍</span>
+
+                        <input type="text" id="busqueda" placeholder="Buscar..." onkeyup="filtrarProveedores()">
+
+                    </div>
+
+                    <label class="switch">
+
+                        <input type="checkbox" id="verInactivos">
+
+                        <span>Ver inactivos</span>
+
+                    </label>
 
                 </div>
 
+                <div class="table-container">
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center;">Nombre</th>
+                                <th style="text-align: center;">NIT</th>
+                                <th style="text-align: center;">Contacto</th>
+                                <th style="text-align: center;">Teléfono</th>
+                                <th style="text-align: center;">Ciudad</th>
+                                <th style="text-align: center;">Estado</th>
+                                <th style="text-align: center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaProveedores"></tbody>
+                    </table>
+
+                </div>
+
+                <div class="pagination">
+                    <button onclick="prevPage()">⬅</button>
+                    <button onclick="nextPage()">➡</button>
+                </div>
+
+            </div>
+
         </main>
+
     </div>
 
     <script type="module" src="../js/auth.js"></script>
-    <script type="module" src="../js/pedidos_licores_bebidas.js"></script>
     <script type="module" src="../js/menu.js" defer></script>
+    <script type="module" src="../js/proveedores.js"></script>
     <script type="module" src="../js/layout.js"></script>
 
     <script>
@@ -258,33 +312,6 @@
         }
     </script>
 
-    <script>
-        window.seleccionarCliente = function (nombre, id) {
-
-            const input = document.getElementById("cliente");
-
-            input.value = nombre;
-            input.dataset.id = id;
-
-            input.style.borderColor = "#28a745";
-            input.style.background = "#f0fff4";
-
-            document.getElementById("listaClientes").classList.add("hidden");
-        };
-
-        document.addEventListener("click", function (e) {
-
-            const lista = document.getElementById("listaClientes");
-            const input = document.getElementById("cliente");
-
-            if (!lista || !input) return;
-
-            if (!input.contains(e.target) && !lista.contains(e.target)) {
-                lista.classList.add("hidden");
-            }
-        });
-        
-    </script>
 </body>
 
 </html>

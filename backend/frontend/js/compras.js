@@ -24,11 +24,18 @@ const filtrosCompras = {
 
 };
 
+const STORAGE_PAGE_SIZE = "compras_page_size";
+
 const estadoPaginacion = {
     page: 1,
     page_size: 10,
     total: 0,
     total_pages: 1
+};
+
+const estadoOrden = {
+    sort_by: "id",
+    sort_order: "desc"
 };
 
 let timeoutBusqueda = null;
@@ -50,6 +57,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     inicializarPaginacion();
 
     inicializarPageSize();
+
+    inicializarOrdenamiento();
 
     const btnAgregarProducto = document.getElementById("btnAgregarProducto");
 
@@ -97,6 +106,56 @@ document.addEventListener("DOMContentLoaded", async () => {
 // Este frontend continuará enviando únicamente los datos
 // de la compra.
 // ======================================================
+function ordenarPor(columna) {
+
+    if (estadoOrden.sort_by === columna) {
+
+        estadoOrden.sort_order =
+            estadoOrden.sort_order === "asc"
+                ? "desc"
+                : "asc";
+
+    } else {
+
+        estadoOrden.sort_by = columna;
+        estadoOrden.sort_order = "asc";
+
+    }
+
+    estadoPaginacion.page = 1;
+
+    actualizarIndicadoresOrden();
+
+    cargarCompras();
+
+}
+
+function actualizarIndicadoresOrden() {
+
+    document
+        .querySelectorAll("th[data-sort]")
+        .forEach(th => {
+
+            const icono = th.querySelector(".sort-icon");
+
+            if (!icono) return;
+
+            if (th.dataset.sort !== estadoOrden.sort_by) {
+
+                icono.textContent = "⇅";
+                return;
+
+            }
+
+            icono.textContent =
+                estadoOrden.sort_order === "asc"
+                    ? "▲"
+                    : "▼";
+
+        });
+
+}
+
 
 // =============================
 // CARGAR TIPOS DE IVA
@@ -1170,6 +1229,26 @@ function limpiarFiltrosCompras() {
 
 }
 
+function inicializarOrdenamiento() {
+
+    document
+        .querySelectorAll("th[data-sort]")
+        .forEach(th => {
+
+            th.style.cursor = "pointer";
+
+            th.addEventListener("click", () => {
+
+                console.log("CLICK:", th.dataset.sort);
+
+                ordenarPor(th.dataset.sort);
+
+            });
+
+        });
+
+}
+
 // =============================
 // CARGAR COMPRAS
 // =============================
@@ -1199,7 +1278,11 @@ async function cargarCompras(filtros = null) {
 
             page: estadoPaginacion.page,
 
-            page_size: estadoPaginacion.page_size
+            page_size: estadoPaginacion.page_size,
+
+            sort_by: estadoOrden.sort_by,
+
+            sort_order: estadoOrden.sort_order
 
         });
 
@@ -1309,6 +1392,8 @@ function renderizarPaginacion() {
 
     renderizarNumerosPaginacion();
 
+    actualizarIndicadoresOrden();
+
 }
 
 function inicializarPaginacion() {
@@ -1359,6 +1444,32 @@ function inicializarPaginacion() {
         );
 
     }
+
+}
+
+function inicializarPageSize() {
+
+    const select =
+        document.getElementById("pageSizeCompras");
+
+    if (!select) return;
+
+    select.value = estadoPaginacion.page_size;
+
+    select.addEventListener("change", () => {
+
+        estadoPaginacion.page_size = Number(select.value);
+
+        localStorage.setItem(
+            STORAGE_PAGE_SIZE,
+            estadoPaginacion.page_size
+        );
+
+        estadoPaginacion.page = 1;
+
+        cargarCompras();
+
+    });
 
 }
 
@@ -1479,26 +1590,6 @@ function renderizarNumerosPaginacion() {
     crearPuntos();
 
     crearBoton(total);
-
-}
-
-function inicializarPageSize() {
-
-    const select = document.getElementById("pageSizeCompras");
-
-    if (!select) return;
-
-    select.value = estadoPaginacion.page_size;
-
-    select.addEventListener("change", () => {
-
-        estadoPaginacion.page_size = Number(select.value);
-
-        estadoPaginacion.page = 1;
-
-        cargarCompras();
-
-    });
 
 }
 

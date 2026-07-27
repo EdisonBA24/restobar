@@ -402,6 +402,26 @@ body {
 
 }
 
+.pg-page-size{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    font-size:.9rem;
+
+}
+
+.pg-page-size select{
+
+    width:80px;
+
+    min-width:80px;
+
+}
+
 /* ===================== SEARCH ===================== */
 .search-container {
     position: relative;

@@ -86,8 +86,7 @@
                         <span class="menu-arrow">▾</span>
                     </div>
                     <ul class="submenu">
-                        <li onclick="ir('crear_compra')">➕ Crear Compra</li>
-                        <li class="active">📋 Consultar Compras</li>
+                        <li class="active">📋 Gestión de Compras</li>
                     </ul>
                 </li>
 
@@ -557,13 +556,33 @@
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Proveedor</th>
-                                    <th>Fecha</th>
-                                    <th>Subtotal</th>
-                                    <th>Iva</th>
-                                    <th>Total</th>
-                                    <th>Usuario</th>
+                                    <th data-sort="id">
+                                        ID <span class="sort-icon">▼</span>
+                                    </th>
+
+                                    <th data-sort="proveedor">
+                                        Proveedor <span class="sort-icon">⇅</span>
+                                    </th>
+
+                                    <th data-sort="fecha">
+                                        Fecha <span class="sort-icon">⇅</span>
+                                    </th>
+
+                                    <th data-sort="subtotal">
+                                        Subtotal <span class="sort-icon">⇅</span>
+                                    </th>
+
+                                    <th data-sort="iva_total">
+                                        IVA <span class="sort-icon">⇅</span>
+                                    </th>
+
+                                    <th data-sort="total">
+                                        Total <span class="sort-icon">⇅</span>
+                                    </th>
+
+                                    <th data-sort="usuario">
+                                        Usuario <span class="sort-icon">⇅</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="tablaCompras"></tbody>
@@ -575,7 +594,11 @@
 
                         <div class="pg-page-size">
 
-                            <label for="pageSizeCompras">Mostrar</label>
+                            <label for="pageSizeCompras">
+
+                                Mostrar
+
+                            </label>
 
                             <select id="pageSizeCompras" class="form-select">
 
@@ -601,11 +624,14 @@
 
                         <div class="pg-center">
 
-                            <div id="infoPaginacionCompras" class="pg-info"></div>
+                            <div id="infoPaginacionCompras" class="pg-info">
+                            </div>
 
-                            <div id="resumenPaginacionCompras" class="pg-summary"></div>
+                            <div id="resumenPaginacionCompras" class="pg-summary">
+                            </div>
 
-                            <div id="numerosPaginacion" class="pg-numbers"></div>
+                            <div id="numerosPaginacion" class="pg-numbers">
+                            </div>
 
                         </div>
 

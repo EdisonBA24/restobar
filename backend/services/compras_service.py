@@ -336,6 +336,8 @@ def get_compras(filtros=None):
     fecha_fin = filtros.get("fecha_fin")
     proveedor_id = filtros.get("proveedor_id")
     buscar = (filtros.get("buscar") or "").strip()
+    sort_by = (filtros.get("sort_by") or "id").lower()
+    sort_order = (filtros.get("sort_order") or "desc").lower()
 
     page = max(int(filtros.get("page", 1)), 1)
     page_size = max(int(filtros.get("page_size", 10)), 1)
@@ -344,6 +346,27 @@ def get_compras(filtros=None):
 
     parametros = []
     where = []
+
+    columnas_ordenables = {
+        "id": "co.id",
+        "fecha": "co.fecha",
+        "proveedor": "p.nombre",
+        "subtotal": "co.subtotal",
+        "iva_total": "co.iva_total",
+        "total": "co.total",
+        "usuario": "u.nombre"
+    }
+
+    if sort_by not in columnas_ordenables:
+        sort_by = "id"
+
+    if sort_order not in ("asc", "desc"):
+        sort_order = "desc"
+
+    order_by_sql = (
+        f"{columnas_ordenables[sort_by]} "
+        f"{sort_order.upper()}"
+    )
 
     if fecha_inicio:
         where.append(f"CAST(co.fecha AS DATE) >= {placeholder}")
@@ -440,7 +463,7 @@ def get_compras(filtros=None):
 
             {where_sql}
                     
-            ORDER BY co.id DESC
+            ORDER BY {order_by_sql}
 
             {paginacion_sql}
 

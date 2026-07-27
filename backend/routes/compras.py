@@ -88,7 +88,9 @@ def listar():
             "proveedor_id": request.args.get("proveedor_id"),
             "buscar": request.args.get("buscar"),
             "page": request.args.get("page", type=int, default=1),
-            "page_size": request.args.get("page_size", type=int, default=20)
+            "page_size": request.args.get("page_size", type=int, default=20),
+            "sort_by": request.args.get("sort_by", default="id"),
+            "sort_order": request.args.get("sort_order", default="desc")
         }
 
         print("===== FILTROS RECIBIDOS =====")

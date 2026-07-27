@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, session
-from services.compras_service import crear_compra, get_compras, get_detalle_compra
+from services.compras_service import crear_compra, get_compras, get_detalle_compra, get_tipos_iva
+import traceback
 
 compras_bp = Blueprint("compras", __name__)
 
@@ -53,13 +54,21 @@ def crear():
             "data": result
         })
 
-    except Exception as e:
-        print("❌ ERROR ROUTE COMPRAS:", e)
+    #except Exception as e:
+    #    print("❌ ERROR ROUTE COMPRAS:", e)
 
-        return jsonify({
-            "status": "error",
-            "message": "Error creando compra"
-        }), 500
+    #    return jsonify({
+    #        "status": "error",
+    #        "message": "Error creando compra"
+    #    }), 500
+    except Exception as e:
+        print("\n========== ERROR ROUTE COMPRAS ==========")
+        traceback.print_exc()
+
+    return jsonify({
+        "status": "error",
+        "message": str(e)
+    }), 500
 
 
 # =============================
@@ -72,7 +81,20 @@ def listar():
         return jsonify({"status": "unauthorized"}), 401
 
     try:
-        data = get_compras()
+        filtros = {
+            "periodo": request.args.get("periodo"),
+            "fecha_inicio": request.args.get("fecha_inicio"),
+            "fecha_fin": request.args.get("fecha_fin"),
+            "proveedor_id": request.args.get("proveedor_id"),
+            "buscar": request.args.get("buscar"),
+            "page": request.args.get("page", type=int, default=1),
+            "page_size": request.args.get("page_size", type=int, default=20)
+        }
+
+        print("===== FILTROS RECIBIDOS =====")
+        print(filtros)
+
+        data = get_compras(filtros)
 
         return jsonify({
             "status": "success",
@@ -117,4 +139,28 @@ def detalle(id):
         return jsonify({
             "status": "error",
             "message": "Error obteniendo detalle"
+        }), 500
+    
+
+# ===================
+# TIPOS DE IVA
+# ===================
+@compras_bp.route("/compras/tipos-iva", methods=["GET"])
+def listar_tipos_iva():
+
+    if not validar_sesion():
+        return jsonify({"status": "unauthorized"}), 401
+
+    try:
+        return jsonify({
+            "status": "success",
+            "data": get_tipos_iva()
+        })
+
+    except Exception as e:
+        print("❌ ERROR TIPOS IVA:", e)
+
+        return jsonify({
+            "status": "error",
+            "message": "Error obteniendo tipos de IVA"
         }), 500

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Consultar Compras</title>
+    <title>Compras</title>
     <link rel="stylesheet" href="../css/styles.css?v=2">
 </head>
 
@@ -153,7 +153,7 @@
 
                 </button>
 
-                <h1>Historial de Compras</h1>
+                <h1>Gestión de Compras</h1>
 
                 <div class="user-box">
                     <span id="nombreUsuario">👤 Usuario</span>
@@ -162,40 +162,475 @@
 
             </header>
 
-            <div class="card">
+            <div id="compraFormContainer" class="hidden">
 
-                <div class="toolbar">
-                    <button class="btn-primary" id="btnNuevaCompra" onclick="abrirModalCompra()">
-                        ➕ Nueva Compra
-                    </button>
+                <div class="page-title">
+
+                    <div>
+
+                        <h2 id="formTitle">🛒 Nueva Compra</h2>
+
+                        <p class="page-description">
+                            Registra compras de proveedores para actualizar automáticamente el inventario y los costos.
+                        </p>
+
+                    </div>
+
                 </div>
 
-                <div class="table-container">
+                <form id="compraForm">
 
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Proveedor</th>
-                                <th>Fecha</th>
-                                <th>Total</th>
-                                <th>Usuario</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaCompras"></tbody>
-                    </table>
+                    <!-- ========================= -->
+                    <!-- INFORMACIÓN GENERAL -->
+                    <!-- ========================= -->
+
+                    <section class="purchase-card">
+
+                        <div class="purchase-card-header">
+
+                            <div>
+
+                                <h3 class="section-title">
+                                    📋 Información General
+                                </h3>
+
+                                <span class="section-description">
+                                    Selecciona el proveedor y la fecha de la compra.
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        <div class="form-grid">
+
+                            <div class="form-group">
+
+                                <label for="proveedorBusqueda">
+                                    Proveedor *
+                                </label>
+
+                                <input type="text" id="proveedorBusqueda" placeholder="Buscar proveedor..."
+                                    autocomplete="off">
+
+                                <input type="hidden" id="proveedorId">
+
+                                <div id="listaProveedores" class="autocomplete-list hidden">
+                                </div>
+
+                            </div>
+
+                            <div class="form-group">
+
+                                <label for="fechaCompra">
+                                    Fecha Compra *
+                                </label>
+
+                                <input type="date" id="fechaCompra">
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                    <hr>
+
+                    <!-- ========================= -->
+                    <!-- PRODUCTOS -->
+                    <!-- ========================= -->
+
+                    <section class="purchase-card productos-section">
+
+                        <div class="productos-toolbar">
+
+                            <div>
+
+                                <h3 class="section-title">
+
+                                    Productos
+
+                                </h3>
+
+                                <span class="section-description">
+
+                                    Agregue uno o varios productos para registrar la compra.
+
+                                </span>
+
+                            </div>
+
+                            <button id="btnAgregarProducto" class="btn-primary btn-add-product" type="button"
+                                class="btn-primary">
+
+                                ➕ Agregar producto
+
+                            </button>
+
+                        </div>
+
+                        <br>
+
+                        <div id="productosContainer">
+
+                        </div>
+
+                    </section>
+
+                    <hr>
+
+                    <!-- ========================= -->
+                    <!-- RESUMEN -->
+                    <!-- ========================= -->
+
+                    <section class="purchase-card resumen-section">
+
+                        <h3 class="section-title">
+
+                            Resumen de la compra
+
+                        </h3>
+
+                        <div class="resumen-compra">
+
+                            <div class="resumen-linea">
+
+                                <span>Subtotal</span>
+
+                                <span id="subtotalCompra">$0</span>
+
+                            </div>
+
+                            <div class="resumen-linea">
+
+                                <span>IVA</span>
+
+                                <span id="ivaCompra">$0</span>
+
+                            </div>
+
+                            <div class="resumen-linea total">
+
+                                <span>TOTAL</span>
+
+                                <span id="totalCompra">$0</span>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                    <hr>
+
+                    <div class="form-actions purchase-actions">
+
+                        <button type="submit" class="btn-primary" id="btnGuardarCompra">
+
+                            Guardar Compra
+
+                        </button>
+
+                        <button type="button" class="btn-secondary" onclick="cancelarCompra()">
+
+                            Cancelar
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div id="listContainer">
+
+                <div class="card listado-card">
+
+                    <div class="listado-header">
+
+                        <div class="listado-header-info">
+
+                            <h2 class="listado-title">
+                                📦 Compras
+                            </h2>
+
+                            <span class="listado-description">
+                                Consulte, filtre y exporte las compras registradas.
+                            </span>
+
+                        </div>
+
+                        <div class="listado-header-actions">
+
+                            <button class="btn-primary" id="btnExportarCompras">
+
+                                📥 Exportar Excel
+
+                            </button>
+
+                            <button class="btn-primary" id="btnNuevaCompra" onclick="mostrarFormularioCompra()">
+
+                                ➕ Nueva Compra
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                    <div class="compras-toolbar">
+
+                        <div class="filters-card">
+
+                            <div class="filters-header">
+
+                                <div>
+
+                                    <h3>
+
+                                        🔎 Filtros de búsqueda
+
+                                    </h3>
+
+                                    <span>
+
+                                        Seleccione el período o aplique filtros específicos para consultar las compras.
+
+                                    </span>
+
+                                </div>
+
+                                <div class="form-group filters-actions">
+
+                                    <button type="button" class="btn-outline" id="btnLimpiarFiltros">
+
+                                        🧹 Limpiar filtros
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                            <div class="toolbar-filtros">
+
+                                <!-- ========================= -->
+                                <!-- FILA 1 -->
+                                <!-- ========================= -->
+
+                                <div class="filters-row">
+
+                                    <div class="form-group filtro-periodo">
+
+                                        <label for="filtroPeriodo">Período</label>
+
+                                        <select id="filtroPeriodo">
+
+                                            <option value="hoy">Hoy</option>
+                                            <option value="ayer">Ayer</option>
+                                            <option value="esta_semana">Esta semana</option>
+                                            <option value="semana_pasada">Semana pasada</option>
+                                            <option value="mes_actual" selected>Mes actual</option>
+                                            <option value="mes_anterior">Mes anterior</option>
+                                            <option value="ultimos30">Últimos 30 días</option>
+                                            <option value="personalizado" data-custom="true">
+
+                                                Personalizado
+
+                                            </option>
+
+                                        </select>
+
+                                    </div>
+
+                                    <div class="form-group">
+
+                                        <label for="filtroProveedor">Proveedor</label>
+
+                                        <select id="filtroProveedor">
+
+                                            <option value="">Todos</option>
+
+                                        </select>
+
+                                    </div>
+
+                                    <div class="form-group buscar-compra">
+
+                                        <label for="buscarCompra">Buscar</label>
+
+                                        <input type="text" id="buscarCompra" placeholder="Proveedor, usuario o ID">
+
+                                    </div>
+
+                                </div>
+
+                                <!-- ========================= -->
+                                <!-- FILA 2 -->
+                                <!-- ========================= -->
+
+                                <div class="filters-row hidden" id="customDateFilters">
+
+                                    <div class="form-group">
+
+                                        <label for="fechaInicio">Desde</label>
+
+                                        <input type="date" id="fechaInicio" disabled>
+
+                                    </div>
+
+                                    <div class="form-group">
+
+                                        <label for="fechaFin">Hasta</label>
+
+                                        <input type="date" id="fechaFin" disabled>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="dashboard-mini">
+
+                        <div class="mini-card">
+
+                            <span>Compras</span>
+
+                            <strong id="kpiCantidadCompras">
+
+                                0
+
+                            </strong>
+
+                        </div>
+
+                        <div class="mini-card">
+
+                            <span>Total Comprado</span>
+
+                            <strong id="kpiTotalComprado">
+
+                                $0
+
+                            </strong>
+
+                        </div>
+
+                        <div class="mini-card">
+
+                            <span>IVA</span>
+
+                            <strong id="kpiIVA">
+
+                                $0
+
+                            </strong>
+
+                        </div>
+
+                        <div class="mini-card">
+
+                            <span>Promedio Compra</span>
+
+                            <strong id="kpiPromedio">
+
+                                $0
+
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                    <div class="table-container">
+
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Proveedor</th>
+                                    <th>Fecha</th>
+                                    <th>Subtotal</th>
+                                    <th>Iva</th>
+                                    <th>Total</th>
+                                    <th>Usuario</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaCompras"></tbody>
+                        </table>
+
+                    </div>
+
+                    <div id="paginacionCompras" class="pg-container">
+
+                        <div class="pg-page-size">
+
+                            <label for="pageSizeCompras">Mostrar</label>
+
+                            <select id="pageSizeCompras" class="form-select">
+
+                                <option value="10">10</option>
+
+                                <option value="20" selected>20</option>
+
+                                <option value="50">50</option>
+
+                                <option value="100">100</option>
+
+                            </select>
+
+                            <span>registros</span>
+
+                        </div>
+
+                        <button id="btnPaginaAnterior" class="btn-secondary" type="button">
+
+                            ← Anterior
+
+                        </button>
+
+                        <div class="pg-center">
+
+                            <div id="infoPaginacionCompras" class="pg-info"></div>
+
+                            <div id="resumenPaginacionCompras" class="pg-summary"></div>
+
+                            <div id="numerosPaginacion" class="pg-numbers"></div>
+
+                        </div>
+
+                        <button id="btnPaginaSiguiente" class="btn-secondary" type="button">
+
+                            Siguiente →
+
+                        </button>
+
+                    </div>
 
                 </div>
 
             </div>
 
-        </main>
+    </div>
+
+    </main>
+
     </div>
 
     <!-- ========================================= -->
     <!-- MODAL NUEVA COMPRA -->
     <!-- ========================================= -->
-
+    <!--
     <div id="modalNuevaCompra" class="modal hidden">
 
         <div class="modal-content modal-lg">
@@ -211,30 +646,72 @@
             <div id="contenidoNuevaCompra">
 
                 <div class="compra-header">
-                    <input type="text" id="proveedor" placeholder="Proveedor">
+
+                    <div class="campo-compra">
+
+                        <label for="proveedorBusqueda">
+                            Proveedor
+                        </label>
+
+                        <input type="text" id="proveedorBusqueda" placeholder="Escriba para buscar..."
+                            autocomplete="off">
+
+                        <input type="hidden" id="proveedorId">
+
+                        <div id="listaProveedores" class="autocomplete-list hidden">
+                        </div>
+
+                    </div>
+
+                    <div class="campo-compra">
+
+                        <label for="fechaCompra">
+                            Fecha Compra
+                        </label>
+
+                        <input type="date" id="fechaCompra">
+
+                    </div>
+
                 </div>
 
-                <div class="compra-grid header-grid">
-                    <div class="text-center">Producto</div>
-                    <div class="text-center">Cantidad</div>
-                    <div class="text-center">Precio Compra</div>
-                    <div class="text-right">Subtotal</div>
-                    <div></div>
+                <div class="productos-container">
+
+                    <div class="productos-header">
+
+                        <h4>Productos de la compra</h4>
+
+                        <button type="button" class="btn-primary" onclick="agregarProducto()">
+
+                            + Agregar producto
+
+                        </button>
+
+                    </div>
+
+                    <div id="productosCompra">
+
+                    </div>
+
                 </div>
-
-                <div id="productosCompra"></div>
-
-                <p id="mensajeVacio">
-                    No hay productos agregados
-                </p>
-
-                <button class="btn-primary" onclick="agregarProducto()">
-                    + Agregar producto
-                </button>
 
                 <div class="resumen-compra">
-                    Total:
-                    <span id="totalCompra">$0</span>
+
+                    <div class="resumen-linea">
+                        <span>Subtotal</span>
+                        <span id="subtotalCompra">$0</span>
+                    </div>
+
+                    <div class="resumen-linea">
+                        <span>IVA</span>
+                        <span id="ivaCompra">$0</span>
+                    </div>
+
+                    <div class="resumen-linea total">
+                        <span>TOTAL</span>
+                        <span id="totalCompra">$0</span>
+                    </div>
+
                 </div>
 
                 <div class="modal-footer">
@@ -254,6 +731,7 @@
         </div>
 
     </div>
+-->
 
     <script type="module" src="../js/auth.js"></script>
     <script type="module" src="../js/compras.js"></script>

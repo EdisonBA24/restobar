@@ -354,6 +354,8 @@ def create_proveedor(data):
 
             proveedor_id = cursor.fetchone()[0]
 
+            conn.commit()
+
         else:
 
             cursor.execute(f"""

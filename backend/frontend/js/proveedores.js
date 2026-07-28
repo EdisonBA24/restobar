@@ -50,7 +50,7 @@ function desbloquearBotonGuardar() {
 
 }
 
-function mostrarFormularioProveedor(esEdicion = false) {
+window.mostrarFormularioProveedor = async function(esEdicion = false) {
 
     if (!esEdicion) {
 
@@ -290,6 +290,8 @@ async function guardarProveedor(e) {
     bloquearBotonGuardar();
 
     const data = obtenerDatosFormulario();
+
+    console.log(data);
 
     if (!data.nombre) {
 

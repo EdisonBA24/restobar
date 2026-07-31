@@ -403,7 +403,7 @@ def get_productos_autocomplete(
 
         placeholder = _placeholder()
 
-        estado = 0 if activos else 1
+        estado = 1 if activos else 0
 
         query = f"""
             SELECT
@@ -429,9 +429,11 @@ def get_productos_autocomplete(
         # =====================================
         # FILTRO SEARCH
         # =====================================
-        if search and str(search).strip():
+        search = (search or "").strip().lower()
 
-            like = f"%{str(search).strip().lower()}%"
+        if search:
+
+            like = f"%{search}%"
 
             if DB_ENGINE == "postgres":
 
@@ -472,7 +474,7 @@ def get_productos_autocomplete(
                 if str(t).strip()
             ]
 
-            if len(tipos) > 0:
+            if tipos:
 
                 placeholders = ",".join(
                     [placeholder] * len(tipos)
@@ -492,7 +494,7 @@ def get_productos_autocomplete(
                 p.nombre
         """
 
-        cursor.execute(query, tuple(params))
+        cursor.execute(query, params)
 
         columns = [
             column[0]

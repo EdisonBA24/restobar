@@ -403,14 +403,7 @@ def get_productos_autocomplete(
 
         placeholder = _placeholder()
 
-        estado = True if (
-            DB_ENGINE == "postgres"
-        ) else 1
-
-        if not activos:
-            estado = False if (
-                DB_ENGINE == "postgres"
-            ) else 0
+        estado = 0 if activos else 1
 
         query = f"""
             SELECT

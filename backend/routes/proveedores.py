@@ -6,7 +6,8 @@ from services.proveedores_service import (
     create_proveedor,
     update_proveedor,
     delete_proveedor,
-    activar_proveedor
+    activar_proveedor,
+    get_proveedores_autocomplete
 )
 
 proveedores_bp = Blueprint("proveedores", __name__)
@@ -83,7 +84,45 @@ def listar_proveedores():
             "status": "error",
             "message": "Error obteniendo proveedores"
         }), 500
-    
+
+
+# =============================
+# AUTOCOMPLETE
+# =============================
+@proveedores_bp.route("/proveedores/autocomplete", methods=["GET"])
+def autocomplete_proveedores():
+
+    if not validar_sesion():
+        return jsonify({"status": "unauthorized"}), 401
+
+    try:
+
+        search = request.args.get("search")
+
+        activo = request.args.get(
+            "activo",
+            "true"
+        ).lower() in ["true", "1"]
+
+        data = get_proveedores_autocomplete(
+            search=search,
+            activos=activo
+        )
+
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR AUTOCOMPLETE PROVEEDORES:", e)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 
 # =============================
 # OBTENER PROVEEDOR

@@ -389,6 +389,160 @@ def get_all_productos(page=1, limit=10, solo_inactivos=False, search=None):
 
 
 # =============================
+# AUTOCOMPLETE PRODUCTOS
+# =============================
+def get_productos_autocomplete(
+    search=None,
+    tipos=None,
+    activos=True
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        placeholder = _placeholder()
+
+        estado = True if (
+            DB_ENGINE == "postgres"
+        ) else 1
+
+        if not activos:
+            estado = False if (
+                DB_ENGINE == "postgres"
+            ) else 0
+
+        query = f"""
+            SELECT
+                p.id,
+                p.nombre,
+                p.codigo,
+                p.tipo,
+                p.categoria,
+                p.unidad_id,
+                p.precio_venta,
+                p.stock,
+                u.nombre AS unidad_nombre,
+                u.abreviatura
+            FROM {PRODUCTOS} p
+            LEFT JOIN {UNIDADES_MEDIDA} u
+                ON p.unidad_id = u.id
+            WHERE
+                p.activo = {placeholder}
+        """
+
+        params = [estado]
+
+        # =====================================
+        # FILTRO SEARCH
+        # =====================================
+        if search and str(search).strip():
+
+            like = f"%{str(search).strip().lower()}%"
+
+            if DB_ENGINE == "postgres":
+
+                query += f"""
+                    AND (
+                        LOWER(COALESCE(p.nombre,'')) LIKE {placeholder}
+                        OR LOWER(COALESCE(p.codigo,'')) LIKE {placeholder}
+                    )
+                """
+
+            else:
+
+                query += f"""
+                    AND (
+                        LOWER(ISNULL(p.nombre,'')) LIKE {placeholder}
+                        OR LOWER(ISNULL(p.codigo,'')) LIKE {placeholder}
+                    )
+                """
+
+            params.extend([like, like])
+
+        # =====================================
+        # FILTRO TIPOS
+        # =====================================
+        if tipos:
+
+            if isinstance(tipos, str):
+
+                tipos = [
+                    t.strip().upper()
+                    for t in tipos.split(",")
+                    if t.strip()
+                ]
+
+            tipos = [
+                str(t).upper()
+                for t in tipos
+                if str(t).strip()
+            ]
+
+            if len(tipos) > 0:
+
+                placeholders = ",".join(
+                    [placeholder] * len(tipos)
+                )
+
+                query += f"""
+                    AND UPPER(p.tipo) IN ({placeholders})
+                """
+
+                params.extend(tipos)
+
+        # =====================================
+        # ORDEN
+        # =====================================
+        query += """
+            ORDER BY
+                p.nombre
+        """
+
+        cursor.execute(query, tuple(params))
+
+        columns = [
+            column[0]
+            for column in cursor.description
+        ]
+
+        data = []
+
+        for row in cursor.fetchall():
+
+            producto = dict(zip(columns, row))
+
+            # ==========================
+            # NORMALIZACIÓN
+            # ==========================
+            producto["precio_venta"] = float(
+                producto.get("precio_venta") or 0
+            )
+
+            producto["stock"] = float(
+                producto.get("stock") or 0
+            )
+
+            producto["id"] = int(
+                producto.get("id") or 0
+            )
+
+            data.append(producto)
+
+        return data
+
+    except Exception as e:
+
+        print("❌ ERROR AUTOCOMPLETE PRODUCTOS:", e)
+
+        return []
+
+    finally:
+
+        conn.close()
+
+
+# =============================
 # CREATE
 # =============================
 def create_producto(data):

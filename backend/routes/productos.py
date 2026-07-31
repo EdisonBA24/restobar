@@ -7,7 +7,8 @@ from services.productos_service import (
     activar_producto,
     get_producto_por_id,
     get_productos_por_categoria,
-    get_componentes_almuerzo
+    get_componentes_almuerzo,
+    get_productos_autocomplete
 )
 
 productos_bp = Blueprint("productos", __name__)
@@ -54,6 +55,61 @@ def listar_productos():
 
     except Exception as e:
         print("❌ ERROR LISTAR PRODUCTOS:", e)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+# =============================
+# AUTOCOMPLETE PRODUCTOS
+# =============================
+@productos_bp.route("/productos/autocomplete", methods=["GET"])
+def autocomplete_productos():
+
+    if not validar_sesion():
+        return jsonify({"status": "unauthorized"}), 401
+
+    try:
+
+        search = request.args.get("search")
+
+        # Puede venir como:
+        # ?tipo=INSUMO
+        # ?tipo=INSUMO,LICOR
+        # ?tipo=INSUMO&tipo=LICOR
+        tipos = request.args.getlist("tipo")
+
+        if len(tipos) == 1 and "," in tipos[0]:
+            tipos = [
+                t.strip()
+                for t in tipos[0].split(",")
+                if t.strip()
+            ]
+
+        if not tipos:
+            tipos = None
+
+        activo = request.args.get(
+            "activo",
+            "true"
+        ).lower() in ["true", "1"]
+
+        data = get_productos_autocomplete(
+            search=search,
+            tipos=tipos,
+            activos=activo
+        )
+
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR AUTOCOMPLETE PRODUCTOS:", e)
+
         return jsonify({
             "status": "error",
             "message": str(e)

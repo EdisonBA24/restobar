@@ -44,23 +44,6 @@ export class TablaUI {
 
         };
 
-        // this.selectores = {
-
-        //    tabla: config.tabla ?? null,
-
-        //    pageSize: config.pageSize ?? null,
-
-        //    btnAnterior: config.btnAnterior ?? null,
-
-        //    btnSiguiente: config.btnSiguiente ?? null,
-
-        //    numeros: config.numeros ?? null,
-
-        //    resumen: config.resumen ?? null,
-
-        //    info: config.info ?? null
-
-        //};
 
         this.elementos = {};
 
@@ -98,24 +81,6 @@ export class TablaUI {
         return { ...this.estado };
 
     }
-
-    /**
-    * ==========================================
-    * Actualiza una o varias propiedades
-    * del estado.
-    * ==========================================
-    */
-    //setEstado(nuevoEstado = {}) {
-
-    //    this.estado = {
-
-    //        ...this.estado,
-
-    //        ...nuevoEstado
-
-    //    };
-
-    //}
 
 
     /**
@@ -247,8 +212,7 @@ export class TablaUI {
             `Mostrando ${inicio} - ${fin} de ${this.total} registros`;
 
     }
-
-
+    
     /**
      * ==========================================
      * Renderiza los números de la paginación
@@ -332,7 +296,7 @@ export class TablaUI {
     }
 
 
-    /**
+/**
  * ==========================================
  * Obtiene las páginas visibles
  * ==========================================
@@ -470,68 +434,6 @@ export class TablaUI {
 
     /**
      * ==========================================
-     * Cambia la página actual
-     * ==========================================
-     */
-    // ELIMINAR LUEGO DE LOS AJUSTES DE ACTUALIZAR ESTADO
-    // setPage(page) {
-
-    //    this.estado.page = Number(page);
-
-    //}
-
-    /**
-     * ==========================================
-     * Cambia el tamaño de página
-     * ==========================================
-     */
-    // ELIMINAR LUEGO DE LOS AJUSTES DE ACTUALIZAR ESTADO
-    //  setPageSize(pageSize) {
-
-    //    this.estado.page_size = Number(pageSize);
-
-    //}
-
-    /**
-     * ==========================================
-     * Actualiza el total de registros
-     * ==========================================
-     */
-    // ELIMINAR LUEGO DE LOS AJUSTES DE ACTUALIZAR ESTADO
-    //  setTotal(total) {
-
-    //    this.estado.total = Number(total);
-
-    //}
-
-    /**
-     * ==========================================
-     * Actualiza el total de páginas
-     * ==========================================
-     */
-    // ELIMINAR LUEGO DE LOS AJUSTES DE ACTUALIZAR ESTADO
-    //  setTotalPages(totalPages) {
-
-    //    this.estado.total_pages = Number(totalPages);
-
-    //}
-
-    /**
-     * ==========================================
-     * Configura el ordenamiento
-     * ==========================================
-     */
-    // setOrden(sortBy, sortOrder) {
-
-    //    this.estado.sort_by = sortBy;
-
-    //    this.estado.sort_order = sortOrder;
-
-    //}
-
-
-    /**
-     * ==========================================
      * Alterna el orden de una columna
      * ==========================================
      */
@@ -579,11 +481,7 @@ export class TablaUI {
 
     }
 
-    /**
- * ==========================================
- * Ejecuta el callback configurado
- * ==========================================
- */
+
     /**
      * ==========================================
      * Notifica cambios al consumidor
@@ -747,24 +645,6 @@ export class TablaUI {
      * ==========================================
      */
     init() {
-
-        //if (!this.validarConfiguracion()) {
-
-        //    console.error(
-        //        `[TablaUI] No fue posible inicializar "${this.nombre}".`
-        //    );
-
-        //    return this;
-
-        //}
-
-        //this.inicializarPageSize();
-
-        //this.inicializarOrdenamiento();
-
-        //this.inicializarPaginacion();
-
-        //return this;
 
         this.cachearElementos();
 

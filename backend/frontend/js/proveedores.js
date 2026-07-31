@@ -476,7 +476,7 @@ window.filtrarProveedores = async function () {
 
     try {
         const res = await apiFetch(`/proveedores?page=1&limit=100&search=${texto}`);
-        pintarTabla(res.data || []);
+        pintarTabla(res.data.items || []);
     } catch (error) {
         console.error(error);
         mostrarMensaje("Error filtrando ❌", "error");

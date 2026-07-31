@@ -146,6 +146,54 @@ def _validar_proveedor_unico(
 
     return None
 
+# =============================
+# HELPERS BÚSQUEDA
+# =============================
+def _agregar_filtro_busqueda(
+    query,
+    params,
+    search,
+    placeholder,
+    is_postgres
+):
+    """
+    Agrega el filtro de búsqueda por nombre, NIT, contacto,
+    teléfono o ciudad.
+
+    Retorna:
+        query, params
+    """
+
+    if not search or not str(search).strip():
+        return query, params
+
+    null_fn = "COALESCE" if is_postgres else "ISNULL"
+
+    search = str(search).strip().lower()
+
+    like = f"%{search}%"
+
+    query += f"""
+        AND (
+            LOWER({null_fn}(nombre,'')) LIKE {placeholder}
+            OR LOWER({null_fn}(nit,'')) LIKE {placeholder}
+            OR LOWER({null_fn}(contacto,'')) LIKE {placeholder}
+            OR LOWER({null_fn}(telefono,'')) LIKE {placeholder}
+            OR LOWER({null_fn}(ciudad,'')) LIKE {placeholder}
+        )
+    """
+
+    params.extend([
+        like,
+        like,
+        like,
+        like,
+        like
+    ])
+
+    return query, params
+
+
 def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
 
     offset = (page - 1) * limit
@@ -158,8 +206,6 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
         estado = 0 if solo_inactivos else 1
 
         is_postgres, placeholder = _get_db_settings()
-
-        null_fn = "COALESCE" if is_postgres else "ISNULL"
 
         query = f"""
             SELECT
@@ -187,45 +233,21 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
 
         count_params = [estado]
 
-        if search and str(search).strip():
+        query, params = _agregar_filtro_busqueda(
+            query=query,
+            params=params,
+            search=search,
+            placeholder=placeholder,
+            is_postgres=is_postgres
+        )
 
-            like = f"%{search.lower()}%"
-
-            query += f"""
-                AND (
-                    LOWER({null_fn}(nombre,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(nit,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(contacto,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(telefono,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(ciudad,'')) LIKE {placeholder}
-                )
-            """
-
-            params.extend([
-                like,
-                like,
-                like,
-                like,
-                like
-            ])
-
-            count_query += f"""
-                AND (
-                    LOWER({null_fn}(nombre,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(nit,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(contacto,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(telefono,'')) LIKE {placeholder}
-                    OR LOWER({null_fn}(ciudad,'')) LIKE {placeholder}
-                )
-            """
-
-            count_params.extend([
-                like,
-                like,
-                like,
-                like,
-                like
-            ])
+        count_query, count_params = _agregar_filtro_busqueda(
+            query=count_query,
+            params=count_params,
+            search=search,
+            placeholder=placeholder,
+            is_postgres=is_postgres
+        )
 
         if is_postgres:
 
@@ -296,6 +318,80 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
     finally:
 
         conn.close()
+
+
+# =============================
+# AUTOCOMPLETE PROVEEDORES
+# =============================
+def get_proveedores_autocomplete(
+    search=None,
+    activos=True
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        is_postgres, placeholder = _get_db_settings()
+
+        estado = 1 if activos else 0
+
+        query = f"""
+            SELECT
+                id,
+                nombre,
+                nit,
+                contacto,
+                telefono,
+                email,
+                ciudad
+            FROM {PROVEEDORES}
+            WHERE activo = {placeholder}
+        """
+
+        params = [estado]
+
+        query, params = _agregar_filtro_busqueda(
+            query=query,
+            params=params,
+            search=search,
+            placeholder=placeholder,
+            is_postgres=is_postgres
+        )
+
+        query += """
+            ORDER BY nombre
+        """
+
+        cursor.execute(query, params)
+
+        columnas = [
+            c[0]
+            for c in cursor.description
+        ]
+
+        data = []
+
+        for fila in cursor.fetchall():
+
+            proveedor = dict(zip(columnas, fila))
+
+            proveedor["id"] = int(proveedor["id"])
+
+            data.append(proveedor)
+
+        return data
+
+    except Exception as e:
+
+        print("❌ ERROR AUTOCOMPLETE PROVEEDORES:", e)
+
+        return []
+
+    finally:
+
+        conn.close()
+
 
 def get_proveedor_por_id(id):
 

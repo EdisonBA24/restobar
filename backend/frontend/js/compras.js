@@ -31,20 +31,6 @@ const STORAGE_PAGE_SIZE = "compras_page_size";
 //SE AGREGAR AL IMPORTA TABLAS.JS
 let tablaCompras = null;
 
-// ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-// const estadoPaginacion = {
-//    page: 1,
-//    page_size: 10,
-//    total: 0,
-//    total_pages: 1
-//};
-
-// ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-// const estadoOrden = {
-//    sort_by: "id",
-//    sort_order: "desc"
-//};
-
 let timeoutBusqueda = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -78,52 +64,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     }).init(); //SE AGREGA .INIT() POR AJUSTE EL TABLAS.JS
 
-    //tablaCompras.setEstado({
-
-    //    page: estadoPaginacion.page,
-
-    //    page_size: estadoPaginacion.page_size,
-
-    //    total: estadoPaginacion.total,
-
-    //    total_pages: estadoPaginacion.total_pages,
-
-    //    sort_by: estadoOrden.sort_by,
-
-    //    sort_order: estadoOrden.sort_order
-
-    //});
-
     const pageSizeGuardado = Number(
         localStorage.getItem(STORAGE_PAGE_SIZE)
     ) || 10;
-
-    //tablaCompras.setEstado({
-
-    //    page: 1,
-
-    //    page_size: pageSizeGuardado,
-
-    //    total: 0,
-
-    //    total_pages: 1,
-
-    //    sort_by: "id",
-
-    //    sort_order: "desc"
-
-    //});
-    // ACA FINALIZA
 
     inicializarFechaCompra();
 
     inicializarFiltrosCompras();
 
     inicializarBuscadorProveedor();
-
-    inicializarPaginacion();
-
-    inicializarPageSize();
 
     inicializarOrdenamiento();
 
@@ -175,32 +124,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ======================================================
 function ordenarPor(columna) {
 
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    // if (estadoOrden.sort_by === columna) {
-
-    //    estadoOrden.sort_order =
-    //        estadoOrden.sort_order === "asc"
-    //            ? "desc"
-    //            : "asc";
-
-    //} else {
-
-    //    estadoOrden.sort_by = columna;
-    //    estadoOrden.sort_order = "asc";
-
-    //}
-
-    //estadoPaginacion.page = 1;
-
-    //actualizarIndicadoresOrden();
-
-    //cargarCompras();
-
     tablaCompras.toggleOrden(columna);
-
-    //actualizarIndicadoresOrden();
-
-    //cargarCompras();
 
 }
 
@@ -214,8 +138,6 @@ function actualizarIndicadoresOrden() {
 
             if (!icono) return;
 
-            // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-            /*if (th.dataset.sort !== estadoOrden.sort_by)*/
             if (th.dataset.sort !== tablaCompras.sortBy) {
 
                 icono.textContent = "⇅";
@@ -223,9 +145,6 @@ function actualizarIndicadoresOrden() {
 
             }
 
-            // ELIMINAR DESPUES DE IMPLEMENTAR TABLAS.JS
-            // icono.textContent =
-            //    estadoOrden.sort_order === "asc"
             icono.textContent =
                 tablaCompras.sortOrder === "asc"
                     ? "▲"
@@ -287,7 +206,7 @@ function generarSelectIVA(selectedId = "") {
 // =============================
 async function cargarProductos() {
     try {
-        const res = await apiFetch("/productos?page=1&limit=100&inactivos=false");
+        const res = await apiFetch("/productos/autocomplete");
 
         // 🔥 PROTECCIÓN
         if (!res || res.status === "error") {
@@ -323,7 +242,7 @@ async function cargarProveedores() {
     try {
 
         const res = await apiFetch(
-            "/proveedores?page=1&limit=1000&inactivos=false"
+            "/proveedores/autocomplete"
         );
 
         if (!res || res.status === "error") {
@@ -334,7 +253,12 @@ async function cargarProveedores() {
 
         }
 
-        proveedores = res.data || [];
+        //proveedores = res.data || [];
+        proveedores = Array.isArray(res.data)
+            ? res.data
+            : Array.isArray(res.data?.items)
+                ? res.data.items
+                : [];
 
     } catch (error) {
 
@@ -1109,9 +1033,6 @@ function actualizarConsulta() {
 
     console.log("Filtros activos:", filtros);
 
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    // estadoPaginacion.page = 1;
-
     tablaCompras.reiniciarPaginacion();
 
     cargarCompras(filtros);
@@ -1425,339 +1346,19 @@ async function cargarCompras(filtros = null) {
     }
 }
 
+
 function actualizarEstadoPaginacion(resultado = {}) {
-
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    // tablaCompras.setEstado({
-
-    //    page: resultado.page ?? 1,
-
-    //    page_size: resultado.page_size ?? 10,
-
-    //    total: resultado.total ?? 0,
-
-    //    total_pages: resultado.total_pages ?? 1
-
-    //});
 
     tablaCompras.actualizarDesdeBackend(resultado);
 
 }
 
+
 function renderizarPaginacion() {
 
-    const info =
-        tablaCompras.getElemento("info");
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    // document.getElementById("infoPaginacionCompras");
-
-    const resumen =
-        tablaCompras.getElemento("resumen");
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    //  document.getElementById("resumenPaginacionCompras");
-
-    const btnAnterior =
-        tablaCompras.getElemento("btnAnterior");
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    // document.getElementById("btnPaginaAnterior");
-
-    const btnSiguiente =
-        tablaCompras.getElemento("btnSiguiente");
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    //  document.getElementById("btnPaginaSiguiente");
-
-    if (!info || !btnAnterior || !btnSiguiente) {
-        return;
-    }
-
-    // ELIMINAR DESPUES DE LA IMPORTACION DE TABLAS.JS
-    //info.textContent =
-    //    `Página ${estadoPaginacion.page} de ${estadoPaginacion.total_pages}`;
-
-    info.textContent =
-        `Página ${tablaCompras.page} de ${tablaCompras.totalPages}`;
-
-    if (resumen) {
-
-        // ELIMINAR DESPUES DE LA IMPORTACION DE TABLAS.JS
-        //const inicio = estadoPaginacion.total === 0
-        //    ? 0
-        //    : ((estadoPaginacion.page - 1) * estadoPaginacion.page_size) + 1;
-
-        //const fin = Math.min(
-        //    estadoPaginacion.page * estadoPaginacion.page_size,
-        //    estadoPaginacion.total
-        //);
-
-        //resumen.textContent =
-        //    `Mostrando ${inicio}-${fin} de ${estadoPaginacion.total} compras`;
-        const inicio = tablaCompras.total === 0
-            ? 0
-            : ((tablaCompras.page - 1) * tablaCompras.pageSize) + 1;
-
-        const fin = Math.min(
-            tablaCompras.page * tablaCompras.pageSize,
-            tablaCompras.total
-        );
-
-        resumen.textContent =
-            `Mostrando ${inicio}-${fin} de ${tablaCompras.total} compras`;
-
-    }
-
-    // ELIMINAR DESPUES DE LA IMPORTACION DE TABLA.JS
-    //btnAnterior.disabled =
-    //    estadoPaginacion.page <= 1;
-
-    //btnSiguiente.disabled =
-    //    estadoPaginacion.page >= estadoPaginacion.total_pages;
-
-    btnAnterior.disabled =
-        tablaCompras.page <= 1;
-
-    btnSiguiente.disabled =
-        tablaCompras.page >= tablaCompras.totalPages;
-
-    renderizarNumerosPaginacion();
+    tablaCompras.renderizar();
 
     actualizarIndicadoresOrden();
-
-}
-
-function inicializarPaginacion() {
-
-    const btnAnterior =
-        document.getElementById("btnPaginaAnterior");
-
-    const btnSiguiente =
-        document.getElementById("btnPaginaSiguiente");
-
-    if (btnAnterior) {
-
-        btnAnterior.addEventListener(
-            "click",
-            () => {
-
-                //if (/*estadoPaginacion.page*/tablaCompras.page <= 1) {
-                //    return;
-                //}
-
-                // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-                // estadoPaginacion.page--;
-                tablaCompras.paginaAnterior();
-
-                //cargarCompras();
-
-            }
-        );
-
-    }
-
-    if (btnSiguiente) {
-
-        btnSiguiente.addEventListener(
-            "click",
-            () => {
-
-                //if (
-                //    /*estadoPaginacion.page*/tablaCompras.page >=
-                //    /*estadoPaginacion.total_pages*/tablaCompras.totalPages
-                //) {
-                //    return;
-                //}
-
-                // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-                // estadoPaginacion.page++;
-                tablaCompras.paginaSiguiente();
-
-                //cargarCompras();
-
-            }
-        );
-
-    }
-
-}
-
-function inicializarPageSize() {
-
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    // const select =
-    //    document.getElementById("pageSizeCompras");
-
-    //if (!select) return;
-
-    //select.value = estadoPaginacion.page_size;
-
-    //select.addEventListener("change", () => {
-
-    //    estadoPaginacion.page_size = Number(select.value);
-
-    //    localStorage.setItem(
-    //        STORAGE_PAGE_SIZE,
-    //        estadoPaginacion.page_size
-    //    );
-
-    //    estadoPaginacion.page = 1;
-
-    //    cargarCompras();
-
-    //});
-
-    const select = document.getElementById("pageSizeCompras");
-
-    if (!select) return;
-
-    select.value = tablaCompras.pageSize;
-
-    select.addEventListener("change", () => {
-
-        tablaCompras.cambiarPageSize(
-            Number(select.value)
-        );
-
-        localStorage.setItem(
-            STORAGE_PAGE_SIZE,
-            tablaCompras.pageSize
-        );
-
-    });
-
-}
-
-function renderizarNumerosPaginacion() {
-
-    // ELIMINAR DESPUES DE LA IMPORTACION DE TABLA.JS
-    //console.log("Estado paginación:", estadoPaginacion);
-
-    console.log(
-        "Estado TablaUI:",
-        tablaCompras.getEstado()
-    );
-
-    const contenedor = document.getElementById("numerosPaginacion");
-
-    if (!contenedor) return;
-
-    contenedor.innerHTML = "";
-
-    // ELIMINAR DESPUES DE LA IMPORTACION DE TABLAS.JS
-    //const total = estadoPaginacion.total_pages;
-    //const actual = estadoPaginacion.page;
-
-    const total = tablaCompras.totalPages;
-
-    const actual = tablaCompras.page;
-
-    console.log("Total páginas:", total);
-    console.log("Página actual:", actual);
-
-    if (total <= 1) return;
-
-    function crearBoton(pagina) {
-
-        console.log("Creando botón:", pagina);
-
-        const boton = document.createElement("button");
-
-        boton.type = "button";
-
-        boton.className = "pg-btn";
-
-        boton.textContent = pagina;
-
-        if (pagina === actual) {
-            boton.classList.add("pg-btn-active");
-        }
-
-        boton.addEventListener("click", () => {
-
-            if (pagina === actual) return;
-
-            // ELIMINAR DESPUES DE LA IMPORTACION DE TABLAS.JS
-            // estadoPaginacion.page = pagina;
-
-            //tablaCompras.setPage(pagina);
-
-            //cargarCompras();
-
-            tablaCompras.irAPagina(pagina);
-
-        });
-
-        contenedor.appendChild(boton);
-
-    }
-
-    function crearPuntos() {
-
-        const span = document.createElement("span");
-
-        span.className = "pg-dots";
-
-        span.textContent = "...";
-
-        contenedor.appendChild(span);
-
-    }
-
-    // ===== Hasta 7 páginas =====
-
-    if (total <= 7) {
-
-        for (let i = 1; i <= total; i++) {
-            crearBoton(i);
-        }
-
-        return;
-
-    }
-
-    // ===== Inicio =====
-
-    if (actual <= 4) {
-
-        for (let i = 1; i <= 5; i++) {
-            crearBoton(i);
-        }
-
-        crearPuntos();
-
-        crearBoton(total);
-
-        return;
-
-    }
-
-    // ===== Final =====
-
-    if (actual >= total - 3) {
-
-        crearBoton(1);
-
-        crearPuntos();
-
-        for (let i = total - 4; i <= total; i++) {
-            crearBoton(i);
-        }
-
-        return;
-
-    }
-
-    // ===== Centro =====
-
-    crearBoton(1);
-
-    crearPuntos();
-
-    for (let i = actual - 1; i <= actual + 1; i++) {
-        crearBoton(i);
-    }
-
-    crearPuntos();
-
-    crearBoton(total);
 
 }
 
@@ -1855,19 +1456,6 @@ function formatearFecha(fecha) {
     }
 }
 
-/*
-window.abrirModalCompra = function () {
-    document
-        .getElementById("modalNuevaCompra")
-        .classList.remove("hidden");
-};
-
-window.cerrarModalCompra = function () {
-    document
-        .getElementById("modalNuevaCompra")
-        .classList.add("hidden");
-};
-*/
 window.mostrarFormularioCompra = function () {
 
     document.getElementById("compraFormContainer")

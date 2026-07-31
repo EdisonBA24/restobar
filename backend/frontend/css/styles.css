@@ -1696,16 +1696,12 @@ img {
 
 }
 
-/*.card {
+.card {
 
     width: 100%;
 
     overflow: hidden;
 
-}*/
-.card{
-    width:100%;
-    overflow:visible;
 }
 
 /*=========================
@@ -6297,7 +6293,7 @@ CARD PRODUCTO COMPRA
 
     border-radius:12px;
 
-    overflow:hidden;
+    /*overflow:visible;*/
 
 }
 

@@ -295,13 +295,19 @@ async function cargarProductos() {
             return;
         }
 
-        //productos = (res.data || []).filter(p =>
-        //    p.tipo === "INSUMO" ||
-        //    p.tipo === "LICORES" ||
-        //    p.tipo === "BEBIDAS"
-        //);
+        const TIPOS_COMPRABLES = [
+            "INSUMO",
+            "LICOR",
+            "LICORES",
+            "BEBIDA",
+            "BEBIDAS",
+            "INGREDIENTE",
+            "INGREDIENTES"
+        ];
 
-        productos = res.data || [];
+        productos = (res.data || []).filter(p =>
+            TIPOS_COMPRABLES.includes((p.tipo || "").toUpperCase())
+        );
 
     } catch (error) {
         console.error("Error productos:", error);

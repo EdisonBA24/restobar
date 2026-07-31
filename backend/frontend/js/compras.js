@@ -98,21 +98,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.getItem(STORAGE_PAGE_SIZE)
     ) || 10;
 
-    tablaCompras.setEstado({
+    //tablaCompras.setEstado({
 
-        page: 1,
+    //    page: 1,
 
-        page_size: pageSizeGuardado,
+    //    page_size: pageSizeGuardado,
 
-        total: 0,
+    //    total: 0,
 
-        total_pages: 1,
+    //    total_pages: 1,
 
-        sort_by: "id",
+    //    sort_by: "id",
 
-        sort_order: "desc"
+    //    sort_order: "desc"
 
-    });
+    //});
     // ACA FINALIZA
 
     inicializarFechaCompra();

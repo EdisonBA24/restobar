@@ -138,21 +138,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }).init();
 
-    tablaProveedores.setEstado({
+    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
+    // tablaProveedores.setEstado({
 
-        page: 1,
+    //    page: 1,
 
-        page_size: pageSizeGuardado,
+    //    page_size: pageSizeGuardado,
 
-        total: 0,
+    //    total: 0,
 
-        total_pages: 1,
+    //    total_pages: 1,
 
-        sort_by: "nombre",
+    //    sort_by: "nombre",
 
-        sort_order: "asc"
+    //    sort_order: "asc"
 
-    });
+    //});
 
     if (getEl("tablaProveedores")) {
         cargarProveedores();

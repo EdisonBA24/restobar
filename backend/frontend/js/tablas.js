@@ -105,17 +105,17 @@ export class TablaUI {
     * del estado.
     * ==========================================
     */
-    setEstado(nuevoEstado = {}) {
+    //setEstado(nuevoEstado = {}) {
 
-        this.estado = {
+    //    this.estado = {
 
-            ...this.estado,
+    //        ...this.estado,
 
-            ...nuevoEstado
+    //        ...nuevoEstado
 
-        };
+    //    };
 
-    }
+    //}
 
 
     /**
@@ -573,7 +573,9 @@ export class TablaUI {
 
             ...nuevoEstado
 
-        }
+        };
+
+        this._notificarCambio();
 
     }
 

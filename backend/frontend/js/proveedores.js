@@ -1,10 +1,18 @@
 import { apiFetch } from "./api.js";
+// IMPORTACION TABLAS.JS
+import { TablaUI } from "./tablas.js";
 
-let currentPage = 1;
-const limit = 5;
+// ELIMINAR DESPUES DE MIGRAR TABLAS.JS
+// let currentPage = 1;
+// const limit = 5;
 
 let editandoId = null;
 let proveedoresGlobal = [];
+
+//SE AGREGAR AL IMPORTA TABLAS.JS
+const STORAGE_PAGE_SIZE = "proveedores_page_size";
+
+let tablaProveedores = null;
 
 function getEl(id) {
     return document.getElementById(id);
@@ -50,7 +58,7 @@ function desbloquearBotonGuardar() {
 
 }
 
-window.mostrarFormularioProveedor = async function(esEdicion = false) {
+window.mostrarFormularioProveedor = async function (esEdicion = false) {
 
     if (!esEdicion) {
 
@@ -104,6 +112,48 @@ function obtenerDatosFormulario() {
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    //SE AGREGA AL IMPORTA TABLAS.JS
+    const pageSizeGuardado =
+        Number(localStorage.getItem(STORAGE_PAGE_SIZE)) || 10;
+
+    tablaProveedores = new TablaUI({
+
+        nombre: "proveedores",
+
+        callback: () => cargarProveedores(),
+
+        tabla: "#tablaProveedores",
+
+        pageSize: "#pageSizeProveedores",
+
+        btnAnterior: "#btnPaginaAnterior",
+
+        btnSiguiente: "#btnPaginaSiguiente",
+
+        numeros: "#numerosPaginacion",
+
+        resumen: "#resumenPaginacion",
+
+        info: "#infoPaginacion"
+
+    }).init();
+
+    tablaProveedores.setEstado({
+
+        page: 1,
+
+        page_size: pageSizeGuardado,
+
+        total: 0,
+
+        total_pages: 1,
+
+        sort_by: "nombre",
+
+        sort_order: "asc"
+
+    });
+
     if (getEl("tablaProveedores")) {
         cargarProveedores();
     }
@@ -128,7 +178,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const chk = getEl("verInactivos");
     if (chk) {
         chk.addEventListener("change", () => {
-            currentPage = 1;
+            // ELIMINAR DESPUES DE MIGRAR TABLAS.JS
+            // currentPage = 1;
+            // cargarProveedores();
+            tablaProveedores.reiniciarPaginacion();
+
             cargarProveedores();
         });
     }
@@ -143,10 +197,26 @@ async function cargarProveedores() {
 
     try {
         const res = await apiFetch(
-            `/proveedores?page=${currentPage}&limit=${limit}&inactivos=${verInactivos ? "true" : "false"}`
+            `/proveedores?page=${/*currentPage*/tablaProveedores.page}&limit=${/*limit*/tablaProveedores.pageSize}&inactivos=${verInactivos ? "true" : "false"}`
         );
 
-        proveedoresGlobal = res?.data || [];
+        // Próxima fase:
+        // TablaUI actualizará aquí page, total y total_pages
+        // desde la respuesta del backend.
+
+        // proveedoresGlobal = res?.data || [];
+        // pintarTabla(proveedoresGlobal);
+
+        const resultado = res?.data || {};
+
+        // TEMPORAL
+        // Cuando el backend entregue la misma estructura que Compras,
+        // solo habrá que descomentar estas líneas.
+
+        tablaProveedores.actualizarDesdeBackend(resultado);
+
+        proveedoresGlobal = resultado.items || [];
+
         pintarTabla(proveedoresGlobal);
 
     } catch (error) {
@@ -194,11 +264,10 @@ function pintarTabla(proveedores) {
                 <td>${p.ciudad || ""}</td>
 
                 <td>
-                    ${
-                        p.activo
-                            ? '<span class="badge active">Activo</span>'
-                            : '<span class="badge inactive">Inactivo</span>'
-                    }
+                    ${p.activo
+                ? '<span class="badge active">Activo</span>'
+                : '<span class="badge inactive">Inactivo</span>'
+            }
                 </td>
 
                 <td class="acciones">
@@ -209,11 +278,10 @@ function pintarTabla(proveedores) {
                         ✏️
                     </button>
 
-                    ${
-                        p.activo
-                            ? `<button class="btn-action btn-deactivate" onclick="eliminar(${p.id})">Desactivar</button>`
-                            : `<button class="btn-action btn-activate" onclick="activar(${p.id})">Activar</button>`
-                    }
+                    ${p.activo
+                ? `<button class="btn-action btn-deactivate" onclick="eliminar(${p.id})">Desactivar</button>`
+                : `<button class="btn-action btn-activate" onclick="activar(${p.id})">Activar</button>`
+            }
 
                 </td>
 
@@ -381,15 +449,19 @@ function mostrarMensaje(msg, tipo = "success") {
 }
 
 window.nextPage = function () {
-    currentPage++;
-    cargarProveedores();
+    // ELIMINAR DESPUES DE MIGRAR TABLAS.JS
+    // currentPage++;
+    // cargarProveedores();
+    tablaProveedores.paginaSiguiente();
 };
 
 window.prevPage = function () {
-    if (currentPage > 1) {
-        currentPage--;
-        cargarProveedores();
-    }
+    // ELIMINAR DESPUES DE MIGRAR TABLAS.JS
+    // if (currentPage > 1) {
+    //    currentPage--;
+    //    cargarProveedores();
+    // }
+    tablaProveedores.paginaAnterior();
 };
 
 window.filtrarProveedores = async function () {

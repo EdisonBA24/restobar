@@ -179,6 +179,14 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
 
         params = [estado]
 
+        count_query = f"""
+            SELECT COUNT(*)
+            FROM {PROVEEDORES}
+            WHERE activo = {placeholder}
+        """
+
+        count_params = [estado]
+
         if search and str(search).strip():
 
             like = f"%{search.lower()}%"
@@ -194,6 +202,24 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
             """
 
             params.extend([
+                like,
+                like,
+                like,
+                like,
+                like
+            ])
+
+            count_query += f"""
+                AND (
+                    LOWER({null_fn}(nombre,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(nit,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(contacto,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(telefono,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(ciudad,'')) LIKE {placeholder}
+                )
+            """
+
+            count_params.extend([
                 like,
                 like,
                 like,
@@ -221,6 +247,18 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
 
             params.extend([offset, limit])
 
+        cursor.execute(count_query, count_params)
+
+        #total = cursor.fetchone()[0]
+
+        fila_total = cursor.fetchone()
+
+        total = int(fila_total[0]) if fila_total else 0
+
+        #total_pages = max((total + limit - 1) // limit, 1)
+
+        total_pages = max((total + limit - 1) // limit, 1) if limit > 0 else 1
+
         cursor.execute(query, params)
 
         columnas = [c[0] for c in cursor.description]
@@ -235,13 +273,25 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
 
             data.append(proveedor)
 
-        return data
+        return {
+            "items": data,
+            "page": page,
+            "page_size": limit,
+            "total": total,
+            "total_pages": total_pages
+        }
 
     except Exception as e:
 
         print("❌ ERROR GET PROVEEDORES:", e)
 
-        return []
+        return {
+            "items": [],
+            "page": page,
+            "page_size": limit,
+            "total": 0,
+            "total_pages": 1
+        }
 
     finally:
 

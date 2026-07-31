@@ -289,9 +289,51 @@
 
                 </div>
 
-                <div class="pagination">
-                    <button onclick="prevPage()">⬅</button>
-                    <button onclick="nextPage()">➡</button>
+                <div id="paginacionProveedores" class="pg-container">
+
+                    <div class="pg-page-size">
+
+                        <label for="pageSizeProveedores">
+                            Mostrar
+                        </label>
+
+                        <select id="pageSizeProveedores" class="form-select">
+
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+
+                        </select>
+
+                        <span>registros</span>
+
+                    </div>
+
+                    <button id="btnPaginaAnterior" class="btn-secondary" type="button">
+
+                        ← Anterior
+
+                    </button>
+
+                    <div class="pg-center">
+
+                        <div id="infoPaginacion" class="pg-info">
+                        </div>
+
+                        <div id="resumenPaginacion" class="pg-summary">
+                        </div>
+
+                        <div id="numerosPaginacion" class="pg-numbers">
+                        </div>
+
+                    </div>
+
+                    <button id="btnPaginaSiguiente" class="btn-secondary" type="button">
+
+                        Siguiente →
+
+                    </button>
+
                 </div>
 
             </div>

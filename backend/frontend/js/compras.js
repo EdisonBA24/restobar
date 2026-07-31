@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         callback: () => cargarCompras(),
 
-        tabla: "#tablaCompras",
+        tabla: "#tablaComprasTabla",
 
         pageSize: "#pageSizeCompras",
 
@@ -122,11 +122,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 // Este frontend continuará enviando únicamente los datos
 // de la compra.
 // ======================================================
-function ordenarPor(columna) {
+//function ordenarPor(columna) {
 
-    tablaCompras.toggleOrden(columna);
+//    tablaCompras.toggleOrden(columna);
 
-}
+//}
 
 function actualizarIndicadoresOrden() {
 

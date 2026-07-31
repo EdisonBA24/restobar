@@ -40,7 +40,9 @@ export class TablaUI {
 
             resumen: config.resumen,
 
-            info: config.info
+            info: config.info,
+
+            encabezados: config.encabezados
 
         };
 
@@ -101,7 +103,11 @@ export class TablaUI {
 
             total: resultado.total ?? 0,
 
-            total_pages: resultado.total_pages ?? 1
+            total_pages: resultado.total_pages ?? 1,
+
+            sort_by: resultado.sort_by ?? this.sortBy,
+
+            sort_order: resultado.sort_order ?? this.sortOrder
 
         };
 
@@ -125,6 +131,8 @@ export class TablaUI {
         this.actualizarInfo();
 
         this.actualizarNumeros();
+
+        this.actualizarIndicadoresOrden();
 
     }
 
@@ -212,7 +220,7 @@ export class TablaUI {
             `Mostrando ${inicio} - ${fin} de ${this.total} registros`;
 
     }
-    
+
     /**
      * ==========================================
      * Renderiza los números de la paginación
@@ -296,11 +304,11 @@ export class TablaUI {
     }
 
 
-/**
- * ==========================================
- * Obtiene las páginas visibles
- * ==========================================
- */
+    /**
+     * ==========================================
+     * Obtiene las páginas visibles
+     * ==========================================
+     */
     _obtenerPaginasVisibles() {
 
         const paginas = [];
@@ -386,6 +394,75 @@ export class TablaUI {
                 this.cambiarPageSize(e.target.value);
             });
         }
+
+    }
+
+
+    /**
+     * ==========================================
+     * Inicializa el ordenamiento por columnas
+     * ==========================================
+     */
+    inicializarOrdenamiento() {
+
+        const tabla = this.getElemento("tabla");
+
+        if (!tabla) return;
+
+        const encabezados = tabla.querySelectorAll("th[data-sort]");
+
+        encabezados.forEach(th => {
+
+            th.style.cursor = "pointer";
+
+            th.addEventListener("click", () => {
+
+                const columna = th.dataset.sort;
+
+                if (!columna) return;
+
+                this.toggleOrden(columna);
+
+            });
+
+        });
+
+    }
+
+
+    /**
+     * ==========================================
+     * Actualiza los indicadores visuales
+     * del ordenamiento
+     * ==========================================
+     */
+    actualizarIndicadoresOrden() {
+
+        const tabla = this.getElemento("tabla");
+
+        if (!tabla) return;
+
+        const encabezados = tabla.querySelectorAll("th[data-sort]");
+
+        encabezados.forEach(th => {
+
+            const columna = th.dataset.sort;
+
+            const texto = th.textContent
+                .replace(" ▲", "")
+                .replace(" ▼", "")
+                .trim();
+
+            th.textContent = texto;
+
+            if (columna !== this.sortBy) return;
+
+            th.textContent +=
+                this.sortOrder === "asc"
+                    ? " ▲"
+                    : " ▼";
+
+        });
 
     }
 
@@ -649,6 +726,8 @@ export class TablaUI {
         this.cachearElementos();
 
         this.inicializarEventos();
+
+        this.inicializarOrdenamiento();
 
         this.renderizar();
 

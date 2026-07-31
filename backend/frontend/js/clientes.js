@@ -1,7 +1,13 @@
 import { apiFetch } from "./api.js";
+import { TablaUI } from "./tablas.js";
 
-let currentPage = 1;
-const limit = 5;
+// ELIMINAR DESPUÉS DE LA MIGRACIÓN
+// let currentPage = 1;
+// const limit = 5;
+
+const STORAGE_PAGE_SIZE = "clientes_page_size";
+
+let tablaClientes = null;
 let editandoId = null;
 let clientesGlobal = [];
 let direccionesCliente = [];
@@ -54,7 +60,7 @@ function desbloquearBotonGuardar() {
 
 }
 
-function mostrarFormularioCliente(esEdicion = false) {
+window.mostrarFormularioCliente = async function (esEdicion = false) {
 
     if (!esEdicion) {
 
@@ -171,7 +177,50 @@ function crearDireccionVacia() {
 document.addEventListener("DOMContentLoaded", () => {
 
     if (getEl("tablaClientes")) {
+
+        const pageSizeGuardado =
+            Number(localStorage.getItem(STORAGE_PAGE_SIZE)) || 10;
+
+        tablaClientes = new TablaUI({
+
+            nombre: "clientes",
+
+            callback: () => cargarClientes(),
+
+            tabla: "#tablaClientesTabla",
+
+            pageSize: "#pageSizeClientes",
+
+            btnAnterior: "#btnPaginaAnterior",
+
+            btnSiguiente: "#btnPaginaSiguiente",
+
+            numeros: "#numerosPaginacion",
+
+            resumen: "#resumenPaginacion",
+
+            info: "#infoPaginacion"
+
+        }).init();
+
+        tablaClientes.actualizarDesdeBackend({
+
+            page: 1,
+
+            page_size: pageSizeGuardado,
+
+            total: 0,
+
+            total_pages: 1,
+
+            sort_by: "id",
+
+            sort_order: "desc"
+
+        });
+
         cargarClientes();
+
     }
 
     const form = getEl("formCliente");
@@ -202,7 +251,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const chk = getEl("verInactivos");
     if (chk) {
         chk.addEventListener("change", () => {
-            currentPage = 1;
+
+            tablaClientes.reiniciarPaginacion();
+
             cargarClientes();
         });
     }
@@ -213,21 +264,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function cargarClientes() {
 
+    if (!tablaClientes) {
+        console.error("TablaUI no inicializada.");
+        return;
+    }
+
     mostrarLoader();
 
     const verInactivos = getEl("verInactivos")?.checked;
+    const texto = getEl("busqueda")?.value.trim() || "";
 
     try {
-        const res = await apiFetch(
-            `/clientes?page=${currentPage}&limit=${limit}&inactivos=${verInactivos ? "true" : "false"}`
-        );
 
-        clientesGlobal = res?.data || [];
+        const params = new URLSearchParams({
+            page: tablaClientes.page,
+            limit: tablaClientes.pageSize,
+            sort_by: tablaClientes.sortBy,
+            sort_order: tablaClientes.sortOrder,
+            inactivos: verInactivos ? "true" : "false",
+            search: texto
+        });
+
+        const res = await apiFetch(`/clientes?${params}`);
+
+        const resultado = res.data;
+
+        tablaClientes.actualizarDesdeBackend(resultado);
+
+        clientesGlobal = resultado.items || [];
+
         pintarTabla(clientesGlobal);
 
     } catch (error) {
-        console.error("Error cargando clientes:", error);
-        mostrarMensaje("Error cargando clientes ❌", "error");
+
+        console.error(error);
+
+        mostrarMensaje(
+            "Error cargando clientes",
+            "error"
+        );
     }
 }
 
@@ -445,9 +520,9 @@ function pintarTabla(clientes) {
                 <td>${c.telefono || ""}</td>
                 <td>
                     ${c.direccion_principal
-                    ? `<strong>${c.nombre_direccion_principal}</strong><br>${c.direccion_principal}`
-                    : ""
-                    }
+                ? `<strong>${c.nombre_direccion_principal}</strong><br>${c.direccion_principal}`
+                : ""
+            }
                 </td>
                 <td>
                     ${c.activo
@@ -659,31 +734,21 @@ function mostrarMensaje(msg, tipo = "success") {
 }
 
 window.nextPage = function () {
-    currentPage++;
-    cargarClientes();
+
+    tablaClientes.paginaSiguiente();
+
 };
 
 window.prevPage = function () {
-    if (currentPage > 1) {
-        currentPage--;
-        cargarClientes();
-    }
+
+    tablaClientes.paginaAnterior();
+
 };
 
-window.filtrarClientes = async function () {
+window.filtrarClientes = function () {
 
-    const texto = getEl("busqueda").value.trim();
+    tablaClientes.reiniciarPaginacion();
 
-    if (!texto) {
-        cargarClientes();
-        return;
-    }
+    cargarClientes();
 
-    try {
-        const res = await apiFetch(`/clientes?page=1&limit=100&search=${texto}`);
-        pintarTabla(res.data || []);
-    } catch (error) {
-        console.error(error);
-        mostrarMensaje("Error filtrando ❌", "error");
-    }
 };

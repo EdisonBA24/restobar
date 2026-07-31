@@ -64,11 +64,17 @@ def listar_proveedores():
 
         search = request.args.get("search")
 
+        sort_by = request.args.get("sort_by", "id")
+
+        sort_order = request.args.get("sort_order", "desc")
+
         data = get_all_proveedores(
-            page,
-            limit,
-            solo_inactivos,
-            search
+            page=page,
+            limit=limit,
+            solo_inactivos=solo_inactivos,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order
         )
 
         return jsonify({

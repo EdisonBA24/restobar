@@ -194,7 +194,7 @@ def _agregar_filtro_busqueda(
     return query, params
 
 
-def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
+def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None, sort_by="id", sort_order="desc"):
 
     offset = (page - 1) * limit
 
@@ -249,10 +249,28 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
             is_postgres=is_postgres
         )
 
+        columnas_validas = {
+            "id": "id",
+            "nombre": "nombre",
+            "nit": "nit",
+            "contacto": "contacto",
+            "telefono": "telefono",
+            "ciudad": "ciudad"
+        }
+
+        sort_by_request = sort_by
+
+        sort_by = columnas_validas.get(
+            sort_by_request,
+            "id"
+        )
+
+        sort_order = "DESC" if str(sort_order).lower() == "desc" else "ASC"
+
         if is_postgres:
 
             query += f"""
-                ORDER BY id DESC
+                ORDER BY {sort_by} {sort_order}
                 LIMIT {placeholder}
                 OFFSET {placeholder}
             """
@@ -262,7 +280,7 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
         else:
 
             query += f"""
-                ORDER BY id DESC
+                ORDER BY {sort_by} {sort_order}
                 OFFSET {placeholder} ROWS
                 FETCH NEXT {placeholder} ROWS ONLY
             """
@@ -300,7 +318,9 @@ def get_all_proveedores(page=1, limit=10, solo_inactivos=False, search=None):
             "page": page,
             "page_size": limit,
             "total": total,
-            "total_pages": total_pages
+            "total_pages": total_pages,
+            "sort_by": sort_by,
+            "sort_order": sort_order.lower()
         }
 
     except Exception as e:

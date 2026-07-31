@@ -5,7 +5,8 @@ from services.clientes_service import (
     create_cliente,
     update_cliente,
     delete_cliente,
-    activar_cliente
+    activar_cliente,
+    get_clientes_autocomplete
 )
 
 clientes_bp = Blueprint("clientes", __name__)
@@ -51,7 +52,18 @@ def listar_clientes():
         solo_inactivos = request.args.get("inactivos", "false").lower() in ["true", "1"]
         search = request.args.get("search")
 
-        data = get_all_clientes(page, limit, solo_inactivos, search)
+        sort_by = request.args.get("sort_by", "id")
+        
+        sort_order = request.args.get("sort_order", "desc")
+
+        data = get_all_clientes(
+            page=page,
+            limit=limit,
+            solo_inactivos=solo_inactivos,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
 
         return jsonify({
             "status": "success",
@@ -64,7 +76,42 @@ def listar_clientes():
             "status": "error",
             "message": "Error obteniendo clientes"
         }), 500
-    
+
+
+@clientes_bp.route("/clientes/autocomplete", methods=["GET"])
+def autocomplete_clientes():
+
+    if not validar_sesion():
+        return jsonify({"status": "unauthorized"}), 401
+
+    try:
+
+        search = request.args.get("search")
+
+        activo = request.args.get(
+            "activo",
+            "true"
+        ).lower() in ["true", "1"]
+
+        data = get_clientes_autocomplete(
+            search=search,
+            activos=activo
+        )
+
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR AUTOCOMPLETE CLIENTES:", e)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 
 # =============================
 # OBTENER CLIENTE

@@ -1,10 +1,5 @@
 import { apiFetch } from "./api.js";
-// IMPORTACION TABLAS.JS
 import { TablaUI } from "./tablas.js";
-
-// ELIMINAR DESPUES DE MIGRAR TABLAS.JS
-// let currentPage = 1;
-// const limit = 5;
 
 let editandoId = null;
 let proveedoresGlobal = [];
@@ -122,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         callback: () => cargarProveedores(),
 
-        tabla: "#tablaProveedores",
+        tabla: "#tablaProveedoresTabla",
 
         pageSize: "#pageSizeProveedores",
 
@@ -137,23 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
         info: "#infoPaginacion"
 
     }).init();
-
-    // ELIMINAR DESPUES DE IMPORTAR TABLAS.JS
-    // tablaProveedores.setEstado({
-
-    //    page: 1,
-
-    //    page_size: pageSizeGuardado,
-
-    //    total: 0,
-
-    //    total_pages: 1,
-
-    //    sort_by: "nombre",
-
-    //    sort_order: "asc"
-
-    //});
 
     if (getEl("tablaProveedores")) {
         cargarProveedores();
@@ -179,9 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const chk = getEl("verInactivos");
     if (chk) {
         chk.addEventListener("change", () => {
-            // ELIMINAR DESPUES DE MIGRAR TABLAS.JS
-            // currentPage = 1;
-            // cargarProveedores();
+
             tablaProveedores.reiniciarPaginacion();
 
             cargarProveedores();
@@ -190,6 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+
 async function cargarProveedores() {
 
     mostrarLoader();
@@ -197,22 +174,23 @@ async function cargarProveedores() {
     const verInactivos = getEl("verInactivos")?.checked;
 
     try {
-        const res = await apiFetch(
-            `/proveedores?page=${/*currentPage*/tablaProveedores.page}&limit=${/*limit*/tablaProveedores.pageSize}&inactivos=${verInactivos ? "true" : "false"}`
-        );
+        const params = new URLSearchParams({
 
-        // Próxima fase:
-        // TablaUI actualizará aquí page, total y total_pages
-        // desde la respuesta del backend.
+            page: tablaProveedores.page,
 
-        // proveedoresGlobal = res?.data || [];
-        // pintarTabla(proveedoresGlobal);
+            limit: tablaProveedores.pageSize,
+
+            sort_by: tablaProveedores.sortBy,
+
+            sort_order: tablaProveedores.sortOrder,
+
+            inactivos: verInactivos ? "true" : "false"
+
+        });
+
+        const res = await apiFetch(`/proveedores?${params.toString()}`);
 
         const resultado = res?.data || {};
-
-        // TEMPORAL
-        // Cuando el backend entregue la misma estructura que Compras,
-        // solo habrá que descomentar estas líneas.
 
         tablaProveedores.actualizarDesdeBackend(resultado);
 
@@ -450,18 +428,12 @@ function mostrarMensaje(msg, tipo = "success") {
 }
 
 window.nextPage = function () {
-    // ELIMINAR DESPUES DE MIGRAR TABLAS.JS
-    // currentPage++;
-    // cargarProveedores();
+
     tablaProveedores.paginaSiguiente();
 };
 
 window.prevPage = function () {
-    // ELIMINAR DESPUES DE MIGRAR TABLAS.JS
-    // if (currentPage > 1) {
-    //    currentPage--;
-    //    cargarProveedores();
-    // }
+
     tablaProveedores.paginaAnterior();
 };
 

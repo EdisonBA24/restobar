@@ -465,7 +465,54 @@ def _actualizar_direcciones(cursor, cliente_id, direcciones, placeholder):
             (id_direccion,)
         )
 
-def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
+
+# =============================
+# HELPERS BÚSQUEDA
+# =============================
+def _agregar_filtro_busqueda_clientes(
+    query,
+    params,
+    search,
+    placeholder,
+    is_postgres
+):
+    """
+    Agrega filtro de búsqueda para clientes.
+
+    Busca por:
+        - nombre
+        - documento
+        - teléfono
+        - email
+    """
+
+    if not search or not str(search).strip():
+        return query, params
+
+    null_fn = "COALESCE" if is_postgres else "ISNULL"
+
+    like = f"%{str(search).strip().lower()}%"
+
+    query += f"""
+        AND (
+            LOWER({null_fn}(nombre,'')) LIKE {placeholder}
+            OR LOWER({null_fn}(documento,'')) LIKE {placeholder}
+            OR LOWER({null_fn}(telefono,'')) LIKE {placeholder}
+            OR LOWER({null_fn}(email,'')) LIKE {placeholder}
+        )
+    """
+
+    params.extend([
+        like,
+        like,
+        like,
+        like
+    ])
+
+    return query, params
+
+
+def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None, sort_by="id", sort_order="desc"):
 
     offset = (page - 1) * limit
 
@@ -476,12 +523,10 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
         estado = 0 if solo_inactivos else 1
 
         # 🔥 FIX CLAVE: evitar error si no existe DB_ENGINE
-        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
-        is_postgres = db_engine == "postgres"
+        is_postgres, placeholder = _get_db_settings()
 
         # 🔥 funciones compatibles
         null_fn = "COALESCE" if is_postgres else "ISNULL"
-        placeholder = "%s" if is_postgres else "?"
 
         query = f"""
         SELECT 
@@ -498,8 +543,16 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
 
         params = [estado]
 
-        if search and str(search).strip() != "":
-            like = f"%{search.lower()}%"
+        count_query = f"""
+            SELECT COUNT(*)
+            FROM {CLIENTES} c
+            WHERE c.activo = {placeholder}
+        """
+
+        count_params = [estado]
+
+        if search and str(search).strip():
+            like = f"%{search.strip().lower()}%"
 
             query += f"""
             AND (
@@ -511,19 +564,63 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
 
             params.extend([like, like, like])
 
+            count_query += f"""
+                AND (
+                    LOWER({null_fn}(c.nombre,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(c.documento,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(c.telefono,'')) LIKE {placeholder}
+                )
+            """
+
+            count_params.extend([
+                like,
+                like,
+                like
+            ])
+
+        columnas_validas = {
+            "id": "c.id",
+            "nombre": "c.nombre",
+            "documento": "c.documento",
+            "telefono": "c.telefono",
+            "direccion": "cd.direccion"
+        }
+
+        sort_by_request = sort_by
+
+        sort_by = columnas_validas.get(
+            sort_by_request,
+            "c.id"
+        )
+
+        sort_order = (
+            "DESC"
+            if str(sort_order).lower() == "desc"
+            else "ASC"
+        )
+
         # 🔥 paginación compatible
         if is_postgres:
             query += f"""
-            ORDER BY c.id DESC
+            ORDER BY {sort_by} {sort_order}
             LIMIT {placeholder} OFFSET {placeholder}
             """
             params.extend([limit, offset])
         else:
             query += f"""
-            ORDER BY c.id DESC
+            ORDER BY {sort_by} {sort_order}
             OFFSET {placeholder} ROWS FETCH NEXT {placeholder} ROWS ONLY
             """
             params.extend([offset, limit])
+
+        cursor.execute(count_query, count_params)
+
+        total = cursor.fetchone()[0]
+
+        total_pages = max(
+            (total + limit - 1) // limit,
+            1
+        )
 
         cursor.execute(query, params)
 
@@ -538,13 +635,100 @@ def get_all_clientes(page=1, limit=10, solo_inactivos=False, search=None):
 
             data.append(r)
 
-        return data
+        return {
+            "items": data,
+            "page": page,
+            "page_size": limit,
+            "total": total,
+            "total_pages": total_pages,
+            "sort_by": sort_by_request,
+            "sort_order": sort_order.lower()
+        }
 
     except Exception as e:
         print("❌ ERROR GET CLIENTES:", e)
+        return {
+            "items": [],
+            "page": page,
+            "page_size": limit,
+            "total": 0,
+            "total_pages": 1,
+            "sort_by": sort_by_request,
+            "sort_order": sort_order.lower()
+        }
+
+    finally:
+        conn.close()
+
+
+# =============================
+# AUTOCOMPLETE CLIETNES
+# =============================
+def get_clientes_autocomplete(
+    search=None,
+    activos=True
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        is_postgres, placeholder = _get_db_settings()
+
+        estado = 1 if activos else 0
+
+        query = f"""
+            SELECT
+                id,
+                nombre,
+                documento,
+                telefono,
+                email
+            FROM {CLIENTES}
+            WHERE activo = {placeholder}
+        """
+
+        params = [estado]
+
+        query, params = _agregar_filtro_busqueda_clientes(
+            query=query,
+            params=params,
+            search=search,
+            placeholder=placeholder,
+            is_postgres=is_postgres
+        )
+
+        query += """
+            ORDER BY nombre
+        """
+
+        cursor.execute(query, params)
+
+        columnas = [
+            c[0]
+            for c in cursor.description
+        ]
+
+        data = []
+
+        for fila in cursor.fetchall():
+
+            cliente = dict(zip(columnas, fila))
+
+            cliente["id"] = int(cliente["id"])
+
+            data.append(cliente)
+
+        return data
+
+    except Exception as e:
+
+        print("❌ ERROR AUTOCOMPLETE CLIENTES:", e)
+
         return []
 
     finally:
+
         conn.close()
 
 
@@ -791,8 +975,7 @@ def delete_cliente(id):
     cursor = conn.cursor()
 
     try:
-        db_engine = getattr(Config, "DB_ENGINE", "sqlserver")
-        placeholder = "%s" if db_engine == "postgres" else "?"
+        is_postgres, placeholder = _get_db_settings()
 
         cursor.execute(f"UPDATE {CLIENTES} SET activo = 0 WHERE id = {placeholder}", (id,))
         conn.commit()

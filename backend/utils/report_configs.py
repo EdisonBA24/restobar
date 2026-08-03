@@ -28,6 +28,18 @@ REPORTE_COMPRAS = {
 
     ],
 
+    "columnas_width": {
+
+        1: 10,
+        2: 22,
+        3: 30,
+        4: 20,
+        5: 18,
+        6: 18,
+        7: 18
+
+    },
+
     "columnas_moneda": [5, 6, 7],
 
     "columnas_totales": {
@@ -97,6 +109,22 @@ REPORTE_DETALLE_COMPRAS = {
         "total"
 
     ],
+
+    "columnas_width": {
+
+        1: 10,
+        2: 22,
+        3: 30,
+        4: 18,
+        5: 35,
+        6: 12,
+        7: 18,
+        8: 10,
+        9: 18,
+        10: 18,
+        11: 18
+
+    },
 
     "columnas_moneda":[
 

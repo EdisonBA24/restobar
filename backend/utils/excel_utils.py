@@ -188,33 +188,51 @@ def llenar_datos(
 
 def autoajustar_columnas(
     ws,
-    ancho_maximo=40
+    ancho_maximo=40,
+    anchos_minimos=None
 ):
+    """
+    Ajusta automáticamente el ancho de las columnas.
+
+    anchos_minimos:
+        Diccionario con el ancho mínimo por índice de columna.
+        Ejemplo:
+        {
+            5: 18,
+            6: 18,
+            7: 18
+        }
+    """
+
+    if anchos_minimos is None:
+        anchos_minimos = {}
 
     for column_cells in ws.columns:
 
+        letra = get_column_letter(column_cells[0].column)
+
+        indice = column_cells[0].column
+
         largo = max(
 
-            len(
-                str(
-                    cell.value or ""
-                )
-            )
+            len(str(cell.value or ""))
 
             for cell in column_cells
 
         )
 
-        letra = get_column_letter(
-            column_cells[0].column
-        )
-
-        ws.column_dimensions[
-            letra
-        ].width = min(
+        ancho = min(
             largo + 4,
             ancho_maximo
         )
+
+        # Aplicar ancho mínimo si existe
+        ancho = max(
+            ancho,
+            anchos_minimos.get(indice, 0)
+        )
+
+        ws.column_dimensions[letra].width = ancho
 
 def aplicar_filtros(
     ws,
@@ -250,7 +268,9 @@ def crear_hoja_reporte(
 
     columnas_decimal=None,
 
-    columnas_totales=None
+    columnas_totales=None,
+
+    columnas_width=None
 
 ):
 
@@ -384,7 +404,13 @@ def crear_hoja_reporte(
     # AJUSTAR COLUMNAS
     # ======================================
 
-    autoajustar_columnas(ws)
+    autoajustar_columnas(
+
+        ws,
+
+        anchos_minimos=columnas_width
+
+    )
 
     # ======================================
     # FILTROS
@@ -491,6 +517,10 @@ def crear_reporte_excel(
 
             columnas_totales=config.get(
                 "columnas_totales"
+            ),
+
+            columnas_width=config.get(
+                "columnas_width"
             )
 
         )

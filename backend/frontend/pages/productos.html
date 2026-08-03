@@ -53,8 +53,7 @@
                         <span class="menu-arrow">▾</span>
                     </div>
                     <ul class="submenu">
-                        <li onclick="ir('crear_producto')">➕ Crear producto</li>
-                        <li class="active">📋 Consultar productos</li>
+                        <li class="active">📋 Gestión de productos</li>
                     </ul>
                 </li>
 
@@ -160,38 +159,93 @@
             </header>
 
             <!-- FORMULARIO OCULTO -->
-            <div id="formContainer" class="card hidden">
+            <div id="formContainer" class="hidden">
                 <h2 id="formTitle">Nuevo Producto</h2>
 
-                <form id="formProducto" class="form-grid">
-                    <input type="text" id="nombre" placeholder="Nombre" required>
-                    <input type="text" id="codigo" placeholder="Código" required>
-                    <input type="number" id="precio_venta" placeholder="Precio Venta">
-                    <input type="text" id="categoria" placeholder="Categoría" required>
+                <form id="formProducto">
 
+                    <h3 class="section-title">
+                        Información General
+                    </h3>
 
-                    <select id="unidad">
-                        <option value="">Seleccione unidad</option>
-                    </select>
+                    <div class="form-grid">
 
+                        <div class="form-group">
+                            <label for="nombre">Nombre *</label>
+                            <input id="nombre" type="text" maxlength="150" required>
+                        </div>
 
-                    <select id="tipo">
-                        <option value="INSUMO">INSUMO</option>
-                        <option value="RECETA">RECETA</option>
-                        <option value="LICORES">LICORES</option>
-                        <option value="BEBIDAS">BEBIDAS</option>
-                    </select>
+                        <div class="form-group">
+                            <label for="codigo">Código *</label>
+                            <input id="codigo" type="text" maxlength="150" required>
+                        </div>
 
-                    <button type="submit" class="btn-primary" id="btnGuardar">Guardar</button>
-                    <button type="button" class="btn-primary" onclick="cancelarEdicion()">Cancelar</button>
+                        <div class="form-group">
+                            <label for="precio_venta">Precio Venta</label>
+                            <input id="precio_venta" type="number">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="stock">Stock</label>
+                            <input id="stock" type="number">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="categoria">Categoría</label>
+                            <input id="categoria" type="text">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unidad_nombre">Unidad</label>
+                            <select id="unidad">
+                                <option value="">Seleccione unidad</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tipo">Tipo</label>
+                            <select id="tipo">
+                                <option value="INSUMO">INSUMO</option>
+                                <option value="RECETA">RECETA</option>
+                                <option value="LICORES">LICORES</option>
+                                <option value="BEBIDAS">BEBIDAS</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+
+                        <button type="submit" class="btn-primary" id="btnGuardar">
+
+                            Guardar
+
+                        </button>
+
+                        <button type="button" class="btn-secondary" onclick="cancelarEdicion()">
+
+                            Cancelar
+
+                        </button>
+
+                    </div>
 
                 </form>
+
             </div>
 
+            <hr>
 
             <div class="card">
 
                 <div class="top-bar">
+
+                    <button id="btnNuevo" class="btn-primary" onclick="mostrarFormulario()">
+
+                        ➕ Nuevo Producto
+
+                    </button>
+
                     <div class="search-container">
                         <span class="search-icon">🔍</span>
                         <input type="text" id="busqueda" placeholder="Buscar..." onkeyup="filtrarProductos()">
@@ -205,32 +259,80 @@
 
                 <div class="table-container">
 
-                    <table class="table">
+                    <table id="tablaProductosTabla" class="table">
                         <thead>
                             <tr>
-                                <th style="text-align: center;">Nombre</th>
-                                <th style="text-align: center;">Codigo</th>
-                                <th style="text-align: center;">Stock</th>
-                                <th style="text-align: center;">Categoria</th>
-                                <th style="text-align: center;">Fecha Creacion</th>
-                                <th style="text-align: center;">Unidad</th>
-                                <th style="text-align: center;">Tipo</th>
-                                <th style="text-align: center;">Precio Venta</th>
+                                <th data-sort="nombre" style="text-align: center;">Nombre</th>
+                                <th data-sort="codigo" style="text-align: center;">Codigo</th>
+                                <th data-sort="stock" style="text-align: center;">Stock</th>
+                                <th data-sort="categoria" style="text-align: center;">Categoria</th>
+                                <th data-sort="fecha_creacion" style="text-align: center;">Fecha Creacion</th>
+                                <th data-sort="unidad_nombre" style="text-align: center;">Unidad</th>
+                                <th data-sort="tipo" style="text-align: center;">Tipo</th>
+                                <th data-sort="precio_venta" style="text-align: center;">Precio Venta</th>
                                 <th style="text-align: center;">Estado</th>
                                 <th style="text-align: center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tablaProductos"></tbody>
                     </table>
-                    
+
                 </div>
 
-                    <div class="pagination">
-                        <button onclick="prevPage()">⬅</button>
-                        <button onclick="nextPage()">➡</button>
+                <div id="paginacionProductos" class="pg-container">
+
+                    <div class="pg-page-size">
+
+                        <label for="pageSizeProductos">
+
+                            Mostrar
+
+                        </label>
+
+                        <select id="pageSizeProductos" class="form-select">
+
+                            <option value="10">10</option>
+
+                            <option value="20" selected>20</option>
+
+                            <option value="50">50</option>
+
+                            <option value="100">100</option>
+
+                        </select>
+
+                        <span>registros</span>
+
                     </div>
 
+                    <button id="btnPaginaAnterior" class="btn-secondary" type="button">
+
+                        ← Anterior
+
+                    </button>
+
+                    <div class="pg-center">
+
+                        <div id="infoPaginacion" class="pg-info">
+                        </div>
+
+                        <div id="resumenPaginacion" class="pg-summary">
+                        </div>
+
+                        <div id="numerosPaginacion" class="pg-numbers">
+                        </div>
+
+                    </div>
+
+                    <button id="btnPaginaSiguiente" class="btn-secondary" type="button">
+
+                        Siguiente →
+
+                    </button>
+
                 </div>
+
+            </div>
 
         </main>
 
@@ -246,8 +348,6 @@
             window.location.href = `../pages/${p}.html`;
         }
     </script>
-
-
 
 </body>
 

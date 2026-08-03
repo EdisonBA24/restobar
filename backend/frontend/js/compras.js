@@ -1,4 +1,7 @@
-import { apiFetch } from "./api.js";
+import {
+    API_URL,
+    apiFetch
+} from "./api.js";
 // IMPORTACION DE TABLAS.JS
 import { TablaUI } from "./tablas.js";
 
@@ -80,6 +83,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (btnAgregarProducto) {
         btnAgregarProducto.addEventListener("click", agregarProducto);
+    }
+
+    const btnExportar = document.getElementById("btnExportarCompras");
+
+    if (btnExportar) {
+
+        btnExportar.addEventListener(
+            "click",
+            exportarComprasExcel
+        );
+
     }
 
     if (document.getElementById("tablaCompras")) {
@@ -1308,6 +1322,8 @@ async function cargarCompras(filtros = null) {
             return;
         }
 
+        await cargarKPIs(filtros);
+
         const tabla = document.getElementById("tablaCompras");
 
         tabla.innerHTML = "";
@@ -1344,6 +1360,53 @@ async function cargarCompras(filtros = null) {
         console.error("Error compras:", error);
         mostrarMensaje("Error cargando compras ❌", "error");
     }
+}
+
+
+async function cargarKPIs(filtros) {
+
+    try {
+
+        const params = new URLSearchParams(filtros);
+
+        const res = await apiFetch(
+            `/compras/kpis?${params}`
+        );
+
+        if (!res || res.status !== "success") {
+            return;
+        }
+
+        const kpi = res.data;
+
+        console.log(kpi);
+
+        const compras = document.getElementById("kpiCompras");
+        const total = document.getElementById("kpiTotalComprado");
+        const iva = document.getElementById("kpiIVA");
+        const promedio = document.getElementById("kpiPromedio");
+
+        if (compras)
+            compras.textContent = Number(kpi.compras || 0).toLocaleString();
+
+        if (total)
+            total.textContent = formatoMoneda(kpi.total);
+
+        if (iva)
+            iva.textContent = formatoMoneda(kpi.iva);
+
+        if (promedio)
+            promedio.textContent = formatoMoneda(kpi.promedio);
+
+    } catch (e) {
+
+        console.error(
+            "Error cargando KPIs",
+            e
+        );
+
+    }
+
 }
 
 
@@ -1500,5 +1563,118 @@ function limpiarFormularioCompra() {
     document.getElementById("totalCompra").textContent = formatoMoneda(0);
 
     inicializarFechaCompra();
+
+}
+
+
+// =====================================
+// EXPORTAR EXCEL
+// =====================================
+
+async function exportarComprasExcel() {
+
+    try {
+
+        const filtros = obtenerFiltros();
+
+        const params = new URLSearchParams({
+
+            periodo: filtros.periodo,
+
+            fecha_inicio: filtros.fecha_inicio,
+
+            fecha_fin: filtros.fecha_fin,
+
+            proveedor_id: filtros.proveedor_id,
+
+            buscar: filtros.buscar
+
+        });
+
+        const response = await fetch(
+
+            `${API_URL}/compras/exportar?${params.toString()}`,
+
+            {
+
+                credentials: "include"
+
+            }
+
+        );
+
+        if (response.status === 401 || response.status === 403) {
+
+            localStorage.removeItem("usuario");
+
+            window.location.href = "/pages/login.html";
+
+            return;
+
+        }
+
+        if (!response.ok) {
+
+            throw new Error(
+                "No fue posible generar el Excel."
+            );
+
+        }
+
+        const blob = await response.blob();
+
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+
+        a.href = url;
+
+        const disposition = response.headers.get("Content-Disposition");
+
+        let fileName = "Compras.xlsx";
+
+        if (disposition) {
+
+            const match = disposition.match(/filename="?([^"]+)"?/);
+
+            if (match) {
+                fileName = match[1];
+            }
+
+        }
+
+        a.download = fileName;
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+
+        mostrarMensaje(
+
+            "Reporte exportado correctamente",
+
+            "success"
+
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        mostrarMensaje(
+
+            "Error exportando el reporte",
+
+            "error"
+
+        );
+
+    }
 
 }

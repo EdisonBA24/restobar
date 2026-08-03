@@ -34,27 +34,61 @@ def listar_productos():
 
     if not validar_sesion():
         return jsonify({"status": "unauthorized"}), 401
-    
+
     try:
+
         page = int(request.args.get("page", 1))
+
         limit = int(request.args.get("limit", 10))
 
-        solo_inactivos = request.args.get("inactivos", "false").lower() in ["true", "1"]
+        solo_inactivos = (
+            request.args.get(
+                "inactivos",
+                "false"
+            ).lower() in ["true", "1"]
+        )
 
-        # 🔥 NUEVO
-        search = request.args.get("search", None)
+        search = request.args.get("search")
 
-        print("📌 PAGE:", page, "| INACTIVOS:", solo_inactivos, "| SEARCH:", search)
+        sort_by = request.args.get(
+            "sort_by",
+            "id"
+        )
 
-        data = get_all_productos(page, limit, solo_inactivos, search)
+        sort_order = request.args.get(
+            "sort_order",
+            "desc"
+        )
+
+        print("===== FILTROS PRODUCTOS =====")
+
+        print({
+            "page": page,
+            "limit": limit,
+            "inactivos": solo_inactivos,
+            "search": search,
+            "sort_by": sort_by,
+            "sort_order": sort_order
+        })
+
+        data = get_all_productos(
+            page=page,
+            limit=limit,
+            solo_inactivos=solo_inactivos,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
 
         return jsonify({
             "status": "success",
-            "data": data or []  # 🔥 evita null
+            "data": data
         })
 
     except Exception as e:
+
         print("❌ ERROR LISTAR PRODUCTOS:", e)
+
         return jsonify({
             "status": "error",
             "message": str(e)

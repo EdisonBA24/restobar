@@ -7,6 +7,19 @@ import traceback, math
 from datetime import datetime
 
 
+def _get_db_settings():
+
+    is_postgres = getattr(
+        Config,
+        "DB_ENGINE",
+        "sqlserver"
+    ) == "postgres"
+
+    placeholder = "%s" if is_postgres else "?"
+
+    return is_postgres, placeholder
+
+
 # =============================
 # 🔧 VALIDAR DECIMAL
 # =============================
@@ -58,6 +71,7 @@ def calcular_costo_promedio_compra(
 # 🛒 CREAR COMPRA
 # =============================
 def crear_compra(data):
+
     conn = get_connection()
     cursor = conn.cursor()
     usuario_id = session.get("user_id")
@@ -110,8 +124,7 @@ def crear_compra(data):
             )
 
         # 🔥 MOTOR DINÁMICO
-        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
-        placeholder = "%s" if is_postgres else "?"
+        is_postgres, placeholder = _get_db_settings()
         null_fn = "COALESCE" if is_postgres else "ISNULL"
 
         subtotal_compra = Decimal("0")
@@ -313,85 +326,43 @@ def crear_compra(data):
 
 
 # =============================
-# 📄 CONSULTAR COMPRAS
+# BUILD WHERE COMPRAS
 # =============================
-def get_compras(filtros=None):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    if filtros is None:
-        filtros = {}
-
-    is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
-
-    placeholder = "%s" if is_postgres else "?"
-
-    cast_text = "TEXT" if is_postgres else "VARCHAR(20)"
-
-    print("==== FILTROS SERVICE ====")
-    print(f"Motor BD: {'PostgreSQL' if is_postgres else 'SQL Server'}")
-    print(filtros)
+def _build_where_compras(filtros, placeholder, cast_text):
 
     fecha_inicio = filtros.get("fecha_inicio")
     fecha_fin = filtros.get("fecha_fin")
     proveedor_id = filtros.get("proveedor_id")
     buscar = (filtros.get("buscar") or "").strip()
-    sort_by = (filtros.get("sort_by") or "id").lower()
-    sort_order = (filtros.get("sort_order") or "desc").lower()
 
-    page = max(int(filtros.get("page", 1)), 1)
-    page_size = max(int(filtros.get("page_size", 10)), 1)
-
-    offset = (page - 1) * page_size
-
-    parametros = []
     where = []
-
-    columnas_ordenables = {
-        "id": "co.id",
-        "fecha": "co.fecha",
-        "proveedor": "p.nombre",
-        "subtotal": "co.subtotal",
-        "iva_total": "co.iva_total",
-        "total": "co.total",
-        "usuario": "u.nombre"
-    }
-
-    if sort_by not in columnas_ordenables:
-        sort_by = "id"
-
-    if sort_order not in ("asc", "desc"):
-        sort_order = "desc"
-
-    order_by_sql = (
-        f"{columnas_ordenables[sort_by]} "
-        f"{sort_order.upper()}"
-    )
+    params = []
 
     if fecha_inicio:
         where.append(f"CAST(co.fecha AS DATE) >= {placeholder}")
-        parametros.append(fecha_inicio)
+        params.append(fecha_inicio)
 
     if fecha_fin:
         where.append(f"CAST(co.fecha AS DATE) <= {placeholder}")
-        parametros.append(fecha_fin)
+        params.append(fecha_fin)
 
     if proveedor_id:
         where.append(f"co.proveedor_id = {placeholder}")
-        parametros.append(proveedor_id)
+        params.append(proveedor_id)
 
     if buscar:
+
         where.append(f"""
-            (
-                p.nombre LIKE {placeholder}
-                OR u.nombre LIKE {placeholder}
-                OR CAST(co.id as {cast_text}) LIKE {placeholder}
-            )
+        (
+            p.nombre LIKE {placeholder}
+            OR u.nombre LIKE {placeholder}
+            OR CAST(co.id AS {cast_text}) LIKE {placeholder}
+        )
         """)
 
         texto = f"%{buscar}%"
 
-        parametros.extend([
+        params.extend([
             texto,
             texto,
             texto
@@ -400,7 +371,43 @@ def get_compras(filtros=None):
     where_sql = ""
 
     if where:
-        where_sql = "WHERE " + "\nAND ".join(where) 
+        where_sql = "WHERE " + "\nAND ".join(where)
+
+    return where_sql, params
+
+
+# =============================
+# 📄 CONSULTAR COMPRAS
+# =============================
+def get_compras(filtros=None):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if filtros is None:
+        filtros = {}
+
+    is_postgres, placeholder = _get_db_settings()
+
+    cast_text = "TEXT" if is_postgres else "VARCHAR(20)"
+
+    print("==== FILTROS SERVICE ====")
+    print(f"Motor BD: {'PostgreSQL' if is_postgres else 'SQL Server'}")
+    print(filtros)
+
+    sort_by = (filtros.get("sort_by") or "id").lower()
+    sort_order = (filtros.get("sort_order") or "desc").lower()
+
+    page = max(int(filtros.get("page", 1)), 1)
+    page_size = max(int(filtros.get("page_size", 10)), 1)
+
+    offset = (page - 1) * page_size
+
+    where_sql, parametros = _build_where_compras(
+        filtros,
+        placeholder,
+        cast_text
+    )
 
     if is_postgres:
         paginacion_sql = f"""
@@ -463,7 +470,7 @@ def get_compras(filtros=None):
 
             {where_sql}
                     
-            ORDER BY {order_by_sql}
+            ORDER BY {sort_by} {sort_order}
 
             {paginacion_sql}
 
@@ -510,6 +517,350 @@ def get_compras(filtros=None):
 
 
 # =============================
+# 📊 KPIs COMPRAS
+# =============================
+def get_compras_kpis(filtros=None):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        if filtros is None:
+            filtros = {}
+
+        is_postgres, placeholder = _get_db_settings()
+
+        cast_text = (
+            "TEXT"
+            if is_postgres
+            else "VARCHAR(20)"
+        )
+
+        where_sql, parametros = _build_where_compras(
+            filtros,
+            placeholder,
+            cast_text
+        )
+
+        cursor.execute(f"""
+            SELECT
+
+                COUNT(*) AS compras,
+
+                COALESCE(SUM(co.subtotal),0) AS subtotal,
+
+                COALESCE(SUM(co.iva_total),0) AS iva,
+
+                COALESCE(SUM(co.total),0) AS total,
+
+                COALESCE(AVG(co.total),0) AS promedio
+
+            FROM {COMPRAS} co
+
+            INNER JOIN {PROVEEDORES} p
+                ON co.proveedor_id = p.id
+
+            INNER JOIN {USUARIOS} u
+                ON co.usuario_id = u.id
+
+            {where_sql}
+
+        """, parametros)
+
+        row = cursor.fetchone()
+
+        #print("====================")
+        #print(row)
+        #print("====================")
+
+        if not row:
+
+            return {
+                "compras": 0,
+                "subtotal": 0,
+                "iva": 0,
+                "total": 0,
+                "promedio": 0
+            }
+
+        return {
+
+            "compras": int(row[0] or 0),
+
+            "subtotal": float(row[1] or 0),
+
+            "iva": float(row[2] or 0),
+
+            "total": float(row[3] or 0),
+
+            "promedio": float(row[4] or 0)
+
+        }
+
+    except Exception as e:
+
+        print("❌ ERROR KPIS COMPRAS:", e)
+
+        traceback.print_exc()
+
+        return {
+            "compras": 0,
+            "subtotal": 0,
+            "iva": 0,
+            "total": 0,
+            "promedio": 0
+        }
+
+    finally:
+
+        conn.close()
+
+
+# =============================
+# EXPORTAR COMPRAS
+# =============================
+def exportar_compras(filtros=None):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        if filtros is None:
+            filtros = {}
+
+        is_postgres, placeholder = _get_db_settings()
+
+        cast_text = (
+            "TEXT"
+            if is_postgres
+            else "VARCHAR(20)"
+        )
+
+        where_sql, parametros = _build_where_compras(
+            filtros,
+            placeholder,
+            cast_text
+        )
+
+        # =============================
+        # CABECERA COMPRAS
+        # =============================
+
+        query = f"""
+            SELECT
+
+                co.id,
+
+                co.fecha,
+
+                p.nombre AS proveedor,
+
+                u.nombre AS usuario,
+
+                co.subtotal,
+
+                co.iva_total,
+
+                co.total
+
+            FROM {COMPRAS} co
+
+            INNER JOIN {PROVEEDORES} p
+                ON co.proveedor_id = p.id
+
+            INNER JOIN {USUARIOS} u
+                ON co.usuario_id = u.id
+
+            {where_sql}
+
+            ORDER BY
+                co.id DESC
+        """
+
+        cursor.execute(
+            query,
+            parametros
+        )
+
+        columnas = [
+            c[0]
+            for c in cursor.description
+        ]
+
+        compras = []
+
+        for row in cursor.fetchall():
+
+            compra = dict(
+                zip(
+                    columnas,
+                    row
+                )
+            )
+
+            compra["id"] = int(
+                compra.get("id") or 0
+            )
+
+            if compra.get("fecha"):
+
+                compra["fecha"] = compra["fecha"].strftime("%Y-%m-%d %H:%M:%S")
+
+            compra["subtotal"] = float(
+                compra.get("subtotal") or 0
+            )
+
+            compra["iva_total"] = float(
+                compra.get("iva_total") or 0
+            )
+
+            compra["total"] = float(
+                compra.get("total") or 0
+            )
+
+            compras.append(compra)
+
+        # =============================
+        # DETALLE COMPRAS
+        # =============================
+
+        query = f"""
+            SELECT
+
+                co.id AS compra_id,
+
+                co.fecha,
+
+                p.nombre AS proveedor,
+
+                pr.codigo,
+
+                pr.nombre AS producto,
+
+                dc.cantidad,
+
+                dc.precio_unitario,
+
+                dc.iva,
+
+                dc.subtotal,
+
+                dc.valor_iva,
+
+                dc.total
+
+            FROM {DETALLE_COMPRAS} dc
+
+            INNER JOIN {COMPRAS} co
+                ON dc.compra_id = co.id
+
+            INNER JOIN {PRODUCTOS} pr
+                ON dc.producto_id = pr.id
+
+            INNER JOIN {PROVEEDORES} p
+                ON co.proveedor_id = p.id
+
+            INNER JOIN {USUARIOS} u
+                ON co.usuario_id = u.id
+
+            {where_sql}
+
+            ORDER BY
+                co.id DESC,
+                pr.nombre
+        """
+
+        cursor.execute(
+            query,
+            parametros
+        )
+
+        columnas = [
+            c[0]
+            for c in cursor.description
+        ]
+
+        detalles = []
+
+        for row in cursor.fetchall():
+
+            detalle = dict(
+                zip(
+                    columnas,
+                    row
+                )
+            )
+
+            detalle["compra_id"] = int(
+                detalle.get("compra_id") or 0
+            )
+
+            if detalle.get("fecha"):
+
+                detalle["fecha"] = detalle["fecha"].strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+            detalle["cantidad"] = float(
+                detalle.get("cantidad") or 0
+            )
+
+            detalle["precio_unitario"] = float(
+                detalle.get("precio_unitario") or 0
+            )
+
+            detalle["iva"] = float(
+                detalle.get("iva") or 0
+            )
+
+            detalle["subtotal"] = float(
+                detalle.get("subtotal") or 0
+            )
+
+            detalle["valor_iva"] = float(
+                detalle.get("valor_iva") or 0
+            )
+
+            detalle["total"] = float(
+                detalle.get("total") or 0
+            )
+
+            detalles.append(detalle)
+
+        return {
+
+            "compras": compras,
+
+            "detalles": detalles
+
+        }
+
+    except Exception as e:
+
+        print(
+            "❌ ERROR EXPORTAR COMPRAS:",
+            e
+        )
+
+        traceback.print_exc()
+
+        return {
+
+            "compras": [],
+
+            "detalles": []
+        }
+
+    finally:
+
+        conn.close()
+
+
+
+
+# =============================
 # 📄 DETALLE COMPRA
 # =============================
 def get_detalle_compra(compra_id):
@@ -517,8 +868,8 @@ def get_detalle_compra(compra_id):
     cursor = conn.cursor()
 
     try:
-        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
-        placeholder = "%s" if is_postgres else "?"
+
+        is_postgres, placeholder = _get_db_settings()
 
         cursor.execute(f"""
             SELECT
@@ -582,6 +933,7 @@ def get_detalle_compra(compra_id):
 
 
 def get_tipos_iva():
+
     conn = get_connection()
     cursor = conn.cursor()
 

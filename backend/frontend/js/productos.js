@@ -1,9 +1,11 @@
 import { apiFetch } from "./api.js";
+import { TablaUI } from "./tablas.js";
 
-let currentPage = 1;
-const limit = 5;
+const STORAGE_PAGE_SIZE = "productos_page_size";
+
+let tablaProductos = null;
+
 let editandoId = null;
-let productosGlobal = [];
 
 // =============================
 // HELPERS SEGUROS
@@ -17,16 +19,106 @@ function setText(id, text) {
     if (el) el.innerText = text;
 }
 
+function limpiarFormularioProducto() {
+
+    editandoId = null;
+
+    const form = getEl("formProducto");
+
+    if (form)
+        form.reset();
+
+    aplicarTipoUI(
+        getEl("tipo")
+    );
+
+    setText(
+        "formTitle",
+        "Nuevo Producto"
+    );
+
+    const btn = getEl("btnGuardar");
+
+    if (btn)
+        btn.innerText = "Guardar";
+
+}
+
+function bloquearBotonGuardar() {
+
+    const btn = getEl("btnGuardar");
+
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.dataset.textoOriginal = btn.textContent;
+    btn.textContent = "Guardando...";
+
+}
+
+function desbloquearBotonGuardar() {
+
+    const btn = getEl("btnGuardar");
+
+    if (!btn) return;
+
+    btn.disabled = false;
+    btn.textContent = btn.dataset.textoOriginal || "Guardar";
+
+}
+
 // =============================
 // INIT
 // =============================
 document.addEventListener("DOMContentLoaded", () => {
 
-    const tipoSelect = getEl("tipo");
-    if (tipoSelect) tipoSelect.dispatchEvent(new Event("change"));
-
     if (getEl("tablaProductos")) {
+
+        const pageSizeGuardado =
+            Number(
+                localStorage.getItem(STORAGE_PAGE_SIZE)
+            ) || 10;
+
+        tablaProductos = new TablaUI({
+
+            nombre: "productos",
+
+            callback: () => cargarProductos(),
+
+            tabla: "#tablaProductosTabla",
+
+            pageSize: "#pageSizeProductos",
+
+            btnAnterior: "#btnPaginaAnterior",
+
+            btnSiguiente: "#btnPaginaSiguiente",
+
+            numeros: "#numerosPaginacion",
+
+            resumen: "#resumenPaginacion",
+
+            info: "#infoPaginacion"
+
+        }).init();
+
+        tablaProductos.actualizarDesdeBackend({
+
+            page: 1,
+
+            page_size: pageSizeGuardado,
+
+            total: 0,
+
+            total_pages: 1,
+
+            sort_by: "id",
+
+            sort_order: "desc"
+
+        });
+
         cargarProductos();
+
     }
 
     if (getEl("unidad")) {
@@ -38,13 +130,30 @@ document.addEventListener("DOMContentLoaded", () => {
         form.addEventListener("submit", guardarProducto);
     }
 
+    const btnNuevo = getEl("btnNuevo");
+
+    if (btnNuevo) {
+
+        btnNuevo.addEventListener(
+            "click",
+            mostrarFormulario
+        );
+
+    }
+
     const chk = getEl("verInactivos");
     if (chk) {
         chk.addEventListener("change", () => {
-            currentPage = 1;
+
+            tablaProductos.reiniciarPaginacion();
+
             cargarProductos();
+
         });
     }
+
+    const tipoSelect = getEl("tipo");
+    if (tipoSelect) tipoSelect.dispatchEvent(new Event("change"));
 
     if (tipoSelect) {
         tipoSelect.addEventListener("change", function () {
@@ -71,6 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         aplicarTipoUI(tipoSelect);
     }
+
 });
 
 
@@ -78,37 +188,67 @@ document.addEventListener("DOMContentLoaded", () => {
 // CARGAR PRODUCTOS
 // =============================
 async function cargarProductos() {
+
+    if (!tablaProductos) {
+        console.error("TablaUI no inicializada.");
+        return;
+    }
+
     mostrarLoader();
 
+    const verInactivos = getEl("verInactivos")?.checked;
+    const texto = getEl("busqueda")?.value.trim() || "";
+
     try {
-        const verInactivos = getEl("verInactivos")?.checked;
 
-        const res = await apiFetch(
-            `/productos?page=${currentPage}&limit=${limit}&inactivos=${verInactivos ? "true" : "false"}`
-        );
+        const params = new URLSearchParams({
 
-        if (!res || res.status === "error") {
-            mostrarMensaje("Error cargando productos ❌", "error");
-            return;
-        }
+            page: tablaProductos.page,
 
-        productosGlobal = res.data || [];
-        pintarTabla(productosGlobal);
+            limit: tablaProductos.pageSize,
+
+            sort_by: tablaProductos.sortBy,
+
+            sort_order: tablaProductos.sortOrder,
+
+            inactivos: verInactivos
+                ? "true"
+                : "false",
+
+            search: texto
+
+        });
+
+        const res = await apiFetch(`/productos?${params}`);
+
+        const resultado = res.data;
+
+        tablaProductos.actualizarDesdeBackend(resultado);
+
+        const productos = resultado.items || [];
+
+        pintarTabla(productos);
 
     } catch (error) {
+
         console.error(error);
-        mostrarMensaje("Error cargando productos ❌", "error");
+
+        mostrarMensaje(
+            "Error cargando productos",
+            "error"
+        );
+    } finally {
+
+        // futuro loader global
+
     }
+
 }
 
 
 // =============================
 // TABLA
 // =============================
-function escaparTexto(texto) {
-    return (texto || "").replace(/'/g, "\\'");
-}
-
 function pintarTabla(productos) {
 
     const tbody = getEl("tablaProductos");
@@ -140,10 +280,9 @@ function pintarTabla(productos) {
                 </td>
                 <td class="acciones">
 
-                    <button class="btn-action btn-edit"
-                        onclick="editar(${p.id}, 
-                        '${escaparTexto(p.nombre)}', '${escaparTexto(p.codigo)}', '${escaparTexto(p.categoria)}', ${p.unidad_id || 0}, '${p.tipo}',
-                        ${p.precio_venta || 0})">
+                    <button
+                        class="btn-action btn-edit"
+                        onclick="editar(${p.id})">
                         ✏️
                     </button>
 
@@ -162,6 +301,75 @@ function pintarTabla(productos) {
 
 
 // =============================
+// EDITAR
+// =============================
+window.editar = async function (id) {
+
+    try {
+
+        mostrarLoader();
+
+        const res = await apiFetch(`/productos/${id}`);
+
+        if (!res || res.status === "error") {
+
+            mostrarMensaje(
+                "Error obteniendo el producto ❌",
+                "error"
+            );
+
+            return;
+
+        }
+
+        const p = res.data;
+
+        editandoId = p.id;
+
+        getEl("nombre").value = p.nombre || "";
+
+        getEl("codigo").value = p.codigo || "";
+
+        getEl("categoria").value = p.categoria || "";
+
+        getEl("unidad").value = p.unidad_id || "";
+
+        getEl("tipo").value = p.tipo || "";
+
+        getEl("precio_venta").value = p.precio_venta || 0;
+
+        getEl("stock").value = p.stock || 0;
+
+        aplicarTipoUI(getEl("tipo"));
+
+        setText(
+            "formTitle",
+            "Editar Producto"
+        );
+
+        const btn = getEl("btnGuardar");
+
+        if (btn)
+            btn.innerText = "Actualizar";
+
+        getEl("formContainer")
+            ?.classList.remove("hidden");
+
+    } catch (error) {
+
+        console.error(error);
+
+        mostrarMensaje(
+            "Error obteniendo producto ❌",
+            "error"
+        );
+
+    }
+
+};
+
+
+// =============================
 // FORMATO
 // =============================
 function formatoMoneda(valor) {
@@ -173,40 +381,25 @@ function formatoMoneda(valor) {
 
 
 // =============================
-// EDITAR
-// =============================
-window.editar = function (id, nombre, codigo, categoria, unidad_id, tipo, precio_venta) {
-
-    editandoId = id;
-
-    getEl("nombre") && (getEl("nombre").value = nombre || "");
-    getEl("codigo") && (getEl("codigo").value = codigo || "");
-    getEl("categoria") && (getEl("categoria").value = categoria || "");
-    getEl("unidad") && (getEl("unidad").value = unidad_id || "");
-    getEl("tipo") && (getEl("tipo").value = tipo || "");
-    getEl("precio_venta") && (getEl("precio_venta").value = precio_venta || 0);
-    aplicarTipoUI(getEl("tipo"));
-
-    setText("formTitle", "Editar Producto");
-    setText("btnGuardar", "Actualizar");
-
-    getEl("formContainer")?.classList.remove("hidden");
-};
-
-
-// =============================
 // CANCELAR
 // =============================
 window.cancelarEdicion = function () {
-    editandoId = null;
 
-    const form = getEl("formProducto");
-    if (form) form.reset();
+    limpiarFormularioProducto();
 
-    setText("btnGuardar", "Guardar");
-    setText("formTitle", "Nuevo Producto");
+    getEl("formContainer")
+        ?.classList.add("hidden");
 
-    getEl("formContainer")?.classList.add("hidden");
+};
+
+
+window.mostrarFormulario = function () {
+
+    limpiarFormularioProducto();
+
+    getEl("formContainer")
+        ?.classList.remove("hidden");
+
 };
 
 
@@ -239,6 +432,8 @@ async function guardarProducto(e) {
 
     try {
 
+        bloquearBotonGuardar();
+
         const res = editandoId
             ? await apiFetch(`/productos/${editandoId}`, "PUT", data)
             : await apiFetch("/productos", "POST", data);
@@ -255,17 +450,15 @@ async function guardarProducto(e) {
             "success"
         );
 
-        // Redirigir a la página de productos después de guardar
-        setTimeout(() => {
-            window.location.href = "../pages/productos.html";
-        }, 1000);
-
         cancelarEdicion();
-        cargarProductos();
+
+        await cargarProductos();
 
     } catch (error) {
         console.error("ERROR REAL:", error);
         mostrarMensaje(error.message || "Error guardando producto", "error");
+    } finally {
+        desbloquearBotonGuardar();
     }
 }
 
@@ -278,45 +471,25 @@ window.eliminar = async function (id) {
 
     await apiFetch(`/productos/${id}`, "DELETE");
     mostrarMensaje("Producto eliminado correctamente ✅", "success");
-    cargarProductos();
+    await cargarProductos();
 };
 
 window.activar = async function (id) {
     await apiFetch(`/productos/${id}/activar`, "PUT");
     mostrarMensaje("Producto activado correctamente ✅", "success");
-    cargarProductos();
+    await cargarProductos();
 };
 
 
 // =============================
 // FILTRO
 // =============================
-window.filtrarProductos = async function () {
+window.filtrarProductos = function () {
 
-    const texto = getEl("busqueda")?.value.trim();
+    tablaProductos.reiniciarPaginacion();
 
-    if (!texto) {
-        cargarProductos();
-        return;
-    }
+    cargarProductos();
 
-    try {
-
-        const res = await apiFetch(
-            `/productos?page=1&limit=100&search=${encodeURIComponent(texto)}`
-        );
-
-        if (res?.status === "error") {
-            mostrarMensaje("Error buscando productos ❌", "error");
-            return;
-        }
-
-        pintarTabla(res.data || []);
-
-    } catch (error) {
-        console.error(error);
-        mostrarMensaje("Error buscando productos ❌", "error");
-    }
 };
 
 
@@ -351,15 +524,15 @@ function mostrarMensaje(msg, tipo = "success") {
 // PAGINACIÓN
 // =============================
 window.nextPage = function () {
-    currentPage++;
-    cargarProductos();
+
+    tablaProductos.paginaSiguiente();
+
 };
 
 window.prevPage = function () {
-    if (currentPage > 1) {
-        currentPage--;
-        cargarProductos();
-    }
+
+    tablaProductos.paginaAnterior();
+
 };
 
 

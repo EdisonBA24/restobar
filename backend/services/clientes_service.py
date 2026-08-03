@@ -760,11 +760,13 @@ def create_cliente(data):
                     nombre,
                     documento,
                     telefono,
+                    email,
                     usuario_id,
                     activo
                 )
                 VALUES
                 (
+                    {placeholder},
                     {placeholder},
                     {placeholder},
                     {placeholder},
@@ -780,6 +782,8 @@ def create_cliente(data):
 
                 data.get("telefono"),
 
+                data.get("email"),
+
                 data.get("usuario_id") or 1
 
             ))
@@ -794,6 +798,7 @@ def create_cliente(data):
                     nombre,
                     documento,
                     telefono,
+                    email,
                     usuario_id,
                     activo
                 )
@@ -813,6 +818,8 @@ def create_cliente(data):
                 data.get("documento"),
 
                 data.get("telefono"),
+
+                data.get("email"),
 
                 data.get("usuario_id") or 1
 

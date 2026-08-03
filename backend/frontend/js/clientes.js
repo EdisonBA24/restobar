@@ -1,10 +1,6 @@
 import { apiFetch } from "./api.js";
 import { TablaUI } from "./tablas.js";
 
-// ELIMINAR DESPUÉS DE LA MIGRACIÓN
-// let currentPage = 1;
-// const limit = 5;
-
 const STORAGE_PAGE_SIZE = "clientes_page_size";
 
 let tablaClientes = null;

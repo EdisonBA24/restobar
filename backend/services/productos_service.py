@@ -51,6 +51,18 @@ def _placeholder():
     return "%s" if DB_ENGINE == "postgres" else "?"
 
 
+# =============================
+# DB SETTINGS
+# =============================
+def _get_db_settings():
+
+    is_postgres = DB_ENGINE == "postgres"
+
+    placeholder = "%s" if is_postgres else "?"
+
+    return is_postgres, placeholder
+
+
 def _normalizar_valor(valor):
     valor = (valor or "").strip()
     return valor or None
@@ -104,12 +116,16 @@ def _validar_producto_unico(cursor, data, excluir_id=None):
 
 
 def _base_query():
-    return f"""
-        SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-        FROM {PRODUCTOS} p
-        LEFT JOIN {UNIDADES_MEDIDA} u ON p.unidad_id = u.id
-    """
 
+    return f"""
+        SELECT
+            p.*,
+            u.nombre AS unidad_nombre,
+            u.abreviatura
+        FROM {PRODUCTOS} p
+        LEFT JOIN {UNIDADES_MEDIDA} u
+            ON p.unidad_id = u.id
+    """
 
 # =============================
 # GET PRODUCTO
@@ -122,9 +138,12 @@ def _get_producto(cursor, producto_id):
         SELECT
             p.id,
             p.nombre,
+            p.codigo,
             p.categoria,
             p.tipo,
+            p.unidad_id,
             p.precio_venta,
+            p.stock,
             p.activo
         FROM {PRODUCTOS} p
         WHERE p.id = {placeholder}
@@ -137,11 +156,32 @@ def _get_producto(cursor, producto_id):
     if not row:
         return None
 
-    columns = [c[0] for c in cursor.description]
+    columns = [
+        column[0]
+        for column in cursor.description
+    ]
 
     producto = dict(zip(columns, row))
 
-    producto["precio_venta"] = float(producto.get("precio_venta") or 0)
+    # =============================
+    # NORMALIZACIÓN
+    # =============================
+
+    producto["id"] = int(
+        producto.get("id") or 0
+    )
+
+    producto["unidad_id"] = int(
+        producto.get("unidad_id") or 0
+    )
+
+    producto["precio_venta"] = float(
+        producto.get("precio_venta") or 0
+    )
+
+    producto["stock"] = float(
+        producto.get("stock") or 0
+    )
 
     return producto
 
@@ -155,9 +195,22 @@ def get_producto_por_id(producto_id):
 
     try:
 
-        return _get_producto(cursor, producto_id)
+        return _get_producto(
+            cursor,
+            producto_id
+        )
+
+    except Exception as e:
+
+        print(
+            "❌ ERROR GET PRODUCTO:",
+            e
+        )
+
+        raise
 
     finally:
+
         conn.close()
 
 # =============================
@@ -172,96 +225,133 @@ def get_productos_por_categoria(categoria):
 
         placeholder = _placeholder()
 
-        activo = True if DB_ENGINE == "postgres" else 1
+        query = _base_query()
 
-        print(f"Buscando categoría: {categoria}")
-
-        cursor.execute(f"""
-            SELECT
-                id,
-                nombre,
-                categoria,
-                tipo,
-                precio_venta
-            FROM {PRODUCTOS}
+        query += f"""
             WHERE
-                activo = {placeholder}
-                AND tipo='RECETA'
-                AND UPPER(categoria)=UPPER({placeholder})
-            ORDER BY nombre
-        """,(activo,categoria))
+                p.categoria = {placeholder}
+                AND p.activo = 1
+            ORDER BY
+                p.nombre
+        """
 
-        columns=[c[0] for c in cursor.description]
+        cursor.execute(query, (categoria,))
 
-        data=[]
+        columns = [
+            column[0]
+            for column in cursor.description
+        ]
 
         rows = cursor.fetchall()
-        print(f"Filas encontradas: {len(rows)}")
 
-        for row in cursor.fetchall():
+        data = []
 
-            r=dict(zip(columns,row))
+        for row in rows:
 
-            r["precio_venta"]=float(r.get("precio_venta") or 0)
+            producto = dict(zip(columns, row))
 
-            data.append(r)
+            producto["id"] = int(
+                producto.get("id") or 0
+            )
+
+            producto["unidad_id"] = int(
+                producto.get("unidad_id") or 0
+            )
+
+            producto["precio_venta"] = float(
+                producto.get("precio_venta") or 0
+            )
+
+            producto["stock"] = float(
+                producto.get("stock") or 0
+            )
+
+            data.append(producto)
 
         return data
 
+    except Exception as e:
+
+        print(
+            "❌ ERROR PRODUCTOS CATEGORIA:",
+            e
+        )
+
+        return []
+
     finally:
+
         conn.close()
 
 # =============================
-# GET COMPONENTES ALMUERZO
+# COMPONENTES ALMUERZO
 # =============================
-#def get_componentes_almuerzo():
-
-#    return {
-
-#        "sopas":get_productos_por_categoria(SOPA),
-
-#        "proteinas":get_productos_por_categoria(PROTEINA),
-
-#        "secos":get_productos_por_categoria(SECO),
-
-#        "ensaladas":get_productos_por_categoria(ENSALADA),
-
-#        "jugos":get_productos_por_categoria(JUGO)
-
-#    }
 def get_componentes_almuerzo():
 
-    print("===== INICIO COMPONENTES =====")
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    print("Consultando SOPAS...")
-    sopas = get_productos_por_categoria(SOPA)
-    print(f"SOPAS: {len(sopas)}")
+    try:
 
-    print("Consultando PROTEINAS...")
-    proteinas = get_productos_por_categoria(PROTEINA)
-    print(f"PROTEINAS: {len(proteinas)}")
+        query = _base_query()
 
-    print("Consultando SECOS...")
-    secos = get_productos_por_categoria(SECO)
-    print(f"SECOS: {len(secos)}")
+        query += """
+            WHERE
+                p.tipo = 'COMPONENTE_ALMUERZO'
+                AND p.activo = 1
+            ORDER BY
+                p.nombre
+        """
 
-    print("Consultando ENSALADAS...")
-    ensaladas = get_productos_por_categoria(ENSALADA)
-    print(f"ENSALADAS: {len(ensaladas)}")
+        cursor.execute(query)
 
-    print("Consultando JUGOS...")
-    jugos = get_productos_por_categoria(JUGO)
-    print(f"JUGOS: {len(jugos)}")
+        columns = [
+            column[0]
+            for column in cursor.description
+        ]
 
-    print("===== FIN COMPONENTES =====")
+        data = []
 
-    return {
-        "sopas": sopas,
-        "proteinas": proteinas,
-        "secos": secos,
-        "ensaladas": ensaladas,
-        "jugos": jugos
-    }
+        for row in cursor.fetchall():
+
+            producto = dict(zip(columns, row))
+
+            # =============================
+            # NORMALIZACIÓN
+            # =============================
+
+            producto["id"] = int(
+                producto.get("id") or 0
+            )
+
+            producto["unidad_id"] = int(
+                producto.get("unidad_id") or 0
+            )
+
+            producto["precio_venta"] = float(
+                producto.get("precio_venta") or 0
+            )
+
+            producto["stock"] = float(
+                producto.get("stock") or 0
+            )
+
+            data.append(producto)
+
+        return data
+
+    except Exception as e:
+
+        print(
+            "❌ ERROR COMPONENTES ALMUERZO:",
+            e
+        )
+
+        return []
+
+    finally:
+
+        conn.close()
 
 # =============================
 # VALIDAR PRODUCTO CATEGORIA
@@ -295,131 +385,238 @@ def validar_producto_categoria(producto_id,categoria):
 # =============================
 # GET PRODUCTOS
 # =============================
-def get_all_productos(page=1, limit=10, solo_inactivos=False, search=None):
+def get_all_productos(page=1, limit=10, solo_inactivos=False, search=None, sort_by="id", sort_order="desc"):
 
-    # 🔥 HARDENING
-    page = max(int(page), 1)
-    limit = max(int(limit), 1)
     offset = (page - 1) * limit
 
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
+
         estado = 0 if solo_inactivos else 1
 
-        # 🔥 BASE SEGÚN MOTOR
-        if DB_ENGINE == "postgres":
-            query = f"""
-            SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-            FROM {PRODUCTOS} p
-            LEFT JOIN {UNIDADES_MEDIDA} u ON p.unidad_id = u.id
-            WHERE p.activo = %s
-            """
-        else:
-            query = f"""
-            SELECT p.*, u.nombre AS unidad_nombre, u.abreviatura
-            FROM {PRODUCTOS} p
-            LEFT JOIN {UNIDADES_MEDIDA} u ON p.unidad_id = u.id
-            WHERE p.activo = ?
-            """
+        is_postgres, placeholder = _get_db_settings()
 
-        params = [estado]
+        null_fn = "COALESCE" if is_postgres else "ISNULL"
 
         # =============================
-        # 🔍 SEARCH
+        # QUERY PRINCIPAL
         # =============================
-        if search and str(search).strip() != "":
-            search = str(search).strip().lower()
-
-            if DB_ENGINE == "postgres":
-                query += """
-                AND (
-                    LOWER(COALESCE(p.nombre, '')) LIKE %s OR
-                    LOWER(COALESCE(p.codigo, '')) LIKE %s OR
-                    LOWER(COALESCE(p.categoria, '')) LIKE %s OR
-                    LOWER(COALESCE(p.tipo, '')) LIKE %s
-                )
-                """
-            else:
-                query += """
-                AND (
-                    LOWER(ISNULL(p.nombre, '')) LIKE ? OR
-                    LOWER(ISNULL(p.codigo, '')) LIKE ? OR
-                    LOWER(ISNULL(p.categoria, '')) LIKE ? OR
-                    LOWER(ISNULL(p.tipo, '')) LIKE ?
-                )
-                """
-
-            like = f"%{search}%"
-            params.extend([like, like, like, like])
-
-        # =============================
-        # 📄 PAGINACIÓN
-        # =============================
-        if DB_ENGINE == "postgres":
-            query += " ORDER BY p.id DESC LIMIT %s OFFSET %s"
-            params.extend([limit, offset])
-        else:
-            query += " ORDER BY p.id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"
-            params.extend([offset, limit])
-
-        cursor.execute(query, tuple(params))
-
-        columns = [column[0] for column in cursor.description]
-
-        data = []
-        for row in cursor.fetchall():
-            r = dict(zip(columns, row))
-
-            # 🔥 NORMALIZACIÓN SEGURA
-            r["precio_venta"] = float(r.get("precio_venta") or 0)
-            r["stock"] = float(r.get("stock") or 0)
-
-            data.append(r)
-
-        return data
-
-    except Exception as e:
-        print("❌ ERROR GET PRODUCTOS:", e)
-        raise e
-
-    finally:
-        conn.close()
-
-
-# =============================
-# AUTOCOMPLETE PRODUCTOS
-# =============================
-def get_productos_autocomplete(
-    search=None,
-    tipos=None,
-    activos=True
-):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    try:
-
-        placeholder = _placeholder()
-
-        estado = 1 if activos else 0
 
         query = f"""
             SELECT
-                p.id,
-                p.nombre,
-                p.codigo,
-                p.tipo,
-                p.categoria,
-                p.unidad_id,
-                p.precio_venta,
-                p.stock,
+                p.*,
                 u.nombre AS unidad_nombre,
                 u.abreviatura
             FROM {PRODUCTOS} p
             LEFT JOIN {UNIDADES_MEDIDA} u
                 ON p.unidad_id = u.id
+            WHERE p.activo = {placeholder}
+        """
+
+        params = [estado]
+
+        # =============================
+        # QUERY TOTAL
+        # =============================
+
+        count_query = f"""
+            SELECT COUNT(*)
+            FROM {PRODUCTOS} p
+            WHERE p.activo = {placeholder}
+        """
+
+        count_params = [estado]
+
+        # =============================
+        # BÚSQUEDA
+        # =============================
+
+        if search and str(search).strip():
+
+            like = f"%{search.strip().lower()}%"
+
+            filtro = f"""
+                AND (
+                    LOWER({null_fn}(p.nombre,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(p.codigo,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(p.categoria,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(p.tipo,'')) LIKE {placeholder}
+                )
+            """
+
+            query += filtro
+            count_query += filtro
+
+            params.extend([like, like, like, like])
+            count_params.extend([like, like, like, like])
+
+        # =============================
+        # COLUMNAS ORDENABLES
+        # =============================
+
+        columnas_validas = {
+            "id": "p.id",
+            "nombre": "p.nombre",
+            "codigo": "p.codigo",
+            "stock": "p.stock",
+            "categoria": "p.categoria",
+            "tipo": "p.tipo",
+            "precio_venta": "p.precio_venta",
+            "fecha_creacion": "p.fecha_creacion",
+            "unidad_nombre": "u.nombre"
+        }
+
+        sort_by_request = sort_by
+
+        sort_by = columnas_validas.get(
+            sort_by,
+            "p.id"
+        )
+
+        sort_order = (
+            "DESC"
+            if str(sort_order).lower() == "desc"
+            else "ASC"
+        )
+
+        # =============================
+        # PAGINACIÓN
+        # =============================
+
+        if is_postgres:
+
+            query += f"""
+                ORDER BY {sort_by} {sort_order}
+                LIMIT {placeholder}
+                OFFSET {placeholder}
+            """
+
+            params.extend([
+                limit,
+                offset
+            ])
+
+        else:
+
+            query += f"""
+                ORDER BY {sort_by} {sort_order}
+                OFFSET {placeholder}
+                ROWS FETCH NEXT {placeholder} ROWS ONLY
+            """
+
+            params.extend([
+                offset,
+                limit
+            ])
+
+        # =============================
+        # TOTAL
+        # =============================
+
+        cursor.execute(
+            count_query,
+            count_params
+        )
+
+        total = cursor.fetchone()[0]
+
+        total_pages = max(
+            (total + limit - 1) // limit,
+            1
+        )
+
+        # =============================
+        # CONSULTA
+        # =============================
+
+        cursor.execute(
+            query,
+            params
+        )
+
+        columns = [
+            c[0]
+            for c in cursor.description
+        ]
+
+        data = []
+
+        for row in cursor.fetchall():
+
+            producto = dict(zip(columns, row))
+
+            producto["id"] = int(
+                producto.get("id") or 0
+            )
+
+            producto["unidad_id"] = int(
+                producto.get("unidad_id") or 0
+            )
+
+            producto["precio_venta"] = float(
+                producto.get("precio_venta") or 0
+            )
+
+            producto["stock"] = float(
+                producto.get("stock") or 0
+            )
+
+            data.append(producto)
+
+        return {
+            "items": data,
+            "page": page,
+            "page_size": limit,
+            "total": total,
+            "total_pages": total_pages,
+            "sort_by": sort_by_request,
+            "sort_order": sort_order.lower()
+        }
+
+    except Exception as e:
+
+        print("❌ ERROR GET PRODUCTOS:", e)
+
+        return {
+            "items": [],
+            "page": page,
+            "page_size": limit,
+            "total": 0,
+            "total_pages": 1,
+            "sort_by": sort_by,
+            "sort_order": sort_order.lower()
+        }
+
+    finally:
+
+        conn.close()
+
+
+# =====================================
+# AUTOCOMPLETE PRODUCTOS
+# =====================================
+def get_productos_autocomplete(
+    search=None,
+    tipos=None,
+    activos=True
+):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        is_postgres, placeholder = _get_db_settings()
+
+        null_fn = "COALESCE" if is_postgres else "ISNULL"
+
+        estado = 1 if activos else 0
+
+        query = _base_query()
+
+        query += f"""
             WHERE
                 p.activo = {placeholder}
         """
@@ -429,35 +626,27 @@ def get_productos_autocomplete(
         # =====================================
         # FILTRO SEARCH
         # =====================================
-        search = (search or "").strip().lower()
 
-        if search:
+        if search and str(search).strip():
 
-            like = f"%{search}%"
+            like = f"%{search.strip().lower()}%"
 
-            if DB_ENGINE == "postgres":
+            query += f"""
+                AND (
+                    LOWER({null_fn}(p.nombre,'')) LIKE {placeholder}
+                    OR LOWER({null_fn}(p.codigo,'')) LIKE {placeholder}
+                )
+            """
 
-                query += f"""
-                    AND (
-                        LOWER(COALESCE(p.nombre,'')) LIKE {placeholder}
-                        OR LOWER(COALESCE(p.codigo,'')) LIKE {placeholder}
-                    )
-                """
-
-            else:
-
-                query += f"""
-                    AND (
-                        LOWER(ISNULL(p.nombre,'')) LIKE {placeholder}
-                        OR LOWER(ISNULL(p.codigo,'')) LIKE {placeholder}
-                    )
-                """
-
-            params.extend([like, like])
+            params.extend([
+                like,
+                like
+            ])
 
         # =====================================
         # FILTRO TIPOS
         # =====================================
+
         if tipos:
 
             if isinstance(tipos, str):
@@ -469,7 +658,7 @@ def get_productos_autocomplete(
                 ]
 
             tipos = [
-                str(t).upper()
+                str(t).strip().upper()
                 for t in tipos
                 if str(t).strip()
             ]
@@ -481,7 +670,8 @@ def get_productos_autocomplete(
                 )
 
                 query += f"""
-                    AND UPPER(p.tipo) IN ({placeholders})
+                    AND UPPER(p.tipo)
+                    IN ({placeholders})
                 """
 
                 params.extend(tipos)
@@ -489,12 +679,16 @@ def get_productos_autocomplete(
         # =====================================
         # ORDEN
         # =====================================
+
         query += """
             ORDER BY
                 p.nombre
         """
 
-        cursor.execute(query, params)
+        cursor.execute(
+            query,
+            tuple(params)
+        )
 
         columns = [
             column[0]
@@ -507,9 +701,18 @@ def get_productos_autocomplete(
 
             producto = dict(zip(columns, row))
 
-            # ==========================
+            # =====================================
             # NORMALIZACIÓN
-            # ==========================
+            # =====================================
+
+            producto["id"] = int(
+                producto.get("id") or 0
+            )
+
+            producto["unidad_id"] = int(
+                producto.get("unidad_id") or 0
+            )
+
             producto["precio_venta"] = float(
                 producto.get("precio_venta") or 0
             )
@@ -518,17 +721,16 @@ def get_productos_autocomplete(
                 producto.get("stock") or 0
             )
 
-            producto["id"] = int(
-                producto.get("id") or 0
-            )
-
             data.append(producto)
 
         return data
 
     except Exception as e:
 
-        print("❌ ERROR AUTOCOMPLETE PRODUCTOS:", e)
+        print(
+            "❌ ERROR AUTOCOMPLETE PRODUCTOS:",
+            e
+        )
 
         return []
 

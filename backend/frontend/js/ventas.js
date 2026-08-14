@@ -277,7 +277,7 @@ window.verDetalleVenta = async function (id) {
                 <tbody>
                     ${(res.data || []).map(d => `
                         <tr>
-                            <td>${escaparHTML(d.nombre)}</td>
+                            <td>${escaparHTML(d.nombre_item || d.nombre || d.tipo_item || "Sin nombre")}</td>
                             <td>${d.cantidad}</td>
                             <td>${formatoMoneda(d.precio)}</td>
                             <td>${formatoMoneda(d.cantidad * d.precio)}</td>

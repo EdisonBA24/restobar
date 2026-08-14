@@ -8,7 +8,29 @@ export class Almuerzo {
 
     constructor() {
 
-        this.id = crypto.randomUUID();
+        this.id =
+            (window.crypto &&
+                typeof window.crypto.randomUUID === "function")
+
+                ? window.crypto.randomUUID()
+
+                : `ALM-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+
+        /*=========================================
+        = TIPO DEL ITEM
+        =========================================*/
+
+        this.tipo = "ADICION";
+
+        this.nombre = "Adición";
+
+        this.precioBase = 0;
+
+        this.precio = 0;
+
+        /*=========================================
+        = COMPONENTES
+        =========================================*/
 
         this.sopa = null;
 
@@ -20,14 +42,24 @@ export class Almuerzo {
 
         this.jugo = null;
 
-        this.observaciones = "";
+        /*=========================================
+        = OBSERVACIONES
+        =========================================*/
 
-        this.subtotal = 0;
+        this.observaciones = "";
 
     }
 
     limpiar() {
 
+        this.tipo = "ADICION";
+
+        this.nombre = "Adición";
+
+        this.precioBase = 0;
+
+        this.precio = 0;
+
         this.sopa = null;
 
         this.proteina = null;
@@ -40,11 +72,25 @@ export class Almuerzo {
 
         this.observaciones = "";
 
-        this.subtotal = 0;
-
     }
 
-    calcularSubtotal() {
+    calcularPrecio() {
+
+        // ==========================
+        // MENÚ
+        // ==========================
+
+        if (this.modo === "MENU") {
+
+            this.precio = Number(this.precioBase || 0);
+
+            return this.precio;
+
+        }
+
+        // ==========================
+        // ADICIÓN
+        // ==========================
 
         let total = 0;
 
@@ -63,7 +109,7 @@ export class Almuerzo {
         if (this.jugo)
             total += Number(this.jugo.precio_venta || 0);
 
-        this.subtotal = total;
+        this.precio = total;
 
         return total;
 
@@ -87,6 +133,14 @@ export class Almuerzo {
 
         const copia = new Almuerzo();
 
+        copia.tipo = this.tipo;
+
+        copia.nombre = this.nombre;
+
+        copia.precioBase = this.precioBase;
+
+        copia.precio = this.precio;
+
         copia.sopa = this.sopa;
 
         copia.proteina = this.proteina;
@@ -98,8 +152,6 @@ export class Almuerzo {
         copia.jugo = this.jugo;
 
         copia.observaciones = this.observaciones;
-
-        copia.subtotal = this.subtotal;
 
         return copia;
 
@@ -175,7 +227,7 @@ export class PedidoAlmuerzo {
 
         return this.items.reduce(
 
-            (total, item) => total + item.subtotal,
+            (total, item) => total + item.precio,
 
             0
 

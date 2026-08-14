@@ -1,7 +1,48 @@
-from flask import Blueprint, request, jsonify, session
-from services.pedidos_service import crear_pedido#, validar_stock_pedido
-from services.pedidos_service import get_pedidos, get_pedido_detalle
-from services.pedidos_service import facturar_pedido
+from flask import (
+    Blueprint,
+    request,
+    jsonify,
+    session,
+    send_file
+)
+
+from services.pedidos_service import (
+
+    crear_pedido,
+
+    get_pedidos,
+
+    get_pedido_detalle,
+
+    get_pedidos_kpis,
+
+    facturar_pedido,
+
+    exportar_pedidos
+
+)
+
+from openpyxl import Workbook
+
+from utils.excel_utils import (
+
+    crear_reporte_excel,
+
+    guardar_workbook
+
+)
+
+from utils.report_configs import (
+
+    construir_resumen_pedidos,
+
+    obtener_hojas_pedidos
+
+)
+
+from datetime import datetime
+
+import traceback
 
 pedidos_bp = Blueprint("pedidos", __name__)
 
@@ -89,7 +130,11 @@ def listar():
         return jsonify({"status": "unauthorized"}), 401
 
     try:
-        data = get_pedidos()
+        data = get_pedidos(
+
+            request.args
+
+        )
 
         return jsonify({
             "status": "success",
@@ -103,6 +148,212 @@ def listar():
             "status": "error",
             "message": "Error obteniendo pedidos"
         }), 500
+
+
+# =====================================================
+# 📊 EXPORTAR PEDIDOS A EXCEL
+# =====================================================
+
+@pedidos_bp.route(
+    "/pedidos/exportar",
+    methods=["GET"]
+)
+def exportar_excel_pedidos():
+
+    if not validar_sesion():
+
+        return jsonify({
+            "status": "unauthorized"
+        }), 401
+
+    try:
+
+        # ==========================================
+        # FILTROS
+        # ==========================================
+
+        filtros = {
+
+            "periodo":
+                request.args.get(
+                    "periodo"
+                ),
+
+            "fecha_inicio":
+                request.args.get(
+                    "fecha_inicio"
+                ),
+
+            "fecha_fin":
+                request.args.get(
+                    "fecha_fin"
+                ),
+
+            "estado":
+                request.args.get(
+                    "estado"
+                ),
+
+            "servicio":
+                request.args.get(
+                    "servicio"
+                ),
+
+            "buscar":
+                request.args.get(
+                    "buscar"
+                )
+
+        }
+
+        print(
+            "📊 FILTROS EXPORTAR PEDIDOS:"
+        )
+
+        print(filtros)
+
+        # ==========================================
+        # OBTENER DATOS
+        # ==========================================
+
+        data = exportar_pedidos(
+            filtros
+        )
+
+        # ==========================================
+        # CREAR WORKBOOK
+        # ==========================================
+
+        workbook = Workbook()
+
+        workbook.remove(
+            workbook.active
+        )
+
+        # ==========================================
+        # RESUMEN FILTROS
+        # ==========================================
+
+        resumen = construir_resumen_pedidos(
+            filtros
+        )
+
+        # ==========================================
+        # CREAR HOJAS
+        # ==========================================
+
+        hojas = obtener_hojas_pedidos(
+            data,
+            resumen
+        )
+
+        # ==========================================
+        # CONSTRUIR EXCEL
+        # ==========================================
+
+        crear_reporte_excel(
+            workbook,
+            hojas
+        )
+
+        # ==========================================
+        # GUARDAR WORKBOOK
+        # ==========================================
+
+        output = guardar_workbook(
+            workbook
+        )
+
+        # ==========================================
+        # NOMBRE ARCHIVO
+        # ==========================================
+
+        nombre_archivo = (
+            f"Reporte_Pedidos_"
+            f"{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+        )
+
+        # ==========================================
+        # DESCARGAR
+        # ==========================================
+
+        return send_file(
+
+            output,
+
+            as_attachment=True,
+
+            download_name=nombre_archivo,
+
+            mimetype=(
+                "application/"
+                "vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            )
+
+        )
+
+    except Exception as e:
+
+        print(
+            "❌ ERROR EXPORTAR PEDIDOS:"
+        )
+
+        print(e)
+
+        traceback.print_exc()
+
+        return jsonify({
+
+            "status": "error",
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+# =============================
+# 📊 KPIS PEDIDOS
+# =============================
+@pedidos_bp.route("/pedidos/kpis", methods=["GET"])
+def obtener_kpis():
+
+    if not validar_sesion():
+
+        return jsonify({
+
+            "status": "unauthorized"
+
+        }), 401
+
+    try:
+
+        data = get_pedidos_kpis(
+
+            request.args
+
+        )
+
+        return jsonify({
+
+            "status": "success",
+
+            "data": data
+
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR KPIS PEDIDOS:", e)
+
+        return jsonify({
+
+            "status": "error",
+
+            "message": str(e)
+
+        }), 500    
 
 
 # =============================
@@ -169,3 +420,5 @@ def facturar(id):
             "status": "error",
             "message": str(e)
         }), 500
+
+

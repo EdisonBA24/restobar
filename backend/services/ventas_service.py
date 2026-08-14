@@ -245,16 +245,131 @@ def crear_venta(data):
         # =============================
         # DETALLE + STOCK
         # =============================
+        #for item in detalles:
+
+        #    producto_id = item.get("producto_id")
+        #    cantidad = to_decimal(item.get("cantidad"), "Cantidad")
+        #    precio = to_decimal(item.get("precio"), "Precio")
+
+        #    cursor.execute(f"""
+        #        INSERT INTO {DETALLE_VENTAS} (venta_id, producto_id, cantidad, precio)
+        #        VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
+        #    """, (venta_id, producto_id, cantidad, precio))
         for item in detalles:
 
             producto_id = item.get("producto_id")
-            cantidad = to_decimal(item.get("cantidad"), "Cantidad")
-            precio = to_decimal(item.get("precio"), "Precio")
 
-            cursor.execute(f"""
-                INSERT INTO {DETALLE_VENTAS} (venta_id, producto_id, cantidad, precio)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
-            """, (venta_id, producto_id, cantidad, precio))
+            cantidad = to_decimal(
+                item.get("cantidad"),
+                "Cantidad"
+            )
+
+            precio = to_decimal(
+                item.get("precio"),
+                "Precio"
+            )
+
+            tipo_item = str(
+                item.get("tipo_item") or "PRODUCTO"
+            ).upper()
+
+            # =====================================================
+            # DETERMINAR NOMBRE DEL ITEM
+            # =====================================================
+
+            nombre_item = item.get("nombre_item")
+
+            if nombre_item:
+                nombre_item = str(nombre_item).strip()
+
+            # -----------------------------------------------------
+            # PRODUCTO REAL
+            # -----------------------------------------------------
+
+            if producto_id is not None:
+
+                cursor.execute(
+                    f"""
+                    SELECT nombre
+                    FROM {PRODUCTOS}
+                    WHERE id = {placeholder}
+                    """,
+                    (producto_id,)
+                )
+
+                producto = cursor.fetchone()
+
+                if not producto:
+                    raise Exception(
+                        f"Producto {producto_id} no existe"
+                    )
+
+                nombre_item = producto[0]
+
+                if not nombre_item:
+                    raise Exception(
+                        f"El producto {producto_id} no tiene nombre"
+                    )
+
+            # -----------------------------------------------------
+            # CONSTRUCTOR / ITEM
+            # -----------------------------------------------------
+
+            else:
+
+                nombres_tipo = {
+                    "ALMUERZO": "Almuerzo",
+                    "MENU_EJECUTIVO": "Menu Ejecutivo",
+                    "MENU_PREMIUM": "Menu Premium",
+                    "MENU_ESPECIAL": "Menu Especial",
+                    "ADICION": "Adición",
+                    "DESAYUNO": "Desayuno",
+                    "COMIDA_RAPIDA": "Comida Rápida",
+                    "LICOR": "Licor"
+                }
+
+                nombre_item = (
+                    nombre_item
+                    or nombres_tipo.get(
+                        tipo_item,
+                        tipo_item.replace("_", " ").title()
+                    )
+                )
+
+            # =====================================================
+            # GUARDAR DETALLE DE VENTA
+            # =====================================================
+
+            cursor.execute(
+                f"""
+                INSERT INTO {DETALLE_VENTAS}
+                (
+                    venta_id,
+                    producto_id,
+                    cantidad,
+                    precio,
+                    nombre_item,
+                    tipo_item
+                )
+                VALUES
+                (
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder}
+                )
+                """,
+                (
+                    venta_id,
+                    producto_id,
+                    cantidad,
+                    precio,
+                    nombre_item,
+                    tipo_item
+                )
+            )
 
             #cursor.execute(f"SELECT tipo FROM restobar.productos WHERE id = {placeholder}", (producto_id,))
             #tipo_row = cursor.fetchone()
@@ -374,10 +489,18 @@ def get_venta_detalle(venta_id):
         placeholder = "%s" if is_postgres else "?"
 
         cursor.execute(f"""
-            SELECT dv.producto_id, p.nombre, dv.cantidad, dv.precio
+            SELECT
+                dv.id,
+                dv.producto_id,
+                dv.nombre_item,
+                dv.tipo_item,
+                dv.cantidad,
+                dv.precio
             FROM {DETALLE_VENTAS} dv
-            JOIN {PRODUCTOS} p ON dv.producto_id = p.id
+            LEFT JOIN {PRODUCTOS} p
+                ON dv.producto_id = p.id
             WHERE dv.venta_id = {placeholder}
+            ORDER BY dv.id
         """, (venta_id,))
 
         columns = [c[0] for c in cursor.description]

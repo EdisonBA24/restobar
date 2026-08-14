@@ -1,8 +1,4 @@
-import {
-    API_URL,
-    apiFetch
-} from "./api.js";
-// IMPORTACION DE TABLAS.JS
+import { API_URL, apiFetch} from "./api.js";
 import { TablaUI } from "./tablas.js";
 
 let productos = [];
@@ -932,18 +928,56 @@ function formatoMoneda(valor) {
 // =============================
 function mostrarMensaje(msg, tipo = "success") {
 
+    document
+        .querySelectorAll(".toast")
+        .forEach(t => t.remove());
+
+    const iconos = {
+
+        success: "✅",
+
+        warning: "⚠",
+
+        error: "❌",
+
+        info: "ℹ"
+
+    };
+
+    const tiempos = {
+
+        success: 3000,
+
+        info: 4000,
+
+        warning: 6000,
+
+        error: 8000
+
+    };
+
     const toast = document.createElement("div");
+
     toast.className = `toast ${tipo}`;
-    toast.innerText = msg;
+
+    toast.innerHTML = `${iconos[tipo] || ""} ${msg}`;
 
     document.body.appendChild(toast);
 
-    setTimeout(() => toast.classList.add("show"), 50);
+    requestAnimationFrame(() => {
+
+        toast.classList.add("show");
+
+    });
 
     setTimeout(() => {
+
         toast.classList.remove("show");
+
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+
+    }, tiempos[tipo] || 4000);
+
 }
 
 // =====================================

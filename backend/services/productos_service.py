@@ -297,7 +297,7 @@ def get_componentes_almuerzo():
 
         query += """
             WHERE
-                p.tipo = 'COMPONENTE_ALMUERZO'
+                p.tipo = 'RECETA'
                 AND p.activo = 1
             ORDER BY
                 p.nombre
@@ -306,19 +306,30 @@ def get_componentes_almuerzo():
         cursor.execute(query)
 
         columns = [
+
             column[0]
+
             for column in cursor.description
+
         ]
 
-        data = []
+        componentes = {
+
+            "sopas": [],
+
+            "proteinas": [],
+
+            "secos": [],
+
+            "ensaladas": [],
+
+            "jugos": []
+
+        }
 
         for row in cursor.fetchall():
 
             producto = dict(zip(columns, row))
-
-            # =============================
-            # NORMALIZACIÓN
-            # =============================
 
             producto["id"] = int(
                 producto.get("id") or 0
@@ -336,9 +347,65 @@ def get_componentes_almuerzo():
                 producto.get("stock") or 0
             )
 
-            data.append(producto)
+            categoria = (
+                producto.get("categoria") or ""
+            ).strip().upper()
 
-        return data
+            nombre = (
+                producto.get("nombre") or ""
+            ).strip().upper()
+
+            # =============================
+            # SOPAS
+            # =============================
+
+            if categoria == "SOPA": #or "SOP" in nombre or "CREM" in nombre:
+
+                componentes["sopas"].append(producto)
+
+                continue
+
+            # =============================
+            # PROTEINAS
+            # =============================
+
+            if categoria == "PROTEINA": #or "PROT" in nombre:
+
+                componentes["proteinas"].append(producto)
+
+                continue
+
+            # =============================
+            # ENSALADAS
+            # =============================
+
+            if categoria == "ENSALADA": # or "ENSAL" in nombre:
+
+                componentes["ensaladas"].append(producto)
+
+                continue
+
+            # =============================
+            # JUGOS
+            # =============================
+
+            if categoria == "JUGO": # or "JUGO" in nombre:
+
+                componentes["jugos"].append(producto)
+
+                continue
+
+            # =============================
+            # SECOS
+            # =============================
+
+            if categoria == "SECO": # or "ARRO" in nombre:
+
+                componentes["secos"].append(producto)
+
+                continue
+
+        return componentes
 
     except Exception as e:
 
@@ -347,7 +414,19 @@ def get_componentes_almuerzo():
             e
         )
 
-        return []
+        return {
+
+            "sopas": [],
+
+            "proteinas": [],
+
+            "secos": [],
+
+            "ensaladas": [],
+
+            "jugos": []
+
+        }
 
     finally:
 

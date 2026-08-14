@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../css/styles.css?v=2">
 </head>
 
-<body data-categoria="ALMUERZO" || data-categoria="PROTEINA">
+<body data-categoria="SOPA" || data-categoria="PROTEINA">
 
     <div class="layout">
 
@@ -223,25 +223,39 @@
                     <!-- Dirección -->
                     <div class="form-group full hidden" id="grupoDireccion">
 
-                        <label>Dirección de entrega</label>
+                        <label>
+
+                            Dirección de entrega
+
+                        </label>
 
                         <select id="direccionEntrega">
 
                             <option value="">
+
                                 Seleccione una dirección...
+
                             </option>
 
                         </select>
 
-                    </div>
+                        <div id="infoDirecciones" class="direccion-info hidden">
 
-                    <!-- Otra dirección -->
-                    <div class="form-group full hidden" id="grupoOtraDireccion">
+                            Cliente sin direcciones registradas.
 
-                        <label>Otra dirección</label>
+                        </div>
 
-                        <input id="otraDireccion" type="text" maxlength="250"
-                            placeholder="Ingrese la dirección de entrega">
+                        <!-- 
+                        <div id="accionesDireccion" class="direccion-actions hidden">
+
+                            <button id="btnNuevaDireccion" type="button" class="btn-secondary">
+
+                                ➕ Nueva dirección
+
+                            </button>
+
+                        </div>
+                        -->
 
                     </div>
 
@@ -281,7 +295,7 @@
 
                             <h3>
 
-                                Almuerzo Tradicional
+                                Adiciones
 
                             </h3>
 
@@ -310,31 +324,8 @@
 
                             <p>
 
-                                Menú Ejecutivo y
-                                Menú Premium.
-
-                            </p>
-
-                        </div>
-
-                        <div class="tipo-pedido-card" data-panel="panelEspeciales">
-
-                            <div class="tipo-icono">
-
-                                🥘
-
-                            </div>
-
-                            <h3>
-
-                                Especiales
-
-                            </h3>
-
-                            <p>
-
-                                Cazuela de Frijoles
-                                y demás platos especiales.
+                                Menú Ejecutivo,
+                                Menú Premium Y Especiales.
 
                             </p>
 
@@ -350,23 +341,24 @@
 
                         <div id="panelConstruir" class="tab-panel active">
 
-                            <h2 class="section-title">
+                            <h2 id="tituloConstructor" class="section-title">
 
-                                🍽️ Construir Almuerzo
+                                🍽️ Agregar Adiciones
 
                             </h2>
 
                             <div class="panel-info">
 
-                                <span class="panel-badge">
+                                <span id="badgeConstructor" class="panel-badge">
 
-                                    Almuerzo Tradicional
+                                    Adiciones del almuerzo
 
                                 </span>
 
-                                <p>
+                                <p id="descripcionConstructor">
 
-                                    Seleccione cada uno de los componentes que conforman el almuerzo.
+                                    Seleccione cada uno de los componentes
+                                    que desea agregar como adición.
 
                                 </p>
 
@@ -461,19 +453,109 @@
                             <!-- RESUMEN DEL ALMUERZO -->
                             <!-- ============================================= -->
 
-                            <div id="divResumen" class="resumen-compra">
+                            <div id="divResumen" class="builder-summary">
 
-                                <strong>
+                                <div class="builder-summary-header">
 
-                                    Subtotal del almuerzo:
+                                    <div class="builder-summary-icon">
+                                        🍽
+                                    </div>
 
-                                </strong>
+                                    <div>
 
-                                <span id="lblSubtotal">
+                                        <div id="lblTipoPedido" class="builder-summary-title">
 
-                                    $0
+                                            Adición
 
-                                </span>
+                                        </div>
+
+                                        <div id="lblEstadoPedido" class="builder-summary-status">
+
+                                            Construyendo pedido
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="builder-divider"></div>
+
+                                <div class="builder-items">
+
+                                    <div class="builder-item">
+
+                                        <span>🍲 Sopa: </span>
+
+                                        <strong id="resSopa">
+
+                                            Sin seleccionar
+
+                                        </strong>
+
+                                    </div>
+
+                                    <div class="builder-item">
+
+                                        <span>🥩 Proteína:</span>
+
+                                        <strong id="resProteina">
+
+                                            Sin seleccionar
+
+                                        </strong>
+
+                                    </div>
+
+                                    <div class="builder-item">
+
+                                        <span>🍚 Seco:</span>
+
+                                        <strong id="resSeco">
+
+                                            Sin seleccionar
+
+                                        </strong>
+
+                                    </div>
+
+                                    <div class="builder-item">
+
+                                        <span>🥗 Ensalada:</span>
+
+                                        <strong id="resEnsalada">
+
+                                            Sin seleccionar
+
+                                        </strong>
+
+                                    </div>
+
+                                    <div class="builder-item">
+
+                                        <span>🥤 Jugo:</span>
+
+                                        <strong id="resJugo">
+
+                                            Sin seleccionar
+
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="builder-summary-price">
+
+                                    <span>Total:</span>
+
+                                    <strong id="lblSubtotal">
+
+                                        $0
+
+                                    </strong>
+
+                                </div>
 
                             </div>
 
@@ -495,140 +577,114 @@
 
                         </div>
 
-                        <div id="panelMenus" class="tab-panel hidden">
+                        <div id="panelMenus" class="tab-panel active">
 
                             <h2 class="section-title">
-                                📋 Menús
+                                🍽 Menús
                             </h2>
 
                             <div class="panel-info">
 
                                 <span class="panel-badge">
-                                    Menús del día
+                                    Seleccione el tipo de menú
                                 </span>
 
                                 <p>
-                                    Seleccione el menú que desea agregar al pedido.
+                                    Después podrá escoger los componentes del menú.
                                 </p>
 
                             </div>
 
                             <div class="menu-grid">
 
-                                <!-- MENÚ EJECUTIVO -->
+                                <!-- EJECUTIVO -->
 
                                 <div class="menu-card">
 
                                     <div class="menu-card-header">
-
                                         🍽 Menú Ejecutivo
-
                                     </div>
 
                                     <div class="menu-price">
-
                                         $17.000
-
                                     </div>
 
                                     <div class="menu-description">
 
-                                        Incluye sopa, proteína, seco,
-                                        ensalada y jugo.
+                                        Incluye:
+
+                                        <br>
+
+                                        • Sopa
+
+                                        <br>
+
+                                        • Proteína
+
+                                        <br>
+
+                                        • Seco
+
+                                        <br>
+
+                                        • Ensalada
+
+                                        <br>
+
+                                        • Jugo
 
                                     </div>
 
-                                    <button class="btn-primary btn-menu" id="btnMenuEjecutivo">
-
+                                    <button class="btn-primary btn-menu" onclick="seleccionarMenu('EJECUTIVO')">
                                         Seleccionar
-
                                     </button>
 
                                 </div>
 
-                                <!-- MENÚ PREMIUM -->
+                                <!-- PREMIUM -->
 
                                 <div class="menu-card">
 
                                     <div class="menu-card-header">
-
                                         🥘 Menú Premium
-
                                     </div>
 
                                     <div class="menu-price">
-
                                         $23.000
-
                                     </div>
 
                                     <div class="menu-description">
 
-                                        Sancocho, Mondongo y
-                                        demás platos premium.
+                                        Sanchocho, Mondongo, Ajiaco.
 
                                     </div>
 
-                                    <button class="btn-primary btn-menu" id="btnMenuPremium">
-
+                                    <button class="btn-primary btn-menu" onclick="seleccionarMenu('PREMIUM')">
                                         Seleccionar
-
                                     </button>
 
                                 </div>
 
-                            </div>
-
-                        </div>
-
-                        <div id="panelEspeciales" class="tab-panel hidden">
-
-                            <h2 class="section-title">
-                                🥘 Especiales
-                            </h2>
-
-                            <div class="panel-info">
-
-                                <span class="panel-badge">
-
-                                    Platos Especiales
-
-                                </span>
-
-                                <p>
-
-                                    Platos preparados disponibles.
-
-                                </p>
-
-                            </div>
-
-                            <div class="menu-grid">
+                                <!-- ESPECIAL -->
 
                                 <div class="menu-card">
 
                                     <div class="menu-card-header">
-
-                                        🥘 Cazuela de Frijoles
-
+                                        ⭐ Menú Especial
                                     </div>
 
                                     <div class="menu-price">
-
                                         $25.000
-
                                     </div>
 
                                     <div class="menu-description">
 
-                                        Plato preparado.
+                                        Cazuela de Frijoles.
 
                                     </div>
 
-                                    <button class="btn-primary btn-menu" id="btnCazuela">
-
-                                        Agregar
-
+                                    <button class="btn-primary btn-menu" onclick="seleccionarMenu('ESPECIAL')">
+                                        Seleccionar
                                     </button>
 
                                 </div>
@@ -652,22 +708,6 @@
                             🧾 Pedido
 
                         </h2>
-
-                        <div class="pedido-info">
-
-                            <strong>
-
-                                Items del pedido:
-
-                            </strong>
-
-                            <span id="lblCantidadAlmuerzos">
-
-                                0
-
-                            </span>
-
-                        </div>
 
                         <div id="divPedido">
 
@@ -695,27 +735,161 @@
 
                             <div class="pedido-resumen">
 
-                                <div>
+                                <div class="pedido-resumen-item">
 
-                                    Productos:
+                                    <span>🍽 Menús (Almuerzos)</span>
 
-                                    <strong id="lblCantidadProductos">
-
+                                    <strong id="lblCantidadMenus">
                                         0
-
                                     </strong>
 
                                 </div>
 
-                                <div>
+                                <div class="pedido-resumen-item">
 
-                                    Almuerzos:
+                                    <span>➕ Adiciones</span>
 
-                                    <strong id="lblCantidadAlmuerzosResumen">
-
+                                    <strong id="lblCantidadAdiciones">
                                         0
-
                                     </strong>
+
+                                </div>
+
+                                <div class="pedido-resumen-item">
+
+                                    <span>📦 Total Items</span>
+
+                                    <strong id="lblCantidadItems">
+                                        0
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+                            <div style="display: flex; justify-content: center;"> 
+
+                                <button id="btnGuardar" class="btn-primary">
+
+                                    💾 Guardar Pedido
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ============================================= -->
+                <!-- LOADING -->
+                <!-- ============================================= -->
+
+                <div id="loading" class="hidden">
+
+                    Procesando...
+
+                </div>
+
+                <!-- ========================================= -->
+                <!-- MODAL CLIENTE RÁPIDO -->
+                <!-- ========================================= -->
+
+                <div id="modalClienteRapido" class="modal hidden">
+
+                    <div class="modal-content modal-medium">
+
+                        <div class="modal-header">
+
+                            <h2>
+
+                                ➕ Crear Cliente
+
+                            </h2>
+
+                            <button id="btnCerrarModalClienteRapido" type="button" class="btn-close">
+
+                                ✕
+
+                            </button>
+
+                        </div>
+
+                        <div class="modal-body">
+
+                            <div class="form-grid">
+
+                                <div class="form-group">
+
+                                    <label>
+
+                                        Nombre *
+
+                                    </label>
+
+                                    <input id="nuevoNombre" type="text">
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>
+
+                                        Documento
+
+                                    </label>
+
+                                    <input id="nuevoDocumento" type="text">
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>
+
+                                        Teléfono
+
+                                    </label>
+
+                                    <input id="nuevoTelefono" type="text">
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>
+
+                                        Dirección *
+
+                                    </label>
+
+                                    <input id="nuevoDireccion" type="text">
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>
+
+                                        Barrio
+
+                                    </label>
+
+                                    <input id="nuevoBarrio" type="text">
+
+                                </div>
+
+                                <div class="form-group">
+
+                                    <label>
+
+                                        Referencia
+
+                                    </label>
+
+                                    <input id="nuevoReferencia" type="text">
 
                                 </div>
 
@@ -723,11 +897,17 @@
 
                         </div>
 
-                        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+                        <div class="modal-footer">
 
-                            <button id="btnGuardar" class="btn-primary">
+                            <button id="btnCancelarClienteRapido" class="btn-secondary" type="button">
 
-                                💾 Guardar Pedido
+                                Cancelar
+
+                            </button>
+
+                            <button id="btnGuardarClienteRapido" class="btn-primary" type="button">
+
+                                Guardar Cliente
 
                             </button>
 
@@ -735,59 +915,11 @@
 
                     </div>
 
-                    <!-- ============================================= -->
-                    <!-- LOADING -->
-                    <!-- ============================================= -->
+                </div>
 
-                    <div id="loading" class="hidden">
+                <div id="warningCliente" class="warning-cliente hidden"></div>
 
-                        Procesando...
-
-                    </div>
-
-                    <div id="modalCliente" class="modal hidden">
-                        <div class="modal-content modal-cliente">
-
-                            <div class="modal-header">
-                                <h3>👤 Nuevo Cliente</h3>
-                                <button class="btn-close" onclick="cerrarModalCliente()">✖</button>
-                            </div>
-
-                            <div class="form-grid">
-
-                                <div class="form-group">
-                                    <label>Nombre</label>
-                                    <input type="text" id="nuevoNombre" placeholder="Nombre completo">
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Documento</label>
-                                    <input type="text" id="nuevoDocumento" placeholder="Cédula / NIT">
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Teléfono</label>
-                                    <input type="text" id="nuevoTelefono" placeholder="Número">
-                                </div>
-
-                                <div class="form-group full">
-                                    <label>Dirección</label>
-                                    <input type="text" id="nuevoDireccion" placeholder="Dirección completa">
-                                </div>
-
-                            </div>
-
-                            <div class="modal-footer">
-                                <button class="btn-primary" onclick="guardarClienteRapido()">
-                                    💾 Guardar Cliente
-                                </button>
-                            </div>
-
-                        </div>
-
-                        <div id="warningCliente" class="warning-cliente hidden"></div>
-
-                        <div id="toastContainer"></div>
+                <div id="toastContainer"></div>
 
         </main>
 
@@ -799,7 +931,7 @@
 
     <script type="module" src="../js/almuerzo.js"></script>
 
-    <script type="module" src="../js/pedidos.js"></script>
+    <!-- <script type="module" src="../js/pedidos.js"></script> -->
 
     <script type="module" src="../js/menu.js" defer></script>
 

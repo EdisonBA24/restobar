@@ -1,3 +1,5 @@
+import traceback
+
 from database.connection import get_connection
 from config import Config
 from database.db_objects import CLIENTES, CLIENTES_DIRECCIONES
@@ -802,6 +804,9 @@ def create_cliente(data):
                     usuario_id,
                     activo
                 )
+
+                OUTPUT INSERTED.ID
+
                 VALUES
                 (
                     {placeholder},
@@ -811,6 +816,7 @@ def create_cliente(data):
                     {placeholder},
                     1
                 )
+
             """, (
 
                 data.get("nombre"),
@@ -825,9 +831,9 @@ def create_cliente(data):
 
             ))
 
-            cursor.execute("SELECT SCOPE_IDENTITY()")
+            cliente_id = cursor.fetchone()[0]
 
-            cliente_id = int(cursor.fetchone()[0])
+            print("CLIENTE_ID SQLSERVER:", cliente_id)
 
         # =====================================
         # VALIDAR DIRECCIONES
@@ -876,11 +882,13 @@ def create_cliente(data):
 
         return {"status": "success", "message": "Cliente creado", "cliente_id": cliente_id}
 
-    except Exception as e:
-        conn.rollback()
-        print("❌ ERROR CREATE CLIENTE:", e)
+    #except Exception as e:
+    #    conn.rollback()
+    #    print("❌ ERROR CREATE CLIENTE:", e)
 
-        return {"status": "error", "message": str(e)}
+    #    return {"status": "error", "message": str(e)}
+    except Exception as e:
+        traceback.print_exc()
 
     finally:
         conn.close()

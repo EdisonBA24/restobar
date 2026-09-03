@@ -32,9 +32,12 @@ const MENUS = {
 
         tipo: "MENU_EJECUTIVO",
 
-        nombre: "Menú Ejecutivo",
+        //nombre: "Menú Ejecutivo",
+        nombre: "Menú del día",
 
-        precio: 17000
+        precio: 18500,
+
+        precio_llevar: 19000
 
     },
 
@@ -42,9 +45,10 @@ const MENUS = {
 
         tipo: "MENU_PREMIUM",
 
-        nombre: "Menú Premium",
+        //nombre: "Menú Premium",
+        nombre: "Especiales",
 
-        precio: 23000
+        precio: 25000
 
     },
 
@@ -52,9 +56,10 @@ const MENUS = {
 
         tipo: "MENU_ESPECIAL",
 
-        nombre: "Menú Especial",
+        //nombre: "Menú Especial",
+        nombre: "Cazuela",
 
-        precio: 25000
+        precio: 27000
 
     }
 
@@ -83,34 +88,34 @@ const CABECERAS = {
 
     MENU_EJECUTIVO: {
 
-        titulo: "🍽️ Menú Ejecutivo",
+        titulo: "🍽️ Menú del Día",
 
-        badge: "Menú Ejecutivo",
+        badge: "Menú del Día",
 
         descripcion:
-            "Seleccione los componentes incluidos en el Menú Ejecutivo."
+            "Seleccione los componentes incluidos en el Menú del Día."
 
     },
 
     MENU_PREMIUM: {
 
-        titulo: "🥘 Menú Premium",
+        titulo: "⭐ Especiales",
 
-        badge: "Menú Premium",
+        badge: "Especiales",
 
         descripcion:
-            "Seleccione los componentes incluidos en el Menú Premium."
+            "Seleccione los componentes incluidos en los Especiales."
 
     },
 
     MENU_ESPECIAL: {
 
-        titulo: "⭐ Menú Especial",
+        titulo: "🥘 Cazuela",
 
-        badge: "Menú Especial",
+        badge: "Cazuela",
 
         descripcion:
-            "Seleccione los componentes incluidos en el Menú Especial."
+            "Seleccione los componentes incluidos en la Cazuela."
 
     }
 
@@ -137,9 +142,25 @@ function cacheDOM() {
         = DATOS DEL PEDIDO
         =========================================*/
 
-        mesa: document.getElementById("mesa"),
-        cliente: document.getElementById("cliente"),
-        listaClientes: document.getElementById("listaClientes"),
+        mesa:
+            document.getElementById(
+                "mesa"
+            ),
+
+        grupoMesa:
+            document.getElementById(
+                "grupoMesa"
+            ),
+
+        cliente:
+            document.getElementById(
+                "cliente"
+            ),
+
+        listaClientes:
+            document.getElementById(
+                "listaClientes"
+            ),
 
         grupoDireccion:
             document.getElementById(
@@ -185,9 +206,26 @@ function cacheDOM() {
         = CONSTRUCTOR
         =========================================*/
 
-        cboSopa: document.getElementById("cboSopa"),
-        cboProteina: document.getElementById("cboProteina"),
-        cboSeco: document.getElementById("cboSeco"),
+        cboSopa:
+            document.getElementById(
+                "cboSopa"
+            ),
+
+        cboProteina:
+            document.getElementById(
+                "cboProteina"
+            ),
+
+        grupoProteina:
+            document.getElementById(
+                "grupoProteina"
+            ),
+
+        cboSeco:
+            document.getElementById(
+                "cboSeco"
+            ),
+
         cboEnsalada: document.getElementById("cboEnsalada"),
         cboJugo: document.getElementById("cboJugo"),
 
@@ -336,21 +374,38 @@ async function init() {
 
     registrarEventos();
 
+    /*
+     * =============================
+     * SERVICIO POR DEFECTO
+     * =============================
+     *
+     * El HTML inicia en LLEVAR.
+     * Debemos reflejar ese valor
+     * también en el estado JS.
+     */
+
+    tipoServicio =
+        elementosDOM.tipoServicio?.value
+        || "LLEVAR";
+
+    /*
+     * =============================
+     * CARGAR COMPONENTES
+     * =============================
+     */
+
     await cargarComponentes();
 
-    //tipoServicio = elementosDOM.tipoServicio.value;
+    /*
+     * =============================
+     * APLICAR SERVICIO
+     * =============================
+     */
 
-    cambiarTipoServicio({
+    await cambiarTipoServicio();
 
-        target: {
+    actualizarCabeceraConstructor();
 
-            value: tipoServicio
-
-        }
-
-    });
-
-    //actualizarResumen();
     actualizarResumenActual();
 
     renderPedido();
@@ -895,19 +950,32 @@ function cerrarModalClienteRapido() {
  ********************************************************************/
 function limpiarDirecciones() {
 
-    elementosDOM.direccionEntrega.innerHTML = `
+    direccionSeleccionada = null;
 
-        <option value="">
+    if (elementosDOM.direccionEntrega) {
 
-            Seleccione una dirección...
+        elementosDOM.direccionEntrega.innerHTML = `
 
-        </option>
+            <option value="">
 
-    `;
+                Seleccione una dirección...
 
-    elementosDOM.infoDirecciones.classList.add("hidden");
+            </option>
 
-    //elementosDOM.accionesDireccion.classList.add("hidden");
+        `;
+
+        elementosDOM.direccionEntrega.value =
+            "";
+
+    }
+
+    if (elementosDOM.infoDirecciones) {
+
+        elementosDOM.infoDirecciones.classList.add(
+            "hidden"
+        );
+
+    }
 
 }
 
@@ -1022,87 +1090,281 @@ function llenarDirecciones(direcciones) {
 /********************************************************************
  * MENÚS
  ********************************************************************/
-function seleccionarMenu(tipo) {
+/********************************************************************
+ * CAMBIO DE TIPO DE ALMUERZO
+ *
+ * IMPORTANTE:
+ * Cambiar entre Adición y Menús NO debe reiniciar los datos generales
+ * del pedido ni crear un nuevo constructor innecesariamente.
+ ********************************************************************/
+function cambiarTipoAlmuerzo(configuracion) {
 
-    crearNuevoAlmuerzo();
+    // Solo creamos el constructor si todavía no existe
+    if (!almuerzoActual) {
 
-    almuerzoActual.modo = MODOS.MENU;
+        crearNuevoAlmuerzo();
 
-    almuerzoActual.tipo = MENUS[tipo].tipo;
+    }
 
-    almuerzoActual.nombre = MENUS[tipo].nombre;
+    // Si estamos editando/cambiando el tipo del constructor actual,
+    // conservamos los datos generales del pedido:
+    //
+    // - clienteSeleccionado
+    // - cliente
+    // - tipoServicio
+    // - mesaSeleccionada
+    // - direccionSeleccionada
+    //
+    // Estos datos pertenecen al pedido, no al almuerzo.
 
-    almuerzoActual.precioBase = MENUS[tipo].precio;
+    almuerzoActual.modo = configuracion.modo;
 
+    almuerzoActual.tipo = configuracion.tipo;
+
+    almuerzoActual.nombre = configuracion.nombre;
+
+    almuerzoActual.precioBase = configuracion.precioBase;
+
+    // Recalcular el precio según la nueva configuración
     almuerzoActual.calcularPrecio();
 
     actualizarCabeceraConstructor();
 
-    elementosDOM.contenidoPedido.classList.remove("hidden");
+    actualizarSopasSegunTipo();
+
+    actualizarProteinaSegunTipo();
+
+    actualizarResumenActual();
+
+}
+
+/********************************************************************
+ * VISIBILIDAD DE PROTEÍNA SEGÚN TIPO DE MENÚ
+ ********************************************************************/
+
+function actualizarProteinaSegunTipo() {
+
+    if (
+        !elementosDOM.grupoProteina
+    ) {
+
+        return;
+
+    }
+
+    const tipo =
+        almuerzoActual?.tipo || "ADICION";
+
+    /*
+     * Especiales y Cazuela NO utilizan proteína.
+     */
+
+    const ocultarProteina =
+        tipo === "MENU_PREMIUM"
+        ||
+        tipo === "MENU_ESPECIAL";
+
+
+    /*
+     * Ocultar / mostrar campo
+     */
+
+    if (
+        ocultarProteina
+    ) {
+
+        elementosDOM.grupoProteina
+            .classList.add("hidden");
+
+        /*
+         * Limpiar cualquier proteína
+         * que hubiera quedado seleccionada
+         * al cambiar desde otro menú.
+         */
+
+        if (
+            almuerzoActual
+        ) {
+
+            almuerzoActual.proteina =
+                null;
+
+        }
+
+        if (
+            elementosDOM.cboProteina
+        ) {
+
+            elementosDOM.cboProteina.value =
+                "";
+
+        }
+
+    }
+    else {
+
+        elementosDOM.grupoProteina
+            .classList.remove("hidden");
+
+    }
+
+}
+
+/********************************************************************
+ * PRECIO DEL MENÚ DEL DÍA SEGÚN SERVICIO
+ ********************************************************************/
+
+function obtenerPrecioMenu(tipoMenu) {
+
+    const menu =
+        MENUS[tipoMenu];
+
+    if (!menu) {
+
+        return 0;
+
+    }
+
+    /*
+     * Solo Menú del Día cambia
+     * de precio según servicio.
+     */
+
+    if (
+        tipoMenu === "EJECUTIVO"
+        &&
+        tipoServicio === "LLEVAR"
+    ) {
+
+        return menu.precio_llevar;
+
+    }
+
+    return menu.precio;
+
+}
+
+
+/********************************************************************
+ * SELECCIONAR MENÚ
+ ********************************************************************/
+function seleccionarMenu(tipo) {
+
+    const menu =
+        MENUS[tipo];
+
+    if (!menu) {
+
+        console.warn(
+            "No se encontró configuración para el menú:",
+            tipo
+        );
+
+        return;
+
+    }
+
+    const precio =
+        obtenerPrecioMenu(tipo);
+
+    cambiarTipoAlmuerzo({
+
+        modo: MODOS.MENU,
+
+        tipo: menu.tipo,
+
+        nombre: menu.nombre,
+
+        precioBase: precio
+
+    });
+
+    elementosDOM.contenidoPedido
+        ?.classList.remove("hidden");
 
     document
         .querySelectorAll(".tab-panel")
         .forEach(panel => {
+
             panel.classList.remove("active");
+
             panel.classList.add("hidden");
+
         });
 
-    elementosDOM.panelConstruir.classList.remove("hidden");
-    elementosDOM.panelConstruir.classList.add("active");
+    elementosDOM.panelConstruir
+        ?.classList.remove("hidden");
 
-    actualizarResumenActual();
+    elementosDOM.panelConstruir
+        ?.classList.add("active");
+
 }
 
+
+/********************************************************************
+ * SELECCIONAR TIPO DE PEDIDO
+ ********************************************************************/
 function seleccionarTipoPedido(card) {
 
     elementosDOM.tarjetasTipoPedido.forEach(
-
-        t => t.classList.remove("active")
-
+        tarjeta => tarjeta.classList.remove("active")
     );
 
     card.classList.add("active");
 
-    if (!card.dataset.menu) {
-
-        crearNuevoAlmuerzo();
-
-        almuerzoActual.modo = MODOS.ADICION;
-
-        actualizarCabeceraConstructor();
-
-        actualizarResumenActual();
-
-    }
-
     const menu = card.dataset.menu;
 
-    if (menu && MENUS[menu]) {
+    /*
+     * ADICIÓN
+     */
+    if (!menu) {
 
-        crearNuevoAlmuerzo();
+        cambiarTipoAlmuerzo({
 
-        almuerzoActual.modo = MODOS.MENU;
+            modo: MODOS.ADICION,
 
-        almuerzoActual.tipo = MENUS[menu].tipo;
+            tipo: "ADICION",
 
-        almuerzoActual.nombre = MENUS[menu].nombre;
+            nombre: "Adición",
 
-        almuerzoActual.precioBase = MENUS[menu].precio;
+            precioBase: 0
 
-        almuerzoActual.calcularPrecio();
-
-        actualizarCabeceraConstructor();
-
-        actualizarResumenActual();
+        });
 
     }
+
+
+    /*
+     * MENÚ
+     */
+    else if (MENUS[menu]) {
+
+        cambiarTipoAlmuerzo({
+
+            modo: MODOS.MENU,
+
+            tipo:
+                MENUS[menu].tipo,
+
+            nombre:
+                MENUS[menu].nombre,
+
+            precioBase:
+                obtenerPrecioMenu(menu)
+
+        });
+
+    }
+
 
     elementosDOM.contenidoPedido.classList.remove("hidden");
 
+
+    /*
+     * Mostrar el panel correspondiente
+     */
     document
-
         .querySelectorAll(".tab-panel")
-
         .forEach(panel => {
 
             panel.classList.remove("active");
@@ -1111,11 +1373,11 @@ function seleccionarTipoPedido(card) {
 
         });
 
+
     const panel = document.getElementById(
-
         card.dataset.panel
-
     );
+
 
     if (panel) {
 
@@ -1127,27 +1389,419 @@ function seleccionarTipoPedido(card) {
 
 }
 
-function cambiarTipoServicio() {
+/********************************************************************
+ * FILTRO DE SOPAS SEGÚN MENÚ
+ ********************************************************************/
 
-    tipoServicio = elementosDOM.tipoServicio.value;
+/********************************************************************
+ * SOPAS DISPONIBLES SEGÚN TIPO DE MENÚ
+ ********************************************************************/
 
-    if (tipoServicio !== "DOMICILIO") {
+function obtenerSopasDisponibles(tipo) {
 
-        elementosDOM.grupoDireccion.classList.add("hidden");
+    const sopas =
+        componentes.sopas || [];
 
-        limpiarDirecciones();
+
+    /*
+     * ==========================================================
+     * ADICIÓN
+     * ==========================================================
+     *
+     * Una adición puede utilizar cualquier sopa disponible.
+     */
+
+    if (
+        tipo === "ADICION"
+        ||
+        !tipo
+    ) {
+
+        return sopas;
+
+    }
+
+
+    /*
+     * ==========================================================
+     * MENÚ DEL DÍA
+     * ==========================================================
+     *
+     * Permitimos:
+     *
+     *   SOPA DE SANCOCHO
+     *
+     * pero NO:
+     *
+     *   SANCOCHO
+     *
+     * Tampoco:
+     *
+     *   CAZUELA DE FRIJOL
+     *   MONDONGO
+     *   AJIACO
+     */
+
+    if (
+        tipo === "MENU_EJECUTIVO"
+    ) {
+
+        return sopas.filter(
+            sopa => {
+
+                const nombre =
+                    String(
+                        sopa.nombre || ""
+                    )
+                        .trim()
+                        .toUpperCase();
+
+                /*
+                 * SOPA DE SANCOCHO
+                 *
+                 * Es una opción válida
+                 * para el Menú del Día.
+                 */
+
+                const esSopaDeSancocho =
+                    nombre ===
+                    "SOPA DE SANCOCHO";
+
+
+                /*
+                 * SANCOCHO
+                 *
+                 * El sancocho independiente
+                 * NO se debe mostrar.
+                 */
+
+                const esSancocho =
+                    nombre ===
+                    "SANCOCHO";
+
+
+                /*
+                 * Otras sopas especiales
+                 * tampoco están disponibles.
+                 */
+
+                const esCazuela =
+                    nombre ===
+                    "CAZUELA DE FRIJOL"
+                    ||
+                    nombre ===
+                    "CAZUELA DE FRIJOLES";
+
+                const esMondongo =
+                    nombre ===
+                    "MONDONGO";
+
+                const esAjiaco =
+                    nombre ===
+                    "AJIACO"
+                    ||
+                    nombre ===
+                    "AJÍACO";
+
+
+                /*
+                 * SOPA DE SANCOCHO sí pasa.
+                 *
+                 * Todo lo demás especial queda fuera.
+                 */
+
+                if (
+                    esSopaDeSancocho
+                ) {
+
+                    return true;
+
+                }
+
+                return !(
+                    esSancocho
+                    ||
+                    esCazuela
+                    ||
+                    esMondongo
+                    ||
+                    esAjiaco
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+     * ==========================================================
+     * ESPECIALES
+     * ==========================================================
+     *
+     * Debe mostrar:
+     *
+     *   SANCOCHO
+     *   MONDONGO
+     *   AJIACO
+     *
+     * y NO:
+     *
+     *   SOPA DE SANCOCHO
+     */
+
+    if (
+        tipo === "MENU_PREMIUM"
+    ) {
+
+        return sopas.filter(
+            sopa => {
+
+                const nombre =
+                    String(
+                        sopa.nombre || ""
+                    )
+                        .trim()
+                        .toUpperCase();
+
+                return (
+                    nombre === "SANCOCHO"
+                    ||
+                    nombre === "MONDONGO"
+                    ||
+                    nombre === "AJIACO"
+                    ||
+                    nombre === "AJÍACO"
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+     * ==========================================================
+     * CAZUELA
+     * ==========================================================
+     *
+     * Únicamente:
+     *
+     *   CAZUELA DE FRIJOL
+     */
+
+    if (
+        tipo === "MENU_ESPECIAL"
+    ) {
+
+        return sopas.filter(
+            sopa => {
+
+                const nombre =
+                    String(
+                        sopa.nombre || ""
+                    )
+                        .trim()
+                        .toUpperCase();
+
+                return (
+                    nombre ===
+                    "CAZUELA DE FRIJOL"
+                    ||
+                    nombre ===
+                    "CAZUELA DE FRIJOLES"
+                );
+
+            }
+        );
+
+    }
+
+
+    return sopas;
+
+}
+
+
+function actualizarSopasSegunTipo() {
+
+    if (!elementosDOM.cboSopa) {
 
         return;
 
     }
 
-    elementosDOM.grupoDireccion.classList.remove("hidden");
+    const tipo =
+        almuerzoActual?.tipo
+        || "ADICION";
 
-    if (clienteSeleccionado) {
+    const sopas =
+        obtenerSopasDisponibles(tipo);
 
-        cargarDireccionesCliente(clienteSeleccionado);
+    llenarCombo(
+
+        elementosDOM.cboSopa,
+
+        sopas,
+
+        "Seleccione una sopa"
+
+    );
+
+    /*
+     * Si el almuerzo tenía una sopa seleccionada
+     * que ya no es válida para el nuevo menú,
+     * la eliminamos.
+     */
+
+    if (
+        almuerzoActual?.sopa
+        &&
+        !sopas.some(
+            sopa =>
+                Number(sopa.id)
+                ===
+                Number(
+                    almuerzoActual.sopa.id
+                )
+        )
+    ) {
+
+        almuerzoActual.sopa =
+            null;
 
     }
+
+    /*
+     * Restaurar la sopa válida
+     * cuando todavía corresponde.
+     */
+
+    if (
+        almuerzoActual?.sopa
+    ) {
+
+        elementosDOM.cboSopa.value =
+            almuerzoActual.sopa.id;
+
+    }
+
+    actualizarSeleccion();
+
+}
+
+async function cambiarTipoServicio() {
+
+    tipoServicio =
+        elementosDOM.tipoServicio?.value || "";
+
+    /*
+     * =============================
+     * PRECIO MENÚ DEL DÍA
+     * =============================
+     */
+
+    if (
+        almuerzoActual
+        &&
+        almuerzoActual.tipo ===
+        MENUS.EJECUTIVO.tipo
+    ) {
+
+        almuerzoActual.precioBase =
+            obtenerPrecioMenu(
+                "EJECUTIVO"
+            );
+
+        almuerzoActual.calcularPrecio();
+
+    }
+
+
+    /*
+     * =============================
+     * MESA
+     * =============================
+     */
+
+    if (
+        elementosDOM.grupoMesa
+    ) {
+
+        if (
+            tipoServicio === "MESA"
+        ) {
+
+            elementosDOM.grupoMesa
+                .classList.remove("hidden");
+
+        }
+        else {
+
+            elementosDOM.grupoMesa
+                .classList.add("hidden");
+
+            if (
+                elementosDOM.mesa
+            ) {
+
+                elementosDOM.mesa.value = "";
+
+            }
+
+            mesaSeleccionada = null;
+
+        }
+
+    }
+
+
+    /*
+     * =============================
+     * DOMICILIO
+     * =============================
+     */
+
+    if (
+        tipoServicio === "DOMICILIO"
+    ) {
+
+        elementosDOM.grupoDireccion
+            ?.classList.remove("hidden");
+
+        if (
+            clienteSeleccionado
+        ) {
+
+            await cargarDireccionesCliente(
+                clienteSeleccionado
+            );
+
+        }
+        else {
+
+            limpiarDirecciones();
+
+        }
+
+    }
+    else {
+
+        elementosDOM.grupoDireccion
+            ?.classList.add("hidden");
+
+        limpiarDirecciones();
+
+    }
+
+
+    /*
+     * =============================
+     * RESUMEN
+     * =============================
+     */
+
+    actualizarResumenActual();
 
 }
 
@@ -1873,10 +2527,33 @@ function actualizarResumenActual() {
             ? almuerzoActual.sopa.nombre
             : "Sin seleccionar";
 
-    elementosDOM.resProteina.textContent =
-        almuerzoActual.proteina
-            ? almuerzoActual.proteina.nombre
-            : "Sin seleccionar";
+    const mostrarProteina =
+        almuerzoActual.tipo === "ADICION"
+        ||
+        almuerzoActual.tipo === "MENU_EJECUTIVO";
+
+
+    if (
+        mostrarProteina
+    ) {
+
+        elementosDOM.resProteina
+            .closest(".builder-item")
+            ?.classList.remove("hidden");
+
+        elementosDOM.resProteina.textContent =
+            almuerzoActual.proteina
+                ? almuerzoActual.proteina.nombre
+                : "Sin seleccionar";
+
+    }
+    else {
+
+        elementosDOM.resProteina
+            .closest(".builder-item")
+            ?.classList.add("hidden");
+
+    }
 
     elementosDOM.resSeco.textContent =
         almuerzoActual.seco
@@ -1906,7 +2583,15 @@ function actualizarResumenActual() {
 
     actualizarEstadoResumen(elementosDOM.resSopa);
 
-    actualizarEstadoResumen(elementosDOM.resProteina);
+    if (
+        mostrarProteina
+    ) {
+
+        actualizarEstadoResumen(
+            elementosDOM.resProteina
+        );
+
+    }
 
     actualizarEstadoResumen(elementosDOM.resSeco);
 
@@ -2183,20 +2868,92 @@ function validarAlmuerzo() {
 
     const faltantes = [];
 
-    if (!almuerzoActual.sopa)
-        faltantes.push("Sopa");
+    const tipo =
+        almuerzoActual?.tipo || "ADICION";
 
-    if (!almuerzoActual.proteina)
-        faltantes.push("Proteína");
 
-    if (!almuerzoActual.seco)
-        faltantes.push("Seco");
+    /*
+     * =============================
+     * SOPA
+     * =============================
+     */
 
-    if (!almuerzoActual.ensalada)
-        faltantes.push("Ensalada");
+    if (
+        !almuerzoActual.sopa
+    ) {
 
-    if (!almuerzoActual.jugo)
-        faltantes.push("Jugo");
+        faltantes.push(
+            "Sopa"
+        );
+
+    }
+
+
+    /*
+     * =============================
+     * PROTEÍNA
+     * =============================
+     *
+     * Solo es obligatoria para:
+     *
+     * - ADICION
+     * - MENU_EJECUTIVO
+     */
+
+    const requiereProteina =
+        tipo === "ADICION"
+        ||
+        tipo === "MENU_EJECUTIVO";
+
+
+    if (
+        requiereProteina
+        &&
+        !almuerzoActual.proteina
+    ) {
+
+        faltantes.push(
+            "Proteína"
+        );
+
+    }
+
+
+    /*
+     * =============================
+     * RESTO DE COMPONENTES
+     * =============================
+     */
+
+    if (
+        !almuerzoActual.seco
+    ) {
+
+        faltantes.push(
+            "Seco"
+        );
+
+    }
+
+    if (
+        !almuerzoActual.ensalada
+    ) {
+
+        faltantes.push(
+            "Ensalada"
+        );
+
+    }
+
+    if (
+        !almuerzoActual.jugo
+    ) {
+
+        faltantes.push(
+            "Jugo"
+        );
+
+    }
 
     return faltantes;
 

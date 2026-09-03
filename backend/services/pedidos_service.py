@@ -1506,13 +1506,16 @@ def exportar_pedidos(filtros=None):
                     "Adición",
 
                 "MENU_EJECUTIVO":
-                    "Menú Ejecutivo",
+                    #"Menú Ejecutivo",
+                    "Menú del Día",
 
                 "MENU_PREMIUM":
-                    "Menú Premium",
+                    #"Menú Premium",
+                    "Especiales",
 
                 "MENU_ESPECIAL":
-                    "Menú Especial",
+                    #"Menú Especial",
+                    "Cazuela",
 
                 "DESAYUNO":
                     "Desayuno",
@@ -1521,7 +1524,8 @@ def exportar_pedidos(filtros=None):
                     "Comida Rápida",
 
                 "LICOR":
-                    "Licor"
+                    #"Licor"
+                    "Licor/Bebidas"
 
             }
 
@@ -2000,97 +2004,171 @@ def enriquecer_detalles_pedido(
 # TRANSFORMAR CONSTRUCTOR
 # =====================================================
 
+# =====================================================
+# TRANSFORMAR CONSTRUCTOR
+# =====================================================
+
 def transformar_constructor(item):
 
     detalle = crear_item_detalle()
 
-    detalle["id"] = item.get("detalle_id")
+    detalle["id"] = item.get(
+        "detalle_id"
+    )
 
-    detalle["tipo"] = str(
-
-        item.get("tipo_item", "")
-
+    tipo_item = str(
+        item.get(
+            "tipo_item",
+            ""
+        )
+        or ""
     ).upper()
 
+    detalle["tipo"] = tipo_item
+
+    # =====================================================
+    # NOMBRES COMERCIALES
+    # =====================================================
+
+    nombres_constructores = {
+
+        "ALMUERZO":
+            "Menú del Día",
+
+        "MENU_EJECUTIVO":
+            "Menú del Día",
+
+        "MENU_PREMIUM":
+            "Especiales",
+
+        "MENU_ESPECIAL":
+            "Cazuela",
+
+        "ADICION":
+            "Adición",
+
+        "DESAYUNO":
+            "Desayuno",
+
+        "COMIDA_RAPIDA":
+            "Comida Rápida",
+
+        "LICOR":
+            "Licor"
+
+    }
+
     detalle["nombre"] = (
-
-        item.get("nombre")
-
-        or item.get("tipo_item", "")
-
-            .replace("_", " ")
-
+        nombres_constructores.get(
+            tipo_item
+        )
+        or tipo_item
+            .replace(
+                "_",
+                " "
+            )
             .title()
-
     )
+
+    # =====================================================
+    # CANTIDAD
+    # =====================================================
 
     detalle["cantidad"] = float(
-
-        item.get("cantidad") or 0
-
+        item.get(
+            "cantidad"
+        )
+        or 0
     )
+
+    # =====================================================
+    # PRECIO
+    # =====================================================
 
     detalle["precio"] = float(
-
-        item.get("precio") or 0
-
+        item.get(
+            "precio"
+        )
+        or 0
     )
+
+    # =====================================================
+    # SUBTOTAL
+    # =====================================================
 
     detalle["subtotal"] = round(
 
         detalle["cantidad"]
-
         *
-
         detalle["precio"],
 
         2
 
     )
 
-    detalle["observaciones"] = item.get(
+    # =====================================================
+    # OBSERVACIONES
+    # =====================================================
 
-        "observaciones",
-
-        ""
-
+    detalle["observaciones"] = (
+        item.get(
+            "observaciones",
+            ""
+        )
+        or ""
     )
+
+    # =====================================================
+    # COMPONENTES
+    # =====================================================
 
     detalle["componentes"] = []
 
     for componente in item.get(
-
         "componentes",
-
         []
-
     ):
 
         detalle["componentes"].append({
 
             "producto_id":
-
-                componente.get("id"),
+                componente.get(
+                    "id"
+                ),
 
             "categoria":
-
-                componente.get("categoria"),
+                componente.get(
+                    "categoria"
+                ),
 
             "nombre":
-
-                componente.get("nombre")
+                componente.get(
+                    "nombre"
+                )
 
         })
 
+    # =====================================================
+    # METADATA
+    # =====================================================
+
     detalle["metadata"] = {
 
-        "constructor": True
+        "constructor":
+            True,
+
+        "tipo_item":
+            tipo_item
 
     }
 
-    print("CONSTRUCTOR TRANSFORMADO")
+    print(
+        "CONSTRUCTOR TRANSFORMADO"
+    )
 
-    print(detalle)
+    print(
+        detalle
+    )
 
     return detalle
 

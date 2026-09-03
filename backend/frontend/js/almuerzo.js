@@ -2848,19 +2848,106 @@ function validarPedidoCompleto() {
 
 function limpiarDespuesGuardar() {
 
+    /*
+     * ==========================================
+     * LIMPIAR ITEMS DEL PEDIDO
+     * ==========================================
+     */
+
     limpiarPedido();
 
-    elementosDOM.cliente.value = "";
+
+    /*
+     * ==========================================
+     * CLIENTE
+     * ==========================================
+     */
+
+    if (
+        elementosDOM.cliente
+    ) {
+
+        elementosDOM.cliente.value = "";
+
+    }
 
     clienteSeleccionado = null;
 
-    elementosDOM.tipoServicio.selectedIndex = 0;
 
-    tipoServicio = null;
+    /*
+     * ==========================================
+     * SERVICIO
+     * ==========================================
+     *
+     * El formulario vuelve a LLEVAR.
+     */
 
-    elementosDOM.mesa.value = "";
+    if (
+        elementosDOM.tipoServicio
+    ) {
+
+        elementosDOM.tipoServicio.value =
+            "LLEVAR";
+
+    }
+
+    tipoServicio = "LLEVAR";
+
+
+    /*
+     * ==========================================
+     * MESA
+     * ==========================================
+     *
+     * Al volver a LLEVAR, Mesa debe quedar
+     * oculta y completamente limpia.
+     */
+
+    if (
+        elementosDOM.grupoMesa
+    ) {
+
+        elementosDOM.grupoMesa
+            .classList.add("hidden");
+
+    }
+
+    if (
+        elementosDOM.mesa
+    ) {
+
+        elementosDOM.mesa.value = "";
+
+    }
 
     mesaSeleccionada = null;
+
+
+    /*
+     * ==========================================
+     * DIRECCIÓN
+     * ==========================================
+     */
+
+    if (
+        elementosDOM.grupoDireccion
+    ) {
+
+        elementosDOM.grupoDireccion
+            .classList.add("hidden");
+
+    }
+
+    limpiarDirecciones();
+
+
+    /*
+     * ==========================================
+     * REAPLICAR ESTADO DEL SERVICIO
+     * ==========================================
+     */
+
+    actualizarResumenActual();
 
 }
 

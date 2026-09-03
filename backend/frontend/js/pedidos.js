@@ -1458,9 +1458,9 @@ function renderDetallePedido(detalle) {
                                     ${item.nombre || "Producto"}
                                 </strong>
 
-                                <span class="badge-detalle">
+                                <!--<span class="badge-detalle">
                                     ${tipo}
-                                </span>
+                                </span>-->
 
                             </div>
 

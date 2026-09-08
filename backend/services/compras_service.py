@@ -324,6 +324,724 @@ def crear_compra(data):
     finally:
         conn.close()
 
+# =====================================================
+# ✏️ EDITAR COMPRA
+# =====================================================
+def editar_compra(compra_id, data):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        usuario_id = session.get("user_id")
+
+        if not usuario_id:
+            raise Exception("Usuario no autenticado")
+
+        proveedor_id = data.get("proveedor_id")
+        fecha_input = data.get("fecha")
+        detalles_nuevos = data.get("detalles", [])
+
+        # ============================================
+        # VALIDACIONES GENERALES
+        # ============================================
+
+        if not proveedor_id:
+            raise Exception("Proveedor requerido")
+
+        if not fecha_input:
+            raise Exception("La fecha de la compra es obligatoria")
+
+        if not isinstance(detalles_nuevos, list) or not detalles_nuevos:
+            raise Exception("No hay productos en la compra")
+
+        # ============================================
+        # CONFIGURACIÓN BD
+        # ============================================
+
+        is_postgres, placeholder = _get_db_settings()
+        null_fn = "COALESCE" if is_postgres else "ISNULL"
+
+        # ============================================
+        # OBTENER COMPRA ACTUAL
+        # ============================================
+
+        cursor.execute(
+            f"""
+            SELECT
+                proveedor_id,
+                fecha
+            FROM {COMPRAS}
+            WHERE id = {placeholder}
+            """,
+            (compra_id,)
+        )
+
+        compra_actual = cursor.fetchone()
+
+        if not compra_actual:
+            raise Exception("Compra no encontrada")
+
+        fecha_actual = compra_actual[1]
+
+        # ============================================
+        # PROCESAR FECHA
+        #
+        # Conservamos la hora original de la compra.
+        # Solo modificamos la fecha seleccionada.
+        # ============================================
+
+        try:
+
+            fecha_compra = datetime.strptime(
+                fecha_input,
+                "%Y-%m-%d"
+            )
+
+        except ValueError:
+
+            raise Exception(
+                "Formato de fecha inválido."
+            )
+
+        if isinstance(fecha_actual, datetime):
+
+            fecha = fecha_compra.replace(
+                hour=fecha_actual.hour,
+                minute=fecha_actual.minute,
+                second=fecha_actual.second,
+                microsecond=0
+            )
+
+        else:
+
+            fecha = fecha_compra
+
+        # ============================================
+        # OBTENER DETALLES ANTERIORES
+        # ============================================
+
+        cursor.execute(
+            f"""
+            SELECT
+                producto_id,
+                cantidad,
+                precio_unitario
+            FROM {DETALLE_COMPRAS}
+            WHERE compra_id = {placeholder}
+            """,
+            (compra_id,)
+        )
+
+        detalles_anteriores = cursor.fetchall()
+
+        if not detalles_anteriores:
+
+            raise Exception(
+                "La compra no tiene detalles."
+            )
+
+        # ============================================
+        # VALIDAR Y NORMALIZAR DETALLES NUEVOS
+        # ============================================
+
+        detalles_procesados = []
+
+        subtotal_compra = Decimal("0")
+        iva_total = Decimal("0")
+        total_compra = Decimal("0")
+
+        for item in detalles_nuevos:
+
+            producto_id = item.get("producto_id")
+
+            if not producto_id:
+                raise Exception(
+                    "Producto inválido"
+                )
+
+            cantidad = to_decimal(
+                item.get("cantidad"),
+                "Cantidad"
+            )
+
+            precio_unitario = to_decimal(
+                item.get("precio_unitario"),
+                "Precio Unitario"
+            )
+
+            tipo_iva_id = item.get("tipo_iva_id")
+
+            if not tipo_iva_id:
+                raise Exception(
+                    "Debe seleccionar el tipo de IVA"
+                )
+
+            if cantidad <= 0:
+                raise Exception(
+                    "Cantidad inválida"
+                )
+
+            if precio_unitario <= 0:
+                raise Exception(
+                    "Precio Unitario inválido"
+                )
+
+            # ========================================
+            # VALIDAR IVA
+            # ========================================
+
+            cursor.execute(
+                f"""
+                SELECT porcentaje
+                FROM {TIPOS_IVA}
+                WHERE id = {placeholder}
+                AND activo = 1
+                """,
+                (tipo_iva_id,)
+            )
+
+            row_iva = cursor.fetchone()
+
+            if not row_iva:
+                raise Exception(
+                    "Tipo de IVA no válido"
+                )
+
+            iva_porcentaje = Decimal(
+                str(row_iva[0])
+            )
+
+            if iva_porcentaje < 0:
+                raise Exception(
+                    "IVA inválido"
+                )
+
+            # ========================================
+            # VALIDAR PRODUCTO
+            # ========================================
+
+            cursor.execute(
+                f"""
+                SELECT id
+                FROM {PRODUCTOS}
+                WHERE id = {placeholder}
+                """,
+                (producto_id,)
+            )
+
+            producto = cursor.fetchone()
+
+            if not producto:
+                raise Exception(
+                    f"Producto no existe: {producto_id}"
+                )
+
+            # ========================================
+            # CALCULAR VALORES
+            # ========================================
+
+            subtotal = (
+                cantidad *
+                precio_unitario
+            )
+
+            valor_iva = (
+                subtotal *
+                iva_porcentaje /
+                Decimal("100")
+            )
+
+            total_item = (
+                subtotal +
+                valor_iva
+            )
+
+            subtotal_compra += subtotal
+            iva_total += valor_iva
+            total_compra += total_item
+
+            detalles_procesados.append({
+                "producto_id": producto_id,
+                "cantidad": cantidad,
+                "precio_unitario": precio_unitario,
+                "tipo_iva_id": tipo_iva_id,
+                "iva": iva_porcentaje,
+                "subtotal": subtotal,
+                "valor_iva": valor_iva,
+                "total": total_item
+            })
+
+        # ============================================
+        # AGRUPAR IMPACTO ANTERIOR POR PRODUCTO
+        # ============================================
+
+        anteriores_por_producto = {}
+
+        for producto_id, cantidad, precio in detalles_anteriores:
+
+            producto_id = int(producto_id)
+            cantidad = Decimal(str(cantidad or 0))
+            precio = Decimal(str(precio or 0))
+
+            if producto_id not in anteriores_por_producto:
+
+                anteriores_por_producto[producto_id] = {
+                    "cantidad": Decimal("0"),
+                    "valor": Decimal("0")
+                }
+
+            anteriores_por_producto[producto_id]["cantidad"] += cantidad
+            anteriores_por_producto[producto_id]["valor"] += (
+                cantidad * precio
+            )
+
+        # ============================================
+        # AGRUPAR NUEVO IMPACTO POR PRODUCTO
+        # ============================================
+
+        nuevos_por_producto = {}
+
+        for item in detalles_procesados:
+
+            producto_id = int(
+                item["producto_id"]
+            )
+
+            cantidad = item["cantidad"]
+            precio = item["precio_unitario"]
+
+            if producto_id not in nuevos_por_producto:
+
+                nuevos_por_producto[producto_id] = {
+                    "cantidad": Decimal("0"),
+                    "valor": Decimal("0")
+                }
+
+            nuevos_por_producto[producto_id]["cantidad"] += cantidad
+            nuevos_por_producto[producto_id]["valor"] += (
+                cantidad * precio
+            )
+
+        # ============================================
+        # PRODUCTOS AFECTADOS
+        # ============================================
+
+        productos_afectados = set(
+            anteriores_por_producto.keys()
+        )
+
+        productos_afectados.update(
+            nuevos_por_producto.keys()
+        )
+
+        # ============================================
+        # REVERTIR + APLICAR NUEVO IMPACTO
+        #
+        # Se calcula primero el valor actual del
+        # inventario, se retira el impacto de la compra
+        # anterior y luego se aplica el nuevo.
+        # ============================================
+
+        for producto_id in productos_afectados:
+
+            cursor.execute(
+                f"""
+                SELECT
+                    stock,
+                    costo
+                FROM {PRODUCTOS}
+                WHERE id = {placeholder}
+                """,
+                (producto_id,)
+            )
+
+            producto_actual = cursor.fetchone()
+
+            if not producto_actual:
+                raise Exception(
+                    f"Producto no existe: {producto_id}"
+                )
+
+            stock_actual = Decimal(
+                str(producto_actual[0] or 0)
+            )
+
+            costo_actual = Decimal(
+                str(producto_actual[1] or 0)
+            )
+
+            valor_actual = (
+                stock_actual *
+                costo_actual
+            )
+
+            # ----------------------------------------
+            # REVERTIR COMPRA ANTERIOR
+            # ----------------------------------------
+
+            anterior = anteriores_por_producto.get(
+                producto_id,
+                {
+                    "cantidad": Decimal("0"),
+                    "valor": Decimal("0")
+                }
+            )
+
+            cantidad_anterior = anterior["cantidad"]
+            valor_anterior = anterior["valor"]
+
+            stock_base = (
+                stock_actual -
+                cantidad_anterior
+            )
+
+            valor_base = (
+                valor_actual -
+                valor_anterior
+            )
+
+            if stock_base < 0:
+
+                raise Exception(
+                    f"No es posible editar la compra. "
+                    f"El stock del producto {producto_id} "
+                    f"sería negativo."
+                )
+
+            # ========================================
+            # PROTECCIÓN DE REDONDEOS
+            # ========================================
+
+            if abs(valor_base) < Decimal("0.0001"):
+                valor_base = Decimal("0")
+
+            if stock_base <= 0:
+
+                stock_base = Decimal("0")
+                valor_base = Decimal("0")
+
+                costo_base = Decimal("0")
+
+            else:
+
+                costo_base = (
+                    valor_base /
+                    stock_base
+                )
+
+            # ----------------------------------------
+            # NUEVO IMPACTO
+            # ----------------------------------------
+
+            nuevo = nuevos_por_producto.get(
+                producto_id,
+                {
+                    "cantidad": Decimal("0"),
+                    "valor": Decimal("0")
+                }
+            )
+
+            cantidad_nueva = nuevo["cantidad"]
+            valor_nuevo = nuevo["valor"]
+
+            stock_final = (
+                stock_base +
+                cantidad_nueva
+            )
+
+            valor_final = (
+                valor_base +
+                valor_nuevo
+            )
+
+            if stock_final <= 0:
+
+                costo_final = Decimal("0")
+
+            else:
+
+                costo_final = (
+                    valor_final /
+                    stock_final
+                )
+
+            costo_final = costo_final.quantize(
+                Decimal("0.0001")
+            )
+
+            # ----------------------------------------
+            # ACTUALIZAR PRODUCTO
+            # ----------------------------------------
+
+            cursor.execute(
+                f"""
+                UPDATE {PRODUCTOS}
+                SET
+                    stock = {placeholder},
+                    costo = {placeholder}
+                WHERE id = {placeholder}
+                """,
+                (
+                    stock_final,
+                    costo_final,
+                    producto_id
+                )
+            )
+
+        # ============================================
+        # REEMPLAZAR DETALLES
+        # ============================================
+
+        cursor.execute(
+            f"""
+            DELETE FROM {DETALLE_COMPRAS}
+            WHERE compra_id = {placeholder}
+            """,
+            (compra_id,)
+        )
+
+        for item in detalles_procesados:
+
+            cursor.execute(
+                f"""
+                INSERT INTO {DETALLE_COMPRAS}
+                (
+                    compra_id,
+                    producto_id,
+                    cantidad,
+                    precio_unitario,
+                    tipo_iva_id,
+                    iva,
+                    subtotal,
+                    valor_iva,
+                    total
+                )
+                VALUES
+                (
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder}
+                )
+                """,
+                (
+                    compra_id,
+                    item["producto_id"],
+                    item["cantidad"],
+                    item["precio_unitario"],
+                    item["tipo_iva_id"],
+                    item["iva"],
+                    item["subtotal"],
+                    item["valor_iva"],
+                    item["total"]
+                )
+            )
+
+        # ============================================
+        # ACTUALIZAR CABECERA COMPRA
+        # ============================================
+
+        cursor.execute(
+            f"""
+            UPDATE {COMPRAS}
+            SET
+                proveedor_id = {placeholder},
+                fecha = {placeholder},
+                subtotal = {placeholder},
+                iva_total = {placeholder},
+                total = {placeholder}
+            WHERE id = {placeholder}
+            """,
+            (
+                proveedor_id,
+                fecha,
+                subtotal_compra,
+                iva_total,
+                total_compra,
+                compra_id
+            )
+        )
+
+        conn.commit()
+
+        return {
+            "id": compra_id,
+            "message": "Compra actualizada correctamente",
+            "subtotal": float(
+                round(subtotal_compra, 2)
+            ),
+            "iva_total": float(
+                round(iva_total, 2)
+            ),
+            "total": float(
+                round(total_compra, 2)
+            )
+        }
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print(
+            "\n========== ERROR EDITAR COMPRA =========="
+        )
+
+        traceback.print_exc()
+
+        raise
+
+    finally:
+
+        conn.close()
+
+
+# =====================================================
+# ✏️ OBTENER COMPRA PARA EDICIÓN
+# =====================================================
+def get_compra_para_editar(compra_id):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        is_postgres, placeholder = _get_db_settings()
+
+        # ============================================
+        # CABECERA
+        # ============================================
+
+        cursor.execute(
+            f"""
+            SELECT
+                id,
+                proveedor_id,
+                fecha,
+                subtotal,
+                iva_total,
+                total
+            FROM {COMPRAS}
+            WHERE id = {placeholder}
+            """,
+            (compra_id,)
+        )
+
+        compra = cursor.fetchone()
+
+        if not compra:
+            return None
+
+        # ============================================
+        # DETALLES
+        # ============================================
+
+        cursor.execute(
+            f"""
+            SELECT
+                dc.producto_id,
+                p.nombre,
+                dc.cantidad,
+                dc.precio_unitario,
+                dc.tipo_iva_id,
+                ti.descripcion AS tipo_iva,
+                dc.iva,
+                dc.subtotal,
+                dc.valor_iva,
+                dc.total
+            FROM {DETALLE_COMPRAS} dc
+            INNER JOIN {PRODUCTOS} p
+                ON dc.producto_id = p.id
+            INNER JOIN {TIPOS_IVA} ti
+                ON dc.tipo_iva_id = ti.id
+            WHERE dc.compra_id = {placeholder}
+            """,
+            (compra_id,)
+        )
+
+        columnas = [
+            c[0]
+            for c in cursor.description
+        ]
+
+        detalles = []
+
+        for row in cursor.fetchall():
+
+            detalle = dict(
+                zip(
+                    columnas,
+                    row
+                )
+            )
+
+            detalle["producto_id"] = int(
+                detalle["producto_id"]
+            )
+
+            detalle["cantidad"] = float(
+                detalle["cantidad"] or 0
+            )
+
+            detalle["precio_unitario"] = float(
+                detalle["precio_unitario"] or 0
+            )
+
+            detalle["iva"] = float(
+                detalle["iva"] or 0
+            )
+
+            detalle["subtotal"] = float(
+                detalle["subtotal"] or 0
+            )
+
+            detalle["valor_iva"] = float(
+                detalle["valor_iva"] or 0
+            )
+
+            detalle["total"] = float(
+                detalle["total"] or 0
+            )
+
+            detalles.append(detalle)
+
+        fecha = compra[2]
+
+        if isinstance(fecha, datetime):
+
+            fecha = fecha.strftime(
+                "%Y-%m-%d"
+            )
+
+        return {
+            "id": compra[0],
+            "proveedor_id": compra[1],
+            "fecha": fecha,
+            "subtotal": float(compra[3] or 0),
+            "iva_total": float(compra[4] or 0),
+            "total": float(compra[5] or 0),
+            "detalles": detalles
+        }
+
+    except Exception as e:
+
+        print(
+            "❌ ERROR COMPRA PARA EDICIÓN:",
+            e
+        )
+
+        raise
+
+    finally:
+
+        conn.close()
+
 
 # =============================
 # BUILD WHERE COMPRAS

@@ -1,5 +1,14 @@
 from flask import Blueprint, request, jsonify, session, send_file
-from services.compras_service import crear_compra, get_compras, get_detalle_compra, get_tipos_iva, get_compras_kpis, exportar_compras
+from services.compras_service import (
+    crear_compra,
+    editar_compra,
+    get_compras,
+    get_detalle_compra,
+    get_compra_para_editar,
+    get_tipos_iva,
+    get_compras_kpis,
+    exportar_compras
+)
 from openpyxl import Workbook
 from utils.excel_utils import (
     crear_reporte_excel,
@@ -275,6 +284,144 @@ def detalle(id):
         return jsonify({
             "status": "error",
             "message": "Error obteniendo detalle"
+        }), 500
+
+
+# ============================================
+# ✏️ OBTENER COMPRA PARA EDITAR
+# ============================================
+@compras_bp.route("/compras/<int:id>/editar", methods=["GET"])
+def obtener_para_editar(id):
+
+    if not validar_sesion():
+        return jsonify({
+            "status": "unauthorized"
+        }), 401
+
+    try:
+
+        data = get_compra_para_editar(id)
+
+        if not data:
+
+            return jsonify({
+                "status": "error",
+                "message": "Compra no encontrada"
+            }), 404
+
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
+
+    except Exception as e:
+
+        print(
+            "❌ ERROR COMPRA PARA EDITAR:",
+            e
+        )
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+# ============================================
+# ✏️ EDITAR COMPRA
+# ============================================
+@compras_bp.route("/compras/<int:id>", methods=["PUT"])
+def actualizar(id):
+
+    if not validar_sesion():
+        return jsonify({
+            "status": "unauthorized"
+        }), 401
+
+    try:
+
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        if not data:
+
+            return jsonify({
+                "status": "error",
+                "message": "No se enviaron datos"
+            }), 400
+
+        detalles = data.get(
+            "detalles",
+            []
+        )
+
+        if not isinstance(
+            detalles,
+            list
+        ) or len(detalles) == 0:
+
+            return jsonify({
+                "status": "error",
+                "message": "Debe incluir productos"
+            }), 400
+
+        for detalle_compra in detalles:
+
+            if not detalle_compra.get(
+                "producto_id"
+            ):
+
+                return jsonify({
+                    "status": "error",
+                    "message": "Producto inválido"
+                }), 400
+
+            if float(
+                detalle_compra.get(
+                    "cantidad",
+                    0
+                )
+            ) <= 0:
+
+                return jsonify({
+                    "status": "error",
+                    "message": "Cantidad inválida"
+                }), 400
+
+            if float(
+                detalle_compra.get(
+                    "precio_unitario",
+                    0
+                )
+            ) <= 0:
+
+                return jsonify({
+                    "status": "error",
+                    "message": "Precio unitario inválido"
+                }), 400
+
+        resultado = editar_compra(
+            id,
+            data
+        )
+
+        return jsonify({
+            "status": "success",
+            "data": resultado
+        })
+
+    except Exception as e:
+
+        print(
+            "\n========== ERROR ACTUALIZAR COMPRA =========="
+        )
+
+        traceback.print_exc()
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
         }), 500
     
 

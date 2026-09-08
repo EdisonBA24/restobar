@@ -1,4 +1,4 @@
-import { API_URL, apiFetch} from "./api.js";
+import { API_URL, apiFetch } from "./api.js";
 import { TablaUI } from "./tablas.js";
 
 let productos = [];
@@ -6,6 +6,7 @@ let tiposIVA = [];
 let proveedores = [];
 
 let proveedorSeleccionado = null;
+let compraEditandoId = null;
 
 // =====================================
 // FILTROS DEL LISTADO
@@ -791,7 +792,7 @@ function renumerarTarjetas() {
 }
 
 // =============================
-// GUARDAR COMPRA
+// GUARDAR / ACTUALIZAR COMPRA
 // =============================
 window.guardarCompra = async function () {
 
@@ -799,9 +800,15 @@ window.guardarCompra = async function () {
         document.getElementById("proveedorId").value
     );
 
-    const fecha = document.getElementById("fechaCompra").value;
+    const fecha =
+        document.getElementById("fechaCompra").value;
 
-    const tarjetas = document.querySelectorAll(".producto-card");
+    const tarjetas =
+        document.querySelectorAll(".producto-card");
+
+    // =========================================
+    // VALIDAR PROVEEDOR
+    // =========================================
 
     if (!proveedor_id) {
 
@@ -810,11 +817,16 @@ window.guardarCompra = async function () {
             "warning"
         );
 
-        document.getElementById("proveedorBusqueda").focus();
+        document
+            .getElementById("proveedorBusqueda")
+            .focus();
 
         return;
-
     }
+
+    // =========================================
+    // VALIDAR FECHA
+    // =========================================
 
     if (!fecha) {
 
@@ -823,39 +835,96 @@ window.guardarCompra = async function () {
             "warning"
         );
 
-        document.getElementById("fechaCompra").focus();
+        document
+            .getElementById("fechaCompra")
+            .focus();
 
         return;
-
     }
+
+    // =========================================
+    // VALIDAR PRODUCTOS
+    // =========================================
 
     if (tarjetas.length === 0) {
-        mostrarMensaje("Agrega productos ⚠️", "warning");
+
+        mostrarMensaje(
+            "Agrega productos ⚠️",
+            "warning"
+        );
+
         return;
     }
 
-    let detalles = [];
+    const detalles = [];
 
     for (const card of tarjetas) {
 
         const producto_id = Number(
-            card.querySelector(".productoId").value
+            card
+                .querySelector(".productoId")
+                .value
         );
 
         const cantidad = parseFloat(
-            card.querySelector(".cantidadProducto").value
+            card
+                .querySelector(".cantidadProducto")
+                .value
         );
 
         const precio = parseFloat(
-            card.querySelector(".precioProducto").value
+            card
+                .querySelector(".precioProducto")
+                .value
         );
 
         const tipo_iva_id = Number(
-            card.querySelector(".tipoIVA").value
+            card
+                .querySelector(".tipoIVA")
+                .value
         );
 
-        if (!producto_id || cantidad <= 0 || precio <= 0) {
-            mostrarMensaje("Datos incompletos o inválidos ⚠️", "warning");
+        // =====================================
+        // VALIDACIÓN
+        // =====================================
+
+        if (!producto_id) {
+
+            mostrarMensaje(
+                "Seleccione un producto en todas las líneas ⚠️",
+                "warning"
+            );
+
+            return;
+        }
+
+        if (!cantidad || cantidad <= 0) {
+
+            mostrarMensaje(
+                "La cantidad debe ser mayor que cero ⚠️",
+                "warning"
+            );
+
+            return;
+        }
+
+        if (!precio || precio <= 0) {
+
+            mostrarMensaje(
+                "El precio unitario debe ser mayor que cero ⚠️",
+                "warning"
+            );
+
+            return;
+        }
+
+        if (!tipo_iva_id) {
+
+            mostrarMensaje(
+                "Seleccione el IVA en todas las líneas ⚠️",
+                "warning"
+            );
+
             return;
         }
 
@@ -870,45 +939,154 @@ window.guardarCompra = async function () {
             tipo_iva_id
 
         });
+
     }
+
+    // =========================================
+    // DATOS
+    // =========================================
+
+    const datos = {
+
+        proveedor_id,
+
+        fecha,
+
+        detalles
+
+    };
 
     try {
 
-        console.log("===== DATOS COMPRA =====");
-        console.log("Proveedor ID:", proveedor_id);
-        console.log("Fecha:", fecha);
-        console.log("Detalles:", detalles);
+        // =====================================
+        // NUEVA COMPRA
+        // =====================================
 
-        const res = await apiFetch("/compras", "POST", {
+        if (!compraEditandoId) {
 
-            proveedor_id,
+            console.log(
+                "===== REGISTRANDO COMPRA ====="
+            );
 
-            fecha,
+            console.log(
+                "Proveedor:",
+                proveedor_id
+            );
 
-            detalles
+            console.log(
+                "Fecha:",
+                fecha
+            );
 
-        });
+            console.log(
+                "Detalles:",
+                detalles
+            );
 
-        if (!res || res.status === "error") {
-            mostrarMensaje(res?.message || "Error en compra ❌", "error");
-            return;
+            const res = await apiFetch(
+                "/compras",
+                "POST",
+                datos
+            );
+
+            if (
+                !res ||
+                res.status === "error"
+            ) {
+
+                mostrarMensaje(
+                    res?.message ||
+                    "Error en compra ❌",
+                    "error"
+                );
+
+                return;
+            }
+
+            mostrarMensaje(
+                "Compra registrada correctamente ✅",
+                "success"
+            );
+
         }
 
-        mostrarMensaje(
-            "Compra registrada correctamente ✅",
-            "success"
-        );
+        // =====================================
+        // EDITAR COMPRA
+        // =====================================
+
+        else {
+
+            console.log(
+                "===== ACTUALIZANDO COMPRA ====="
+            );
+
+            console.log(
+                "Compra ID:",
+                compraEditandoId
+            );
+
+            console.log(
+                "Datos:",
+                datos
+            );
+
+            const res = await apiFetch(
+                `/compras/${compraEditandoId}`,
+                "PUT",
+                datos
+            );
+
+            if (
+                !res ||
+                res.status === "error"
+            ) {
+
+                mostrarMensaje(
+                    res?.message ||
+                    "Error actualizando compra ❌",
+                    "error"
+                );
+
+                return;
+            }
+
+            mostrarMensaje(
+                "Compra actualizada correctamente ✅",
+                "success"
+            );
+
+        }
+
+        // =====================================
+        // LIMPIAR Y VOLVER AL LISTADO
+        // =====================================
 
         limpiarFormularioCompra();
+
+        compraEditandoId = null;
 
         cancelarCompra();
 
         await cargarCompras();
 
-    } catch (error) {
-        console.error("Error compra:", error);
-        mostrarMensaje("Error guardando compra ❌", "error");
     }
+
+    catch (error) {
+
+        console.error(
+            "Error guardando compra:",
+            error
+        );
+
+        mostrarMensaje(
+            compraEditandoId
+                ? "Error actualizando compra ❌"
+                : "Error guardando compra ❌",
+            "error"
+        );
+
+    }
+
 };
 
 
@@ -1093,7 +1271,55 @@ function actualizarConsulta() {
 
 function formatearFechaISO(fecha) {
 
-    return fecha.toISOString().split("T")[0];
+    if (!fecha) {
+        return "";
+    }
+
+    // =====================================
+    // FECHA YA VIENE COMO TEXTO
+    // =====================================
+
+    if (typeof fecha === "string") {
+
+        // Ejemplo:
+        // "2026-09-05"
+        // "2026-09-05 14:30:00"
+        // "2026-09-05T14:30:00"
+
+        return fecha.substring(0, 10);
+
+    }
+
+    // =====================================
+    // FECHA ES OBJETO DATE
+    // =====================================
+
+    if (fecha instanceof Date) {
+
+        if (isNaN(fecha.getTime())) {
+            return "";
+        }
+
+        return fecha
+            .toISOString()
+            .split("T")[0];
+
+    }
+
+    // =====================================
+    // INTENTAR CONVERTIR OTRO FORMATO
+    // =====================================
+
+    const fechaConvertida =
+        new Date(fecha);
+
+    if (isNaN(fechaConvertida.getTime())) {
+        return "";
+    }
+
+    return fechaConvertida
+        .toISOString()
+        .split("T")[0];
 
 }
 
@@ -1376,15 +1602,56 @@ async function cargarCompras(filtros = null) {
 
             tabla.innerHTML += `
         <tr onclick="verDetalle(${c.id})" style="cursor:pointer">
-            <td>${c.id}</td>
-            <td>${c.proveedor || ""}</td>
-            <td>${formatearFecha(c.fecha)}</td>
-            <td>${formatoMoneda(c.subtotal)}</td>
-            <td>${formatoMoneda(c.iva_total)}</td>
-            <td>${formatoMoneda(c.total)}</td>
-            <td>${c.usuario || ""}</td>
+
+            <td>
+                ${c.id}
+            </td>
+
+            <td>
+                ${c.proveedor || ""}
+            </td>
+
+            <td>
+                ${formatearFecha(c.fecha)}
+            </td>
+
+            <td>
+                ${formatoMoneda(c.subtotal)}
+            </td>
+
+            <td>
+                ${formatoMoneda(c.iva_total)}
+            </td>
+
+            <td>
+                ${formatoMoneda(c.total)}
+            </td>
+
+            <td>
+                ${c.usuario || ""}
+            </td>
+
+            <td>
+
+                <div class="acciones">
+
+                    <button
+                        type="button"
+                        class="btn-icon btn-edit"
+                        title="Editar compra"
+                        aria-label="Editar compra"
+                        onclick="event.stopPropagation(); editarCompra(${c.id})">
+
+                        ✏️
+
+                    </button>
+
+                </div>
+
+            </td>
+
         </tr>
-    `;
+        `;
 
         });
 
@@ -1475,25 +1742,58 @@ window.verDetalle = async function (id) {
         const body = document.getElementById("modalBody");
 
         body.innerHTML = `
+
             <table class="table">
+
                 <thead>
+
                     <tr>
+
                         <th>Producto</th>
+
                         <th>Cantidad</th>
+
                         <th>Precio</th>
+
                         <th>Subtotal</th>
+
                     </tr>
+
                 </thead>
+
                 <tbody>
+
                     ${(res.data || []).map(d => `
+
                         <tr>
-                            <td>${d.nombre}</td>
-                            <td>${d.cantidad}</td>
-                            <td>${formatoMoneda(d.precio_unitario)}</td>
-                            <td>${formatoMoneda(d.cantidad * d.precio_unitario)}</td>
+
+                            <td>
+                                ${d.nombre || ""}
+                            </td>
+
+                            <td>
+                                ${d.cantidad}
+                            </td>
+
+                            <td>
+                                ${formatoMoneda(
+            d.precio_unitario
+        )}
+                            </td>
+
+                            <td>
+                                ${formatoMoneda(
+            d.cantidad *
+            d.precio_unitario
+        )}
+                            </td>
+
                         </tr>
+
                     `).join("")}
+
                 </tbody>
+
             </table>
         `;
 
@@ -1503,6 +1803,239 @@ window.verDetalle = async function (id) {
         console.error("Error detalle:", error);
         mostrarMensaje("Error cargando detalle ❌", "error");
     }
+};
+
+// =====================================
+// ✏️ EDITAR COMPRA
+// =====================================
+window.editarCompra = async function (id) {
+
+    try {
+
+        const res = await apiFetch(
+            `/compras/${id}/editar`
+        );
+
+        if (
+            !res ||
+            res.status === "error"
+        ) {
+
+            mostrarMensaje(
+                res?.message ||
+                "Error cargando la compra ❌",
+                "error"
+            );
+
+            return;
+        }
+
+        const compra = res.data;
+
+        if (!compra) {
+
+            mostrarMensaje(
+                "Compra no encontrada ❌",
+                "error"
+            );
+
+            return;
+        }
+
+        // =================================
+        // GUARDAR MODO EDICIÓN
+        // =================================
+
+        compraEditandoId = Number(
+            compra.id
+        );
+
+        // =================================
+        // CERRAR MODAL
+        // =================================
+
+        const modal =
+            document.getElementById(
+                "modalCompra"
+            );
+
+        if (modal) {
+
+            modal.classList.add(
+                "hidden"
+            );
+
+        }
+
+        // =================================
+        // MOSTRAR FORMULARIO
+        // =================================
+
+        document
+            .getElementById("compraFormContainer")
+            .classList.remove("hidden");
+
+        document
+            .getElementById("listContainer")
+            .classList.add("hidden");
+
+        document
+            .getElementById("formTitle")
+            .textContent =
+            `✏️ Editar Compra #${compra.id}`;
+
+        const boton =
+            document.getElementById(
+                "btnGuardarCompra"
+            );
+
+        if (boton) {
+
+            boton.textContent =
+                "Actualizar Compra";
+
+        }
+
+        // =================================
+        // PROVEEDOR
+        // =================================
+
+        proveedorSeleccionado = null;
+
+        document
+            .getElementById("proveedorId")
+            .value =
+            compra.proveedor_id || "";
+
+        const proveedor =
+            proveedores.find(
+                p =>
+                    Number(p.id) ===
+                    Number(compra.proveedor_id)
+            );
+
+        document
+            .getElementById("proveedorBusqueda")
+            .value =
+            proveedor?.nombre || "";
+
+        // =================================
+        // FECHA
+        // =================================
+
+        document
+            .getElementById("fechaCompra")
+            .value =
+            formatearFechaISO(
+                compra.fecha
+            );
+
+        // =================================
+        // LIMPIAR PRODUCTOS
+        // =================================
+
+        document
+            .getElementById("productosContainer")
+            .innerHTML = "";
+
+        // =================================
+        // CARGAR DETALLES
+        // =================================
+
+        for (
+            const detalle
+            of (compra.detalles || [])
+        ) {
+
+            agregarProducto();
+
+            const cards =
+                document.querySelectorAll(
+                    ".producto-card"
+                );
+
+            const card =
+                cards[cards.length - 1];
+
+            if (!card) continue;
+
+            // -----------------------------
+            // PRODUCTO
+            // -----------------------------
+
+            card
+                .querySelector(".productoId")
+                .value =
+                detalle.producto_id;
+
+            card
+                .querySelector(".productoBusqueda")
+                .value =
+                detalle.nombre || "";
+
+            // -----------------------------
+            // CANTIDAD
+            // -----------------------------
+
+            card
+                .querySelector(".cantidadProducto")
+                .value =
+                detalle.cantidad;
+
+            // -----------------------------
+            // PRECIO
+            // -----------------------------
+
+            card
+                .querySelector(".precioProducto")
+                .value =
+                detalle.precio_unitario;
+
+            // -----------------------------
+            // IVA
+            // -----------------------------
+
+            const selectIVA =
+                card.querySelector(
+                    ".tipoIVA"
+                );
+
+            if (
+                selectIVA &&
+                detalle.tipo_iva_id
+            ) {
+
+                selectIVA.value =
+                    detalle.tipo_iva_id;
+
+            }
+
+            // -----------------------------
+            // RECALCULAR
+            // -----------------------------
+
+            calcularCard(card);
+
+        }
+
+        actualizarResumenCompra();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error editando compra:",
+            error
+        );
+
+        mostrarMensaje(
+            "Error cargando compra ❌",
+            "error"
+        );
+
+    }
+
 };
 
 window.cerrarModal = function () {
@@ -1555,14 +2088,32 @@ function formatearFecha(fecha) {
 
 window.mostrarFormularioCompra = function () {
 
-    document.getElementById("compraFormContainer")
+    compraEditandoId = null;
+
+    document
+        .getElementById("compraFormContainer")
         .classList.remove("hidden");
 
-    document.getElementById("listContainer")
+    document
+        .getElementById("listContainer")
         .classList.add("hidden");
 
-    document.getElementById("formTitle").textContent =
-        "Nueva Compra";
+    document
+        .getElementById("formTitle")
+        .textContent =
+        "🛒 Nueva Compra";
+
+    const boton =
+        document.getElementById(
+            "btnGuardarCompra"
+        );
+
+    if (boton) {
+
+        boton.textContent =
+            "Guardar Compra";
+
+    }
 
     limpiarFormularioCompra();
 
@@ -1570,10 +2121,14 @@ window.mostrarFormularioCompra = function () {
 
 window.cancelarCompra = function () {
 
-    document.getElementById("compraFormContainer")
+    compraEditandoId = null;
+
+    document
+        .getElementById("compraFormContainer")
         .classList.add("hidden");
 
-    document.getElementById("listContainer")
+    document
+        .getElementById("listContainer")
         .classList.remove("hidden");
 
 }
@@ -1597,6 +2152,18 @@ function limpiarFormularioCompra() {
     document.getElementById("totalCompra").textContent = formatoMoneda(0);
 
     inicializarFechaCompra();
+
+    const boton =
+        document.getElementById(
+            "btnGuardarCompra"
+        );
+
+    if (boton) {
+
+        boton.textContent =
+            "Guardar Compra";
+
+    }
 
 }
 

@@ -2,12 +2,13 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Usuarios</title>
     <link rel="stylesheet" href="../css/styles.css?v=2">
 </head>
 
-<body>
+<body class="usuarios-page">
 
     <div class="layout">
 
@@ -58,14 +59,23 @@
                 </li>
 
                 <li class="menu-item solo-admin">
+
                     <div class="menu-title">
+
                         <span>👤 Usuarios</span>
+
                         <span class="menu-arrow">▾</span>
+
                     </div>
+
                     <ul class="submenu">
-                        <li onclick="ir('crear_usuario')">➕ Crear Usuario</li>
-                        <li class="active">📋 Consultar Usuarios</li>
+
+                        <li class="active">
+                            📋 Gestión de Usuarios
+                        </li>
+
                     </ul>
+
                 </li>
 
                 <li class="menu-item">
@@ -158,55 +168,271 @@
 
             </header>
 
-            <!-- FORMULARIO EDICIÓN -->
-            <div id="formContainer" class="card hidden">
+            <!-- ================================================= -->
+            <!-- FORMULARIO CREAR / EDITAR USUARIO -->
+            <!-- ================================================= -->
 
-                <h2 id="formTitle">Editar Usuario</h2>
+            <section id="formContainer" class="card usuarios-form-card hidden" aria-labelledby="formTitle">
 
-                <form id="formUsuario" class="form-grid">
+                <div class="usuarios-form-header">
 
-                    <input id="nombre" placeholder="Nombre" required>
-                    <input id="usuario" placeholder="Usuario" required>
-                    <input id="password" placeholder="Contraseña">
+                    <div>
 
-                    <select id="perfil">
-                        <option value="admin">ADMIN</option>
-                        <option value="ventas">VENTAS</option>
-                    </select>
+                        <h2 id="formTitle">
+                            Nuevo Usuario
+                        </h2>
 
-                    <select id="activo">
-                        <option value="1">Activo</option>
-                        <option value="0">Inactivo</option>
-                    </select>
+                        <p id="formDescription">
+                            Registra los datos de acceso y el perfil del usuario.
+                        </p>
 
-                    <button type="submit" class="btn-primary">Guardar</button>
-                    <button type="button" class="btn-primary" onclick="cancelarEdicion()">Cancelar</button>
+                    </div>
+
+                </div>
+
+                <form id="formUsuario" autocomplete="off">
+
+                    <div class="usuarios-form-grid">
+
+                        <!-- NOMBRE -->
+
+                        <div class="usuarios-field">
+
+                            <label for="nombre">
+                                Nombre completo *
+                            </label>
+
+                            <input id="nombre" type="text" maxlength="150" autocomplete="name"
+                                placeholder="Nombre completo" required>
+
+                        </div>
+
+                        <!-- USUARIO -->
+
+                        <div class="usuarios-field">
+
+                            <label for="usuario">
+                                Nombre de usuario *
+                            </label>
+
+                            <input id="usuario" type="text" maxlength="80" autocomplete="username"
+                                placeholder="Ej. juan.perez" required>
+
+                        </div>
+
+                        <!-- PASSWORD -->
+
+                        <div class="usuarios-field">
+
+                            <label for="password">
+                                Contraseña
+                            </label>
+
+                            <input id="password" type="password" minlength="12" autocomplete="new-password"
+                                placeholder="Contraseña de mínimo 12 caracteres" required>
+
+                            <small id="passwordHelp">
+                                La contraseña debe tener mínimo 12 caracteres.
+                            </small>
+
+                        </div>
+
+                        <!-- PERFIL -->
+
+                        <div class="usuarios-field">
+
+                            <label for="perfil">
+                                Perfil de acceso *
+                            </label>
+
+                            <select id="perfil" required>
+
+                                <option value="ventas" selected>
+                                    VENTAS
+                                </option>
+
+                                <option value="admin">
+                                    ADMIN
+                                </option>
+
+                            </select>
+
+                            <small>
+                                El perfil determina las opciones y permisos disponibles.
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ACCIONES -->
+
+                    <div class="usuarios-form-actions">
+
+                        <button type="button" id="btnCancelarUsuario" class="btn-secondary">
+                            Cancelar
+                        </button>
+
+                        <button type="submit" id="btnGuardarUsuario" class="btn-primary">
+                            Guardar Usuario
+                        </button>
+
+                    </div>
 
                 </form>
 
-            </div>
+            </section>
 
-            <div class="card">
 
-                <div class="table-container">
+            <!-- ================================================= -->
+            <!-- LISTADO DE USUARIOS -->
+            <!-- ================================================= -->
 
-                    <table class="table">
+            <section class="card usuarios-list-card">
+
+                <!-- BARRA SUPERIOR -->
+
+                <div class="usuarios-toolbar">
+
+                    <div class="usuarios-toolbar-heading">
+
+                        <div>
+
+                            <h2>Usuarios registrados</h2>
+
+                            <p>
+                                Consulta y administra las cuentas del sistema.
+                            </p>
+
+                        </div>
+
+                        <button type="button" id="btnNuevoUsuario" class="btn-primary">
+                            ➕ Nuevo Usuario
+                        </button>
+
+                    </div>
+
+                    <!-- FILTROS -->
+
+                    <div class="usuarios-filters">
+
+                        <div class="usuarios-search">
+
+                            <span aria-hidden="true">🔍</span>
+
+                            <input type="search" id="busqueda" placeholder="Buscar por nombre, usuario o perfil..."
+                                autocomplete="off">
+
+                        </div>
+
+                        <label class="usuarios-filter-check">
+
+                            <input type="checkbox" id="verInactivos">
+
+                            <span>
+                                Ver usuarios inactivos
+                            </span>
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TABLA -->
+
+                <div class="table-container usuarios-table-wrap">
+
+                    <table id="tablaUsuariosTabla" class="table usuarios-table">
+
                         <thead>
+
                             <tr>
-                                <th>Nombre</th>
-                                <th>Usuario</th>
-                                <th>Perfil</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+
+                                <th data-sort="nombre">
+                                    Nombre
+                                </th>
+
+                                <th data-sort="usuario">
+                                    Usuario
+                                </th>
+
+                                <th data-sort="perfil">
+                                    Perfil
+                                </th>
+
+                                <th>
+                                    Estado
+                                </th>
+
+                                <th>
+                                    Acciones
+                                </th>
+
                             </tr>
+
                         </thead>
 
-                        <tbody id="tablaUsuarios"></tbody>
+                        <tbody id="tablaUsuarios">
+
+                        </tbody>
+
                     </table>
 
                 </div>
 
-            </div>
+
+                <!-- PAGINACIÓN -->
+
+                <div id="paginacionUsuarios" class="pg-container usuarios-pagination">
+
+                    <div class="pg-page-size">
+
+                        <label for="pageSizeUsuarios">
+                            Mostrar
+                        </label>
+
+                        <select id="pageSizeUsuarios" class="form-select">
+
+                            <option value="10" selected>10</option>
+
+                            <option value="20">20</option>
+
+                            <option value="50">50</option>
+
+                            <option value="100">100</option>
+
+                        </select>
+
+                        <span>registros</span>
+
+                    </div>
+
+
+                    <button id="btnPaginaAnteriorUsuarios" class="btn-secondary" type="button">
+                        ← Anterior
+                    </button>
+
+
+                    <div class="pg-center">
+
+                        <div id="infoPaginacionUsuarios" class="pg-info"></div>
+
+                        <div id="resumenPaginacionUsuarios" class="pg-summary"></div>
+
+                        <div id="numerosPaginacionUsuarios" class="pg-numbers"></div>
+
+                    </div>
+
+
+                    <button id="btnPaginaSiguienteUsuarios" class="btn-secondary" type="button">
+                        Siguiente →
+                    </button>
+
+                </div>
+
+            </section>
 
         </main>
 

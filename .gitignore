@@ -1,0 +1,99 @@
+
+# ==========================================
+# ENTORNOS VIRTUALES DE PYTHON
+# ==========================================
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+
+# ==========================================
+# VARIABLES DE ENTORNO Y CREDENCIALES
+# ==========================================
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+.flaskenv
+
+# Certificados y claves privadas
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ==========================================
+# ARCHIVOS TEMPORALES DE PYTHON
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+
+# Paquetes y compilaciones
+*.egg
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+build/
+dist/
+
+# ==========================================
+# CACHÉ Y PRUEBAS
+# ==========================================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+test-results/
+playwright-report/
+
+# ==========================================
+# LOGS Y ARCHIVOS TEMPORALES
+# ==========================================
+*.log
+logs/
+log/
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*.orig
+*.rej
+
+# ==========================================
+# BASES DE DATOS LOCALES Y RESPALDOS
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.dump
+*.backup
+
+# ==========================================
+# SISTEMA OPERATIVO
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ==========================================
+# EDITORES
+# ==========================================
+.idea/
+
+# Dependencias frontend si se incorporan
+node_modules/

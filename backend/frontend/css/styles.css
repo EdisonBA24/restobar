@@ -9364,3 +9364,686 @@ PEDIDO
     }
 
 }
+
+
+/* ==========================================================
+   MODULO DE PAGOS
+========================================================== */
+
+.pagos-page .main {
+
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+
+}
+
+
+.pagos-page .pagos-form-card,
+.pagos-page .pagos-list-card {
+
+    width: 100%;
+    box-sizing: border-box;
+
+}
+
+
+.pagos-page .pagos-form-card {
+
+    margin-bottom: 24px;
+
+}
+
+
+/* ==========================================================
+   ENCABEZADOS
+========================================================== */
+
+.pagos-page .pagos-section-heading {
+
+    margin-bottom: 22px;
+
+}
+
+
+.pagos-page .pagos-section-heading h2,
+.pagos-page .pagos-toolbar-heading h2 {
+
+    margin: 0 0 6px;
+
+    color: #1e293b;
+
+    font-size: 21px;
+
+}
+
+
+.pagos-page .pagos-section-heading p,
+.pagos-page .pagos-toolbar-heading p {
+
+    margin: 0;
+
+    color: #64748b;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==========================================================
+   FORMULARIO
+========================================================== */
+
+.pagos-page .pagos-form-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+
+}
+
+
+.pagos-page .pagos-field {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    min-width: 0;
+
+}
+
+
+.pagos-page .pagos-field label,
+.pagos-page .pagos-date-field label {
+
+    color: #334155;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+}
+
+
+.pagos-page .pagos-field input,
+.pagos-page .pagos-field select,
+.pagos-page .pagos-date-field input,
+.pagos-page .pagos-search input {
+
+    width: 100%;
+
+    min-width: 0;
+
+    height: 44px;
+
+    padding: 0 13px;
+
+    border: 1px solid #d6dbe3;
+
+    border-radius: 10px;
+
+    background: #fff;
+
+    color: #1e293b;
+
+    font-size: 14px;
+
+    box-sizing: border-box;
+
+    transition: border-color .2s, box-shadow .2s;
+
+}
+
+
+.pagos-page .pagos-field input:focus,
+.pagos-page .pagos-field select:focus,
+.pagos-page .pagos-date-field input:focus,
+.pagos-page .pagos-search input:focus {
+
+    outline: none;
+
+    border-color: #3b82f6;
+
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .13);
+
+}
+
+
+.pagos-page .pagos-form-notice {
+
+    margin-top: 20px;
+
+    padding: 12px 14px;
+
+    border: 1px solid #dbeafe;
+
+    border-radius: 10px;
+
+    background: #f8fbff;
+
+    color: #475569;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+}
+
+
+.pagos-page .pagos-form-actions {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+    margin-top: 24px;
+
+}
+
+
+.pagos-page .pagos-form-actions button {
+
+    min-width: 150px;
+
+    min-height: 44px;
+
+}
+
+
+/* ==========================================================
+   BARRA SUPERIOR
+========================================================== */
+
+.pagos-page .pagos-toolbar {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 22px;
+
+    margin-bottom: 22px;
+
+}
+
+
+.pagos-page .pagos-toolbar-heading {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 16px;
+
+}
+
+
+.pagos-page #btnNuevoPago {
+
+    min-height: 44px;
+
+    padding: 10px 18px;
+
+    white-space: nowrap;
+
+}
+
+
+/* ==========================================================
+   FILTROS
+========================================================== */
+
+.pagos-page .pagos-filters {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(220px, 2fr)
+        repeat(2, minmax(140px, 1fr))
+        auto;
+
+    align-items: end;
+
+    gap: 12px;
+
+}
+
+
+.pagos-page .pagos-search {
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    min-width: 0;
+
+}
+
+
+.pagos-page .pagos-search span {
+
+    position: absolute;
+
+    left: 13px;
+
+    z-index: 1;
+
+    pointer-events: none;
+
+}
+
+
+.pagos-page .pagos-search input {
+
+    padding-left: 40px;
+
+}
+
+
+.pagos-page .pagos-date-field {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+
+    min-width: 0;
+
+}
+
+
+.pagos-page #btnLimpiarFiltrosPagos {
+
+    min-height: 44px;
+
+    white-space: nowrap;
+
+}
+
+
+/* ==========================================================
+   TABLA
+========================================================== */
+
+.pagos-page .pagos-table-wrap {
+
+    width: 100%;
+
+    overflow-x: auto;
+
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+
+}
+
+
+.pagos-page .pagos-table {
+
+    width: 100%;
+
+    min-width: 760px;
+
+    border-collapse: separate;
+
+    border-spacing: 0 8px;
+
+}
+
+
+.pagos-page .pagos-table th[data-sort] {
+
+    cursor: pointer;
+
+    user-select: none;
+
+}
+
+
+.pagos-page .pagos-table tbody td {
+
+    vertical-align: middle;
+
+}
+
+
+.pagos-page .pagos-table tbody td.pagos-amount {
+
+    text-align: right;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    color: #1e293b;
+
+}
+
+
+.pagos-page .pagos-empty {
+
+    padding: 26px 16px !important;
+
+    text-align: center !important;
+
+    color: #64748b;
+
+}
+
+
+/* ==========================================================
+   PAGINACIÓN
+========================================================== */
+
+.pagos-page .pagos-pagination {
+
+    margin-top: 20px;
+
+}
+
+
+.pagos-page .pagos-pagination .pg-center {
+
+    min-width: 150px;
+
+}
+
+
+/* ==========================================================
+   TABLET
+========================================================== */
+
+@media (max-width: 900px) {
+
+    .pagos-page .pagos-filters {
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    }
+
+
+    .pagos-page .pagos-search {
+
+        grid-column: 1 / -1;
+
+    }
+
+
+    .pagos-page #btnLimpiarFiltrosPagos {
+
+        width: 100%;
+
+    }
+
+}
+
+
+/* ==========================================================
+   MÓVILES
+========================================================== */
+
+@media (max-width: 600px) {
+
+    .pagos-page .pagos-form-grid {
+
+        grid-template-columns: 1fr;
+
+        gap: 16px;
+
+    }
+
+
+    .pagos-page .pagos-toolbar-heading {
+
+        align-items: stretch;
+
+        flex-direction: column;
+
+    }
+
+
+    .pagos-page #btnNuevoPago {
+
+        width: 100%;
+
+    }
+
+
+    .pagos-page .pagos-filters {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .pagos-page .pagos-search {
+
+        grid-column: auto;
+
+    }
+
+
+    .pagos-page .pagos-date-field,
+    .pagos-page .pagos-date-field input {
+
+        width: 100%;
+
+    }
+
+
+    .pagos-page .pagos-table-wrap {
+
+        overflow: visible;
+
+    }
+
+
+    .pagos-page .pagos-table {
+
+        display: block;
+
+        width: 100%;
+
+        min-width: 0 !important;
+
+        border-spacing: 0;
+
+    }
+
+
+    .pagos-page .pagos-table thead {
+
+        display: none;
+
+    }
+
+
+    .pagos-page .pagos-table tbody {
+
+        display: grid;
+
+        grid-template-columns: 1fr;
+
+        gap: 14px;
+
+    }
+
+
+    .pagos-page .pagos-table tbody tr {
+
+        display: grid;
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        padding: 8px;
+
+        border: 1px solid #e2e8f0;
+
+        border-radius: 14px;
+
+        background: #fff;
+
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+
+    }
+
+
+    .pagos-page .pagos-table tbody td {
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        justify-content: center;
+
+        min-width: 0;
+
+        padding: 11px 10px;
+
+        border: 0;
+
+        text-align: left !important;
+
+        overflow-wrap: anywhere;
+
+    }
+
+
+    .pagos-page .pagos-table tbody td::before {
+
+        content: attr(data-label);
+
+        display: block;
+
+        margin-bottom: 5px;
+
+        color: #64748b;
+
+        font-size: 11px;
+
+        font-weight: 700;
+
+        text-transform: uppercase;
+
+        letter-spacing: .03em;
+
+    }
+
+
+    .pagos-page .pagos-table tbody td.pagos-amount {
+
+        color: #1d4ed8;
+
+        font-size: 15px;
+
+    }
+
+
+    .pagos-page .pagos-table tbody td.pagos-empty {
+
+        display: block;
+
+        grid-column: 1 / -1;
+
+        text-align: center !important;
+
+    }
+
+
+    .pagos-page .pagos-table tbody td.pagos-empty::before {
+
+        display: none;
+
+    }
+
+
+    .pagos-page .pagos-form-actions {
+
+        flex-direction: column-reverse;
+
+    }
+
+
+    .pagos-page .pagos-form-actions button {
+
+        width: 100%;
+
+    }
+
+
+    .pagos-page .pagos-pagination {
+
+        justify-content: center;
+
+    }
+
+
+    .pagos-page .pagos-pagination .pg-center {
+
+        width: 100%;
+
+        text-align: center;
+
+    }
+
+}
+
+
+/* ==========================================================
+   CELULARES PEQUEÑOS
+========================================================== */
+
+@media (max-width: 420px) {
+
+    .pagos-page .pagos-table tbody tr {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .pagos-page .pagos-pagination {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+    }
+
+
+    .pagos-page .pagos-pagination > button {
+
+        width: 100%;
+
+        min-height: 44px;
+
+    }
+
+
+    .pagos-page .pagos-pagination .pg-center {
+
+        width: 100%;
+
+    }
+
+}

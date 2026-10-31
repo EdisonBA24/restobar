@@ -4,7 +4,7 @@ const isLocal = window.location.hostname.includes("localhost")
 
 export const API_URL =
     location.hostname === "localhost" ||
-    location.hostname === "127.0.0.1"
+        location.hostname === "127.0.0.1"
         ? "http://127.0.0.1:5000/api"
         : `${location.origin}/api`;
 
@@ -28,13 +28,20 @@ export async function apiFetch(url, method = "GET", data = null) {
     try {
         const res = await fetch(`${API_URL}${url}`, options);
 
-        // 🔐 sesión expirada por status
-        if (res.status === 401 || res.status === 403) {
-            console.warn("Sesión expirada (status)");
+        // =================================================
+        // SESION NO AUTENTICADA
+        // =================================================
+
+        if (res.status === 401) {
+
+            console.warn("Sesión expirada");
 
             localStorage.removeItem("usuario");
+
             window.location.href = "/pages/login.html";
+
             return;
+
         }
 
         // ❌ error backend (IMPORTANTE)

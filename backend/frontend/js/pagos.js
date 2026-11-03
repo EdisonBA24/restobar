@@ -1,22 +1,22 @@
-import { apiFetch } from "./api.js";
+
+import { apiFetch, API_URL } from "./api.js";
 import { TablaUI } from "./tablas.js";
 
-
 // =====================================================
-// CONFIGURACIÓN Y ESTADO
+// CONFIGURACION Y ESTADO
 // =====================================================
 
 const STORAGE_PAGE_SIZE = "pagos_page_size";
+const EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 let tablaPagosUI = null;
-
 let timeoutBusqueda = null;
-
 let solicitudActual = 0;
+let solicitudResumenActual = 0;
 
 
 // =====================================================
-// HELPERS
+// HELPERS GENERALES
 // =====================================================
 
 function getEl(id) {
@@ -59,17 +59,110 @@ function fechaLocalHoy() {
 }
 
 
+function formatoMoneda(valor) {
+
+    const monto = Number(valor) || 0;
+
+    return new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 0
+    }).format(monto);
+
+}
+
+
+function formatoNumero(valor) {
+
+    return new Intl.NumberFormat("es-CO", {
+        maximumFractionDigits: 0
+    }).format(Number(valor) || 0);
+
+}
+
+
 // =====================================================
-// INICIALIZACIÓN
+// FILTROS COMPARTIDOS
+// =====================================================
+
+function obtenerFiltrosActuales() {
+
+    return {
+
+        search: getEl("busquedaPago")?.value.trim() || "",
+
+        fecha_inicio: getEl("fechaInicioPago")?.value || "",
+
+        fecha_fin: getEl("fechaFinPago")?.value || ""
+
+    };
+
+}
+
+
+function crearParametrosFiltros() {
+
+    const filtros = obtenerFiltrosActuales();
+
+    const params = new URLSearchParams();
+
+    if (filtros.search) {
+        params.set("search", filtros.search);
+    }
+
+    if (filtros.fecha_inicio) {
+        params.set("fecha_inicio", filtros.fecha_inicio);
+    }
+
+    if (filtros.fecha_fin) {
+        params.set("fecha_fin", filtros.fecha_fin);
+    }
+
+    return params;
+
+}
+
+
+function validarRangoFechas(mostrarAviso = true) {
+
+    const {
+        fecha_inicio,
+        fecha_fin
+    } = obtenerFiltrosActuales();
+
+    if (
+        fecha_inicio &&
+        fecha_fin &&
+        fecha_fin < fecha_inicio
+    ) {
+
+        if (mostrarAviso) {
+
+            mostrarMensaje(
+                "La fecha final no puede ser anterior a la fecha inicial.",
+                "warning"
+            );
+
+        }
+
+        return false;
+
+    }
+
+    return true;
+
+}
+
+
+// =====================================================
+// INICIALIZACION
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-    // Evita inicializar el módulo en otra página.
     if (!getEl("tablaPagos")) {
         return;
     }
-
 
     // =============================================
     // TABLA UI
@@ -99,7 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     // =============================================
-    // TAMAÑO DE PÁGINA GUARDADO
+    // TAMAÑO DE PAGINA
     // =============================================
 
     const pageSizeGuardado = Number(
@@ -111,7 +204,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     )
         ? pageSizeGuardado
         : 10;
-
 
     tablaPagosUI.actualizarDesdeBackend({
 
@@ -132,11 +224,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     getEl("pageSizePagos")?.addEventListener(
         "change",
-        (e) => {
+        event => {
 
             localStorage.setItem(
                 STORAGE_PAGE_SIZE,
-                e.target.value
+                event.target.value
             );
 
         }
@@ -152,12 +244,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         guardarPago
     );
 
-
     getEl("btnNuevoPago")?.addEventListener(
         "click",
         mostrarFormularioPago
     );
-
 
     getEl("btnCancelarPago")?.addEventListener(
         "click",
@@ -166,7 +256,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     // =============================================
-    // BÚSQUEDA
+    // BUSQUEDA
     // =============================================
 
     getEl("busquedaPago")?.addEventListener(
@@ -184,16 +274,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         aplicarFiltros
     );
 
-
     getEl("fechaFinPago")?.addEventListener(
         "change",
         aplicarFiltros
     );
 
-
     getEl("btnLimpiarFiltrosPagos")?.addEventListener(
         "click",
         limpiarFiltros
+    );
+
+
+    // =============================================
+    // EXPORTAR EXCEL
+    // =============================================
+
+    getEl("btnExportarPagos")?.addEventListener(
+        "click",
+        descargarPagosExcel
     );
 
 
@@ -226,10 +324,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     // =============================================
-    // CARGAR HISTORIAL
+    // CARGAR INFORMACION INICIAL
     // =============================================
 
-    await cargarPagos();
+    await recargarDatosPagos();
 
 });
 
@@ -256,14 +354,11 @@ async function cargarUsuarios() {
 
         }
 
-
         const usuarios = Array.isArray(res.data)
             ? res.data
             : [];
 
-
         select.innerHTML = "";
-
 
         const opcionInicial = document.createElement("option");
 
@@ -274,7 +369,6 @@ async function cargarUsuarios() {
             : "No hay empleados activos";
 
         select.appendChild(opcionInicial);
-
 
         usuarios.forEach(usuario => {
 
@@ -288,7 +382,6 @@ async function cargarUsuarios() {
 
         });
 
-
     } catch (error) {
 
         console.error(
@@ -297,9 +390,7 @@ async function cargarUsuarios() {
         );
 
         select.innerHTML = `
-            <option value="">
-                Error cargando empleados
-            </option>
+            <option value="">Error cargando empleados</option>
         `;
 
         mostrarMensaje(
@@ -324,21 +415,15 @@ function mostrarFormularioPago() {
         form.reset();
     }
 
-
     const fecha = getEl("fecha");
 
     if (fecha) {
         fecha.value = fechaLocalHoy();
     }
 
-
-    getEl("formContainer")?.classList.remove(
-        "hidden"
-    );
-
+    getEl("formContainer")?.classList.remove("hidden");
 
     getEl("usuario_id")?.focus();
-
 
     getEl("formContainer")?.scrollIntoView({
 
@@ -351,7 +436,8 @@ function mostrarFormularioPago() {
 }
 
 
-// Permite abrir el formulario desde el menú lateral.
+// Compatibilidad con el menú existente.
+
 window.abrirNuevoPago = mostrarFormularioPago;
 
 
@@ -363,9 +449,7 @@ function cancelarFormularioPago() {
 
     getEl("formPago")?.reset();
 
-    getEl("formContainer")?.classList.add(
-        "hidden"
-    );
+    getEl("formContainer")?.classList.add("hidden");
 
 }
 
@@ -377,7 +461,6 @@ function cancelarFormularioPago() {
 async function guardarPago(event) {
 
     event.preventDefault();
-
 
     const usuarioId = Number(
         getEl("usuario_id")?.value
@@ -420,11 +503,11 @@ async function guardarPago(event) {
 
         usuario_id: usuarioId,
 
-        monto: monto,
+        monto,
 
-        concepto: concepto,
+        concepto,
 
-        fecha: fecha
+        fecha
 
     };
 
@@ -448,7 +531,6 @@ async function guardarPago(event) {
             datos
         );
 
-
         if (!res || res.status !== "success") {
 
             throw new Error(
@@ -456,7 +538,6 @@ async function guardarPago(event) {
             );
 
         }
-
 
         mostrarMensaje(
             res.message || "Pago registrado correctamente.",
@@ -468,18 +549,20 @@ async function guardarPago(event) {
 
         getEl("formPago")?.reset();
 
-        getEl("fecha").value = fechaLocalHoy();
+        const fechaInput = getEl("fecha");
 
-        getEl("formContainer")?.classList.add(
-            "hidden"
-        );
+        if (fechaInput) {
+            fechaInput.value = fechaLocalHoy();
+        }
+
+        getEl("formContainer")?.classList.add("hidden");
 
 
-        // Mostrar el registro nuevo desde la primera página.
+        // Actualizar tabla e indicadores.
 
-        tablaPagosUI.reiniciarPaginacion();
+        tablaPagosUI?.reiniciarPaginacion();
 
-        await cargarPagos();
+        await recargarDatosPagos();
 
 
     } catch (error) {
@@ -517,12 +600,9 @@ function filtrarPagos() {
 
     clearTimeout(timeoutBusqueda);
 
-
     timeoutBusqueda = setTimeout(() => {
 
-        tablaPagosUI.reiniciarPaginacion();
-
-        cargarPagos();
+        recargarPorFiltros();
 
     }, 350);
 
@@ -530,35 +610,14 @@ function filtrarPagos() {
 
 
 // =====================================================
-// APLICAR FILTROS DE FECHA
+// APLICAR FILTROS
 // =====================================================
 
 function aplicarFiltros() {
 
-    const fechaInicio = getEl("fechaInicioPago")?.value;
+    clearTimeout(timeoutBusqueda);
 
-    const fechaFin = getEl("fechaFinPago")?.value;
-
-
-    if (
-        fechaInicio &&
-        fechaFin &&
-        fechaFin < fechaInicio
-    ) {
-
-        mostrarMensaje(
-            "La fecha final no puede ser anterior a la inicial.",
-            "warning"
-        );
-
-        return;
-
-    }
-
-
-    tablaPagosUI.reiniciarPaginacion();
-
-    cargarPagos();
+    recargarPorFiltros();
 
 }
 
@@ -569,16 +628,57 @@ function aplicarFiltros() {
 
 function limpiarFiltros() {
 
-    getEl("busquedaPago").value = "";
+    const busqueda = getEl("busquedaPago");
 
-    getEl("fechaInicioPago").value = "";
+    const fechaInicio = getEl("fechaInicioPago");
 
-    getEl("fechaFinPago").value = "";
+    const fechaFin = getEl("fechaFinPago");
+
+    if (busqueda) {
+        busqueda.value = "";
+    }
+
+    if (fechaInicio) {
+        fechaInicio.value = "";
+    }
+
+    if (fechaFin) {
+        fechaFin.value = "";
+    }
+
+    clearTimeout(timeoutBusqueda);
+
+    recargarPorFiltros();
+
+}
 
 
-    tablaPagosUI.reiniciarPaginacion();
+// =====================================================
+// RECARGA COORDINADA DE INFORMACION
+// =====================================================
 
-    cargarPagos();
+async function recargarPorFiltros() {
+
+    if (!validarRangoFechas()) {
+        return;
+    }
+
+    tablaPagosUI?.reiniciarPaginacion();
+
+    await recargarDatosPagos();
+
+}
+
+
+async function recargarDatosPagos() {
+
+    await Promise.all([
+
+        cargarPagos(),
+
+        cargarResumenPagos()
+
+    ]);
 
 }
 
@@ -591,44 +691,37 @@ async function cargarPagos() {
 
     if (!tablaPagosUI) return;
 
-
-    const fechaInicio = getEl("fechaInicioPago")?.value || "";
-
-    const fechaFin = getEl("fechaFinPago")?.value || "";
-
-
-    if (
-        fechaInicio &&
-        fechaFin &&
-        fechaFin < fechaInicio
-    ) {
-        return;
-    }
-
+    if (!validarRangoFechas(false)) return;
 
     const numeroSolicitud = ++solicitudActual;
 
+    const filtros = obtenerFiltrosActuales();
+
+    const params = new URLSearchParams({
+
+        page: String(tablaPagosUI.page),
+
+        page_size: String(tablaPagosUI.pageSize),
+
+        sort_by: tablaPagosUI.sortBy,
+
+        sort_order: tablaPagosUI.sortOrder
+
+    });
+
+    if (filtros.search) {
+        params.set("search", filtros.search);
+    }
+
+    if (filtros.fecha_inicio) {
+        params.set("fecha_inicio", filtros.fecha_inicio);
+    }
+
+    if (filtros.fecha_fin) {
+        params.set("fecha_fin", filtros.fecha_fin);
+    }
 
     try {
-
-        const params = new URLSearchParams({
-
-            page: tablaPagosUI.page,
-
-            page_size: tablaPagosUI.pageSize,
-
-            search: getEl("busquedaPago")?.value.trim() || "",
-
-            fecha_inicio: fechaInicio,
-
-            fecha_fin: fechaFin,
-
-            sort_by: tablaPagosUI.sortBy,
-
-            sort_order: tablaPagosUI.sortOrder
-
-        });
-
 
         const res = await apiFetch(
             `/pagos?${params.toString()}`
@@ -642,7 +735,6 @@ async function cargarPagos() {
             return;
         }
 
-
         if (!res || res.status !== "success") {
 
             throw new Error(
@@ -651,7 +743,6 @@ async function cargarPagos() {
 
         }
 
-
         const resultado = res.data || {};
 
         const pagos = Array.isArray(resultado.items)
@@ -659,24 +750,19 @@ async function cargarPagos() {
             : [];
 
 
-        // Actualizar estado de paginación y ordenamiento.
+        // Actualizar paginación y ordenamiento.
 
         tablaPagosUI.actualizarDesdeBackend(resultado);
-
 
         const tbody = getEl("tablaPagos");
 
         if (!tbody) return;
 
-
         if (!pagos.length) {
 
             tbody.innerHTML = `
                 <tr>
-                    <td
-                        colspan="5"
-                        class="pagos-empty"
-                    >
+                    <td colspan="5" class="pagos-empty">
                         No se encontraron pagos registrados.
                     </td>
                 </tr>
@@ -686,6 +772,8 @@ async function cargarPagos() {
 
         }
 
+
+        // Renderizar pagos.
 
         tbody.innerHTML = pagos.map(pago => {
 
@@ -704,7 +792,6 @@ async function cargarPagos() {
             );
 
             const monto = formatoMoneda(pago.monto);
-
 
             return `
                 <tr>
@@ -741,24 +828,18 @@ async function cargarPagos() {
             return;
         }
 
-
         console.error(
             "Error cargando pagos:",
             error
         );
 
-
         getEl("tablaPagos").innerHTML = `
             <tr>
-                <td
-                    colspan="5"
-                    class="pagos-empty"
-                >
+                <td colspan="5" class="pagos-empty">
                     No fue posible cargar los pagos.
                 </td>
             </tr>
         `;
-
 
         mostrarMensaje(
             error.message || "Error cargando pagos.",
@@ -771,22 +852,365 @@ async function cargarPagos() {
 
 
 // =====================================================
-// FORMATO DE MONEDA
+// RESUMEN FINANCIERO
 // =====================================================
 
-function formatoMoneda(valor) {
+function mostrarEstadoResumen(mensaje, tipo = "normal") {
 
-    const monto = Number(valor) || 0;
+    const estado = getEl("estadoResumenPagos");
 
-    return new Intl.NumberFormat("es-CO", {
+    if (!estado) return;
 
-        style: "currency",
+    estado.textContent = mensaje;
 
-        currency: "COP",
+    estado.dataset.estado = tipo;
 
-        maximumFractionDigits: 0
+}
 
-    }).format(monto);
+
+function actualizarIndicadoresResumen(resumen = {}) {
+
+    const cantidad = Number(
+        resumen.cantidad_pagos
+    ) || 0;
+
+    const total = Number(
+        resumen.total_pagado
+    ) || 0;
+
+    const empleados = Number(
+        resumen.empleados
+    ) || 0;
+
+    const promedio = Number(
+        resumen.promedio_pago
+    ) || 0;
+
+
+    const elCantidad = getEl("resumenCantidadPagos");
+
+    const elTotal = getEl("resumenTotalPagado");
+
+    const elEmpleados = getEl("resumenEmpleadosPagos");
+
+    const elPromedio = getEl("resumenPromedioPago");
+
+
+    if (elCantidad) {
+        elCantidad.textContent = formatoNumero(cantidad);
+    }
+
+    if (elTotal) {
+        elTotal.textContent = formatoMoneda(total);
+    }
+
+    if (elEmpleados) {
+        elEmpleados.textContent = formatoNumero(empleados);
+    }
+
+    if (elPromedio) {
+        elPromedio.textContent = formatoMoneda(promedio);
+    }
+
+}
+
+
+async function cargarResumenPagos() {
+
+    if (!validarRangoFechas(false)) {
+        return;
+    }
+
+    const numeroSolicitud = ++solicitudResumenActual;
+
+    const params = crearParametrosFiltros();
+
+    const query = params.toString();
+
+    mostrarEstadoResumen(
+        "Actualizando indicadores...",
+        "loading"
+    );
+
+
+    try {
+
+        const endpoint = query
+            ? `/pagos/resumen?${query}`
+            : "/pagos/resumen";
+
+        const res = await apiFetch(endpoint);
+
+
+        // Ignorar respuestas de filtros anteriores.
+
+        if (numeroSolicitud !== solicitudResumenActual) {
+            return;
+        }
+
+        if (!res || res.status !== "success") {
+
+            throw new Error(
+                res?.message || "No fue posible consultar el resumen de pagos."
+            );
+
+        }
+
+        const resumen = res.data || {};
+
+        actualizarIndicadoresResumen(resumen);
+
+        const cantidad = Number(
+            resumen.cantidad_pagos
+        ) || 0;
+
+        mostrarEstadoResumen(
+
+            cantidad === 0
+                ? "No hay pagos para los filtros seleccionados."
+                : `Indicadores calculados sobre ${formatoNumero(cantidad)} pago(s).`,
+
+            "success"
+
+        );
+
+
+    } catch (error) {
+
+        if (numeroSolicitud !== solicitudResumenActual) {
+            return;
+        }
+
+        console.error(
+            "Error cargando resumen de pagos:",
+            error
+        );
+
+        actualizarIndicadoresResumen({});
+
+        mostrarEstadoResumen(
+            error.message || "No fue posible actualizar los indicadores.",
+            "error"
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// EXPORTAR PAGOS A EXCEL
+// =====================================================
+
+function obtenerNombreArchivo(response) {
+
+    const disposition = response.headers.get(
+        "Content-Disposition"
+    ) || "";
+
+    const coincidencia = disposition.match(
+        /filename\*?=(?:UTF-8''|"?)("[^"]+"|[^;]+)/i
+    );
+
+    if (!coincidencia) {
+        return `pagos_${fechaLocalHoy()}.xlsx`;
+    }
+
+    const nombre = coincidencia[1]
+        .replace(/"/g, "")
+        .trim();
+
+    try {
+
+        return decodeURIComponent(nombre);
+
+    } catch (_) {
+
+        return nombre;
+
+    }
+
+}
+
+
+async function leerMensajeError(response) {
+
+    const texto = await response.text();
+
+    if (!texto) {
+
+        return `No fue posible exportar los pagos (HTTP ${response.status}).`;
+
+    }
+
+    try {
+
+        const json = JSON.parse(texto);
+
+        return json.message || `Error ${response.status}`;
+
+    } catch (_) {
+
+        return texto;
+
+    }
+
+}
+
+
+async function descargarPagosExcel() {
+
+    if (!validarRangoFechas()) {
+        return;
+    }
+
+    const boton = getEl("btnExportarPagos");
+
+    const textoOriginal = boton?.textContent || "📥 Exportar Excel";
+
+    if (boton) {
+
+        boton.disabled = true;
+
+        boton.textContent = "Generando Excel...";
+
+    }
+
+
+    try {
+
+        const params = crearParametrosFiltros();
+
+        const query = params.toString();
+
+        const endpoint = query
+            ? `${API_URL}/pagos/exportar?${query}`
+            : `${API_URL}/pagos/exportar`;
+
+
+        // Se utiliza fetch directamente porque la respuesta
+        // es un archivo binario y no una respuesta JSON.
+
+        const response = await fetch(endpoint, {
+
+            method: "GET",
+
+            credentials: "include",
+
+            headers: {
+                Accept: EXCEL_MIME
+            }
+
+        });
+
+
+        // Sesión expirada.
+
+        if (response.status === 401) {
+
+            localStorage.removeItem("usuario");
+
+            window.location.href = "/pages/login.html";
+
+            return;
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                await leerMensajeError(response)
+            );
+
+        }
+
+
+        const contentType = response.headers.get(
+            "Content-Type"
+        ) || "";
+
+
+        if (
+            contentType.includes("application/json") ||
+            contentType.includes("text/html")
+        ) {
+
+            throw new Error(
+                await leerMensajeError(response)
+            );
+
+        }
+
+
+        const blob = await response.blob();
+
+        if (!blob.size) {
+
+            throw new Error(
+                "El archivo Excel recibido está vacío."
+            );
+
+        }
+
+
+        // Crear enlace temporal de descarga.
+
+        const url = window.URL.createObjectURL(blob);
+
+        const enlace = document.createElement("a");
+
+        enlace.href = url;
+
+        enlace.download = obtenerNombreArchivo(response);
+
+        enlace.style.display = "none";
+
+        document.body.appendChild(enlace);
+
+        enlace.click();
+
+        enlace.remove();
+
+
+        // Liberar memoria.
+
+        window.setTimeout(() => {
+
+            window.URL.revokeObjectURL(url);
+
+        }, 1500);
+
+
+        mostrarMensaje(
+            "El archivo Excel de pagos se generó correctamente.",
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Error exportando pagos:",
+            error
+        );
+
+        mostrarMensaje(
+            error.message || "No fue posible descargar el Excel.",
+            "error"
+        );
+
+    } finally {
+
+        if (boton) {
+
+            boton.disabled = false;
+
+            boton.textContent = textoOriginal;
+
+        }
+
+    }
 
 }
 
@@ -799,17 +1223,13 @@ function formatearFecha(valor) {
 
     if (!valor) return "";
 
-
     const texto = String(valor).trim();
 
-
-    // Evita que una fecha YYYY-MM-DD
-    // se muestre como el día anterior por la zona horaria.
+    // Evita desfases de zona horaria en fechas YYYY-MM-DD.
 
     const soloFecha = texto.match(
         /^(\d{4})-(\d{2})-(\d{2})$/
     );
-
 
     if (soloFecha) {
 
@@ -817,21 +1237,17 @@ function formatearFecha(valor) {
 
     }
 
-
     try {
 
         const fechaNormalizada = texto.includes("T")
             ? texto
             : texto.replace(" ", "T");
 
-
         const fecha = new Date(fechaNormalizada);
-
 
         if (Number.isNaN(fecha.getTime())) {
             return texto;
         }
-
 
         return new Intl.DateTimeFormat("es-CO", {
 
@@ -876,7 +1292,6 @@ function mostrarMensaje(msg, tipo = "success") {
         .querySelectorAll(".toast")
         .forEach(toast => toast.remove());
 
-
     const iconos = {
 
         success: "✅",
@@ -888,7 +1303,6 @@ function mostrarMensaje(msg, tipo = "success") {
         info: "ℹ️"
 
     };
-
 
     const tiempos = {
 
@@ -902,16 +1316,13 @@ function mostrarMensaje(msg, tipo = "success") {
 
     };
 
-
     const toast = document.createElement("div");
 
     toast.className = `toast ${tipo}`;
 
     toast.textContent = `${iconos[tipo] || ""} ${msg}`;
 
-
     document.body.appendChild(toast);
-
 
     requestAnimationFrame(() => {
 
@@ -919,12 +1330,11 @@ function mostrarMensaje(msg, tipo = "success") {
 
     });
 
-
-    setTimeout(() => {
+    window.setTimeout(() => {
 
         toast.classList.remove("show");
 
-        setTimeout(() => toast.remove(), 300);
+        window.setTimeout(() => toast.remove(), 300);
 
     }, tiempos[tipo] || 4000);
 

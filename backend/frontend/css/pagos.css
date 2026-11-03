@@ -1,0 +1,129 @@
+/* ==========================================================
+   RESUMEN FINANCIERO DEL MODULO DE PAGOS
+========================================================== */
+
+.pagos-page .pagos-summary-section {
+    width: 100%;
+    margin: 0 0 24px;
+}
+
+.pagos-page .pagos-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.pagos-page .pagos-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 18px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .045);
+    box-sizing: border-box;
+}
+
+.pagos-page .pagos-summary-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pagos-page .pagos-summary-label {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.pagos-page .pagos-summary-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border-radius: 10px;
+    background: #eff6ff;
+    font-size: 18px;
+}
+
+.pagos-page .pagos-summary-value {
+    display: block;
+    overflow-wrap: anywhere;
+    color: #0f172a;
+    font-size: clamp(21px, 2vw, 27px);
+    font-weight: 750;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+}
+
+.pagos-page .pagos-summary-description {
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.pagos-page .pagos-summary-status {
+    margin: 9px 2px 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+/* ==========================================================
+   ACCIONES DE LA BARRA DEL HISTORIAL
+========================================================== */
+
+.pagos-page .pagos-toolbar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pagos-page #btnExportarPagos,
+.pagos-page #btnNuevoPago {
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+.pagos-page #btnExportarPagos:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width: 1100px) {
+    .pagos-page .pagos-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .pagos-page .pagos-summary-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .pagos-page .pagos-summary-card {
+        padding: 16px;
+    }
+
+    .pagos-page .pagos-toolbar-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pagos-page #btnExportarPagos,
+    .pagos-page #btnNuevoPago {
+        width: 100%;
+    }
+}

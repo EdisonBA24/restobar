@@ -2,21 +2,21 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Pagos</title>
     <link rel="stylesheet" href="../css/styles.css?v=3">
+    <link rel="stylesheet" href="../css/pagos.css?v=1">
 </head>
 
 <body class="pagos-page">
 
     <div class="layout">
 
-        <!-- SIDEBAR -->
         <aside class="sidebar">
             <img src="../assets/logo.ico" class="logo" width="80%" style="margin:20px auto;display:block;">
 
             <ul>
-
                 <li class="menu-item solo-admin">
                     <div class="menu-title">
                         <span>🏠 Dashboard</span>
@@ -133,13 +133,11 @@
                         <li class="active">📋 Gestión de Pagos</li>
                     </ul>
                 </li>
-
             </ul>
         </aside>
 
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-        <!-- CONTENIDO -->
         <main class="main">
 
             <header class="header header-user app-header">
@@ -159,92 +157,55 @@
 
             </header>
 
-
-        <!-- =============================================
-        FORMULARIO DE REGISTRO DE PAGOS
-        ============================================== -->
+            <!-- FORMULARIO DE REGISTRO -->
 
             <section id="formContainer" class="card pagos-form-card hidden" aria-labelledby="formTitle">
 
                 <div class="pagos-section-heading">
-
                     <div>
                         <h2 id="formTitle">Registrar nuevo pago</h2>
-
                         <p>
                             Selecciona el empleado y registra el valor,
                             concepto y fecha del pago.
                         </p>
                     </div>
-
                 </div>
-
 
                 <form id="formPago" autocomplete="off">
 
                     <div class="pagos-form-grid">
 
                         <div class="pagos-field">
-
-                            <label for="usuario_id">
-                                Empleado *
-                            </label>
-
+                            <label for="usuario_id">Empleado *</label>
                             <select id="usuario_id" required>
-
-                                <option value="">
-                                    Cargando empleados...
-                                </option>
-
+                                <option value="">Cargando empleados...</option>
                             </select>
-
                         </div>
 
-
                         <div class="pagos-field">
-
-                            <label for="monto">
-                                Monto del pago *
-                            </label>
-
+                            <label for="monto">Monto del pago *</label>
                             <input type="number" id="monto" min="0.01" step="0.01" inputmode="decimal"
                                 placeholder="Ej. 150000" required>
-
                         </div>
 
-
                         <div class="pagos-field">
-
-                            <label for="concepto">
-                                Concepto *
-                            </label>
-
+                            <label for="concepto">Concepto *</label>
                             <input type="text" id="concepto" placeholder="Ej. Salario, bono, anticipo..." required>
-
                         </div>
 
-
                         <div class="pagos-field">
-
-                            <label for="fecha">
-                                Fecha del pago *
-                            </label>
-
+                            <label for="fecha">Fecha del pago *</label>
                             <input type="date" id="fecha" required>
-
                         </div>
 
                     </div>
-
 
                     <div class="pagos-form-notice">
                         Los pagos registrados quedan guardados en el historial.
                         Desde esta pantalla no se pueden editar ni eliminar.
                     </div>
 
-
                     <div class="pagos-form-actions">
-
                         <button type="button" id="btnCancelarPago" class="btn-secondary">
                             Cancelar
                         </button>
@@ -252,18 +213,71 @@
                         <button type="submit" id="btnGuardarPago" class="btn-primary">
                             💾 Guardar Pago
                         </button>
-
                     </div>
 
                 </form>
 
             </section>
 
+            <!-- RESUMEN FINANCIERO -->
 
+            <section class="pagos-summary-section" aria-label="Resumen financiero de pagos">
 
-        <!-- =============================================
-        HISTORIAL DE PAGOS
-        ============================================== -->
+                <div class="pagos-summary-grid">
+
+                    <article class="pagos-summary-card">
+                        <div class="pagos-summary-heading">
+                            <span class="pagos-summary-label">Pagos registrados</span>
+                            <span class="pagos-summary-icon" aria-hidden="true">🧾</span>
+                        </div>
+                        <strong id="resumenCantidadPagos" class="pagos-summary-value">—</strong>
+                        <span class="pagos-summary-description">
+                            Cantidad de pagos según los filtros
+                        </span>
+                    </article>
+
+                    <article class="pagos-summary-card">
+                        <div class="pagos-summary-heading">
+                            <span class="pagos-summary-label">Total pagado</span>
+                            <span class="pagos-summary-icon" aria-hidden="true">💰</span>
+                        </div>
+                        <strong id="resumenTotalPagado" class="pagos-summary-value">—</strong>
+                        <span class="pagos-summary-description">
+                            Valor acumulado de los pagos
+                        </span>
+                    </article>
+
+                    <article class="pagos-summary-card">
+                        <div class="pagos-summary-heading">
+                            <span class="pagos-summary-label">Empleados con pagos</span>
+                            <span class="pagos-summary-icon" aria-hidden="true">👥</span>
+                        </div>
+                        <strong id="resumenEmpleadosPagos" class="pagos-summary-value">—</strong>
+                        <span class="pagos-summary-description">
+                            Empleados distintos incluidos
+                        </span>
+                    </article>
+
+                    <article class="pagos-summary-card">
+                        <div class="pagos-summary-heading">
+                            <span class="pagos-summary-label">Promedio por pago</span>
+                            <span class="pagos-summary-icon" aria-hidden="true">📊</span>
+                        </div>
+                        <strong id="resumenPromedioPago" class="pagos-summary-value">—</strong>
+                        <span class="pagos-summary-description">
+                            Promedio del valor registrado
+                        </span>
+                    </article>
+
+                </div>
+
+                <p id="estadoResumenPagos" class="pagos-summary-status" aria-live="polite">
+                    Los indicadores se calculan según los filtros aplicados.
+                </p>
+
+            </section>
+
+            <!-- HISTORIAL DE PAGOS -->
 
             <section class="card pagos-list-card">
 
@@ -273,55 +287,45 @@
 
                         <div>
                             <h2>Pagos registrados</h2>
-
                             <p>
                                 Consulta los pagos realizados y filtra
                                 por empleado, concepto o fecha.
                             </p>
                         </div>
 
-                        <button type="button" id="btnNuevoPago" class="btn-primary">
-                            ➕ Registrar Pago
-                        </button>
+                        <div class="pagos-toolbar-actions">
+
+                            <button type="button" id="btnExportarPagos" class="btn-primary">
+                                📥 Exportar Excel
+                            </button>
+
+                            <button type="button" id="btnNuevoPago" class="btn-primary">
+                                ➕ Registrar Pago
+                            </button>
+
+                        </div>
 
                     </div>
-
 
                     <!-- FILTROS -->
 
                     <div class="pagos-filters">
 
                         <div class="pagos-search">
-
                             <span aria-hidden="true">🔍</span>
-
                             <input type="search" id="busquedaPago" placeholder="Buscar por empleado o concepto..."
                                 autocomplete="off">
-
                         </div>
 
-
                         <div class="pagos-date-field">
-
-                            <label for="fechaInicioPago">
-                                Desde
-                            </label>
-
+                            <label for="fechaInicioPago">Desde</label>
                             <input type="date" id="fechaInicioPago">
-
                         </div>
-
 
                         <div class="pagos-date-field">
-
-                            <label for="fechaFinPago">
-                                Hasta
-                            </label>
-
+                            <label for="fechaFinPago">Hasta</label>
                             <input type="date" id="fechaFinPago">
-
                         </div>
-
 
                         <button type="button" id="btnLimpiarFiltrosPagos" class="btn-secondary">
                             Limpiar filtros
@@ -331,8 +335,6 @@
 
                 </div>
 
-
-
                 <!-- TABLA -->
 
                 <div class="table-container pagos-table-wrap">
@@ -340,89 +342,53 @@
                     <table id="tablaPagosTabla" class="table pagos-table">
 
                         <thead>
-
                             <tr>
-
-                                <th data-sort="id">
-                                    ID
-                                </th>
-
-                                <th data-sort="empleado">
-                                    Empleado
-                                </th>
-
-                                <th data-sort="concepto">
-                                    Concepto
-                                </th>
-
-                                <th data-sort="fecha">
-                                    Fecha
-                                </th>
-
-                                <th data-sort="monto">
-                                    Monto
-                                </th>
-
+                                <th data-sort="id">ID</th>
+                                <th data-sort="empleado">Empleado</th>
+                                <th data-sort="concepto">Concepto</th>
+                                <th data-sort="fecha">Fecha</th>
+                                <th data-sort="monto">Monto</th>
                             </tr>
-
                         </thead>
 
-
                         <tbody id="tablaPagos">
-
                             <tr>
                                 <td colspan="5" class="pagos-empty">
                                     Cargando pagos...
                                 </td>
                             </tr>
-
                         </tbody>
 
                     </table>
 
                 </div>
 
-
-
                 <!-- PAGINACIÓN -->
 
                 <div id="paginacionPagos" class="pg-container pagos-pagination">
 
                     <div class="pg-page-size">
-
-                        <label for="pageSizePagos">
-                            Mostrar
-                        </label>
+                        <label for="pageSizePagos">Mostrar</label>
 
                         <select id="pageSizePagos" class="form-select">
-
                             <option value="10" selected>10</option>
                             <option value="20">20</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
-
                         </select>
 
                         <span>registros</span>
-
                     </div>
-
 
                     <button id="btnPaginaAnteriorPagos" class="btn-secondary" type="button">
                         ← Anterior
                     </button>
 
-
                     <div class="pg-center">
-
                         <div id="infoPaginacionPagos" class="pg-info"></div>
-
                         <div id="resumenPaginacionPagos" class="pg-summary"></div>
-
                         <div id="numerosPaginacionPagos" class="pg-numbers"></div>
-
                     </div>
-
 
                     <button id="btnPaginaSiguientePagos" class="btn-secondary" type="button">
                         Siguiente →

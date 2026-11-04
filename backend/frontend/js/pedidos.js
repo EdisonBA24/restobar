@@ -29,6 +29,7 @@ let clientePedidoActual = "";
 let mesaPedidoActual = "";
 let servicioPedidoActual = "";
 let tipoPedidoActual = "";
+let direccionPedidoActual = "";
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -1193,6 +1194,9 @@ window.verDetallePedido = async function (id, estado, tipo) {
     servicioPedidoActual =
         res.data.pedido?.tipo || "";
 
+    direccionPedidoActual =
+        res.data.pedido?.direccion_entrega || "";
+
     tipoPedidoActual =
         String(
             res.data.pedido?.categoria ||
@@ -1830,70 +1834,156 @@ async function cargarClientesAutocomplete() {
     clientesCache = res.data || [];
 }
 
-// =============================
-// 🔥 GUARDAR CLIENTE RÁPIDO (FIX)
-// =============================
+
 window.guardarClienteRapido = async function () {
 
-    const nombre = document.getElementById("nuevoNombre")?.value;
-    const documento = document.getElementById("nuevoDocumento")?.value;
-    const telefono = document.getElementById("nuevoTelefono")?.value;
-    const direccion = document.getElementById("nuevoDireccion")?.value;
+    const nombre = (
+        document.getElementById("nuevoNombre")?.value || ""
+    ).trim();
+
+    const documento = (
+        document.getElementById("nuevoDocumento")?.value || ""
+    ).trim();
+
+    const telefono = (
+        document.getElementById("nuevoTelefono")?.value || ""
+    ).trim();
+
+    const direccion = (
+        document.getElementById("nuevoDireccion")?.value || ""
+    ).trim();
+
     const duplicado = validarClienteDuplicado();
 
     if (duplicado) {
+
         const confirmar = confirm(
-            `El cliente ya existe (${duplicado.nombre}). ¿Deseas continuar?`
+            `El cliente ya existe (${duplicado.nombre}). ¿Deseas utilizarlo?`
         );
 
-        if (!confirmar) return;
+        if (confirmar) {
+
+            seleccionarCliente(
+                duplicado.nombre,
+                duplicado.id
+            );
+
+            cerrarModalCliente();
+
+        }
+
+        return;
+
     }
 
     if (!nombre) {
-        mostrarMensaje("El nombre es obligatorio ⚠️", "warning");
+
+        mostrarMensaje(
+            "El nombre es obligatorio.",
+            "warning"
+        );
+
         return;
+
+    }
+
+    if (!direccion) {
+
+        mostrarMensaje(
+            "La dirección principal es obligatoria.",
+            "warning"
+        );
+
+        return;
+
     }
 
     const data = {
+
         nombre,
+
         documento,
+
         telefono,
-        direccion
+
+        email: "",
+
+        direcciones: [
+
+            {
+
+                nombre: "Principal",
+
+                direccion,
+
+                barrio: "",
+
+                referencia: "",
+
+                principal: 1,
+
+                activo: 1
+
+            }
+
+        ]
+
     };
 
     try {
 
-        const res = await apiFetch("/clientes", "POST", data);
+        const res = await apiFetch(
+            "/clientes",
+            "POST",
+            data
+        );
 
-        if (res.status === "error") {
-            mostrarMensaje(res.message || "Error creando cliente ❌", "error");
-            return;
+        if (!res || res.status !== "success") {
+
+            throw new Error(
+                res?.message || "Error creando cliente."
+            );
+
         }
 
-        mostrarMensaje("Cliente creado correctamente ✅", "success");
+        mostrarMensaje(
+            "Cliente creado correctamente.",
+            "success"
+        );
 
-        // 🔥 recargar cache
         await cargarClientesAutocomplete();
 
-        // 🔥 buscar cliente recién creado (por nombre)
-        const nuevo = clientesCache.find(c =>
-            (c.nombre || "").toLowerCase() === nombre.toLowerCase()
+        const nuevo = clientesCache.find(cliente =>
+            Number(cliente.id) === Number(res.cliente_id)
         );
 
         if (nuevo) {
-            seleccionarCliente(nuevo.nombre, nuevo.id);
-        } else {
-            // fallback si no lo encuentra
-            document.getElementById("cliente").value = nombre;
+
+            seleccionarCliente(
+                nuevo.nombre,
+                nuevo.id
+            );
+
         }
 
         cerrarModalCliente();
 
     } catch (error) {
-        console.error(error);
-        mostrarMensaje("Error al guardar cliente ❌", "error");
+
+        console.error(
+            "Error guardando cliente:",
+            error
+        );
+
+        mostrarMensaje(
+            error.message || "Error al guardar el cliente.",
+            "error"
+        );
+
     }
+
 };
+
 
 window.abrirCrearCliente = function () {
 
@@ -1959,6 +2049,16 @@ function imprimirComanda() {
         "ALMUERZOS",
         "COMIDAS RAPIDAS"
     ];
+
+    const servicioNormalizado =
+        String(servicioPedidoActual || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim()
+            .toUpperCase();
+
+    const esDomicilio =
+        servicioNormalizado === "DOMICILIO";
 
     if (!tiposPermitidos.includes(tipoNormalizado)) {
 
@@ -2192,26 +2292,37 @@ function imprimirComanda() {
 
         <div class="info">
             CLIENTE: ${escaparHtml(
-                clientePedidoActual || "GENERAL"
-            )}
+        clientePedidoActual || "GENERAL"
+    )}
         </div>
 
         <div class="info">
             SERVICIO: ${escaparHtml(
-                servicioPedidoActual || ""
-            )}
+        servicioPedidoActual || ""
+    )}
         </div>
+
+        ${esDomicilio ? `
+
+            <div class="info direccion-entrega">
+                DIRECCIÓN DE ENTREGA:
+                ${escaparHtml(
+        direccionPedidoActual || "DIRECCIÓN NO REGISTRADA"
+    )}
+            </div>
+
+        ` : ""}
 
         <div class="info">
             MESA: ${escaparHtml(
-                mesaPedidoActual || ""
-            )}
+        mesaPedidoActual || ""
+    )}
         </div>
 
         <div class="info">
             CATEGORÍA: ${escaparHtml(
-                tipoPedidoActual
-            )}
+        tipoPedidoActual
+    )}
         </div>
 
         <div class="linea"></div>

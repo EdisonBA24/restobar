@@ -82,6 +82,16 @@ def crear():
             "data": result
         })
 
+    except ValueError as e:
+
+        return jsonify({
+
+            "status": "error",
+
+            "message": str(e)
+
+        }), 400
+
     except Exception as e:
         print("❌ ERROR CREAR PEDIDO:", e)
 

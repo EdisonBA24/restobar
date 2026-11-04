@@ -2,8 +2,9 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Ventas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Historial de Ventas - Parche el Antojo</title>
     <link rel="stylesheet" href="../css/styles.css?v=2">
 </head>
 
@@ -11,8 +12,14 @@
 
     <div class="layout">
 
+        <!-- ================================================= -->
+        <!-- MENU LATERAL -->
+        <!-- ================================================= -->
+
         <aside class="sidebar">
-            <img src="../assets/logo.ico" class="logo" width="80%" style="margin:20px auto;display:block;">
+
+            <img src="../assets/logo.ico" class="logo" width="80%" style="margin:20px auto;display:block;"
+                alt="Parche el Antojo">
 
             <ul>
 
@@ -134,9 +141,15 @@
                 </li>
 
             </ul>
+
         </aside>
 
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+
+        <!-- ================================================= -->
+        <!-- CONTENIDO PRINCIPAL -->
+        <!-- ================================================= -->
 
         <main class="main">
 
@@ -149,52 +162,731 @@
                 <h1>Historial de Ventas</h1>
 
                 <div class="user-box">
+
                     <span id="nombreUsuario">👤 Usuario</span>
-                    <button onclick="logout()" class="btn-logout">Cerrar sesión</button>
+
+                    <button onclick="logout()" class="btn-logout">
+                        Cerrar sesión
+                    </button>
+
                 </div>
 
             </header>
 
-            <div class="card">
+
+            <!-- ================================================= -->
+            <!-- HISTORIAL -->
+            <!-- ================================================= -->
+
+            <section class="card listado-card">
+
+                <!-- ============================================= -->
+                <!-- ENCABEZADO -->
+                <!-- ============================================= -->
+
+                <div class="listado-header">
+
+                    <div class="listado-header-info">
+
+                        <h2 class="listado-title">
+                            💰 Historial de Ventas
+                        </h2>
+
+                        <span class="listado-description">
+                            Consulte, filtre y analice las ventas registradas
+                            en Parche el Antojo.
+                        </span>
+
+                    </div>
+
+                    <div class="listado-header-actions">
+
+                        <button type="button" id="btnExportarExcel" class="btn-primary">
+                            📄 Exportar Excel
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <hr>
+
+
+                <!-- ============================================= -->
+                <!-- FILTROS -->
+                <!-- ============================================= -->
+
+                <div class="compras-toolbar">
+
+                    <div class="filters-card">
+
+                        <div class="filters-header">
+
+                            <div>
+
+                                <h3>
+                                    🔎 Filtros de búsqueda
+                                </h3>
+
+                                <span>
+                                    Consulte ventas por período,
+                                    método de pago o cliente.
+                                </span>
+
+                            </div>
+
+                            <div class="form-group filters-actions">
+
+                                <button type="button" class="btn-outline" id="btnLimpiarFiltrosVentas">
+                                    🧹 Limpiar filtros
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- FILA PRINCIPAL -->
+
+                        <div class="toolbar-filtros">
+
+                            <div class="form-group">
+
+                                <label for="filtroPeriodoVentas">
+                                    Período
+                                </label>
+
+                                <select id="filtroPeriodoVentas">
+
+                                    <option value="hoy">
+                                        Hoy
+                                    </option>
+
+                                    <option value="ayer">
+                                        Ayer
+                                    </option>
+
+                                    <option value="esta_semana">
+                                        Esta semana
+                                    </option>
+
+                                    <option value="semana_pasada">
+                                        Semana pasada
+                                    </option>
+
+                                    <option value="mes_actual" selected>
+                                        Mes actual
+                                    </option>
+
+                                    <option value="mes_anterior">
+                                        Mes anterior
+                                    </option>
+
+                                    <option value="ultimos30">
+                                        Últimos 30 días
+                                    </option>
+
+                                    <option value="personalizado" data-custom="true">
+                                        Personalizado
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="filtroMetodoPago">
+                                    Método de pago
+                                </label>
+
+                                <select id="filtroMetodoPago">
+
+                                    <option value="" selected>
+                                        Todos los métodos
+                                    </option>
+
+                                    <option value="Efectivo">
+                                        💵 Efectivo
+                                    </option>
+
+                                    <option value="Nequi">
+                                        📱 Nequi
+                                    </option>
+
+                                    <option value="Transferencia">
+                                        💳 Transferencia
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="form-group buscar-compra">
+
+                                <label for="buscarVenta">
+                                    Buscar venta
+                                </label>
+
+                                <input type="search" id="buscarVenta" placeholder="Cliente, número de venta o usuario"
+                                    autocomplete="off">
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- FILTROS FECHA PERSONALIZADA -->
+
+                        <div class="filters-row hidden" id="customDateFiltersVentas">
+
+                            <div class="form-group">
+
+                                <label for="fechaInicioVentas">
+                                    Desde
+                                </label>
+
+                                <input type="date" id="fechaInicioVentas" disabled>
+
+                            </div>
+
+                            <div class="form-group">
+
+                                <label for="fechaFinVentas">
+                                    Hasta
+                                </label>
+
+                                <input type="date" id="fechaFinVentas" disabled>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <hr>
+
+
+                <!-- ============================================= -->
+                <!-- INDICADORES -->
+                <!-- ============================================= -->
+
+                <div class="dashboard-mini">
+
+                    <article class="mini-card">
+
+                        <span class="mini-title">
+                            📋 Ventas registradas
+                        </span>
+
+                        <strong id="kpiTotalVentas">
+                            0
+                        </strong>
+
+                    </article>
+
+
+                    <article class="mini-card">
+
+                        <span class="mini-title">
+                            💰 Total vendido
+                        </span>
+
+                        <strong id="kpiTotalVendido">
+                            $0
+                        </strong>
+
+                    </article>
+
+
+                    <article class="mini-card">
+
+                        <span class="mini-title">
+                            👥 Clientes identificados
+                        </span>
+
+                        <strong id="kpiClientesIdentificados">
+                            0
+                        </strong>
+
+                    </article>
+
+
+                    <article class="mini-card">
+
+                        <span class="mini-title">
+                            📊 Ticket promedio
+                        </span>
+
+                        <strong id="kpiTicketPromedio">
+                            $0
+                        </strong>
+
+                    </article>
+
+                </div>
+
+
+                <hr>
+
+
+                <!-- ============================================= -->
+                <!-- TABLA -->
+                <!-- ============================================= -->
 
                 <div class="table-container">
 
-                    <table class="table">
+                    <table id="tablaVentasTabla" class="table">
+
                         <thead>
+
                             <tr>
-                                <th>Cliente</th>
-                                <th>Fecha</th>
-                                <th>Total</th>
-                                <th>Usuario</th>
+
+                                <th data-sort="id">
+                                    Venta
+                                </th>
+
+                                <th data-sort="cliente">
+                                    Cliente
+                                </th>
+
+                                <th data-sort="fecha">
+                                    Fecha
+                                </th>
+
+                                <th data-sort="metodo_pago">
+                                    Método de pago
+                                </th>
+
+                                <th data-sort="total">
+                                    Total
+                                </th>
+
+                                <th data-sort="usuario">
+                                    Usuario
+                                </th>
+
+                                <th style="width:100px;text-align:center;">
+                                    Acción
+                                </th>
+
                             </tr>
+
                         </thead>
-                        <tbody id="tablaVentas"></tbody>
+
+                        <tbody id="tablaVentas">
+
+                            <tr>
+
+                                <td colspan="7" style="text-align:center;">
+                                    Cargando ventas...
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
                     </table>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- PAGINACIÓN -->
+                <!-- ============================================= -->
+
+                <div class="pg-container">
+
+                    <div class="pg-page-size">
+
+                        <label for="pageSizeVentas">
+                            Mostrar
+                        </label>
+
+                        <select id="pageSizeVentas" class="form-select">
+
+                            <option value="10">
+                                10
+                            </option>
+
+                            <option value="20" selected>
+                                20
+                            </option>
+
+                            <option value="50">
+                                50
+                            </option>
+
+                            <option value="100">
+                                100
+                            </option>
+
+                        </select>
+
+                        <span>
+                            registros
+                        </span>
+
+                    </div>
+
+
+                    <div class="pg-center">
+
+                        <div id="resumenPaginacionVentas" class="pg-summary"></div>
+
+                        <div id="numerosPaginacionVentas" class="pg-numbers"></div>
+
+                        <div id="infoPaginacionVentas" class="pg-info"></div>
+
+                    </div>
+
+
+                    <div>
+
+                        <button id="btnPaginaAnteriorVentas" class="btn-secondary" type="button">
+                            ← Anterior
+                        </button>
+
+                        <button id="btnPaginaSiguienteVentas" class="btn-secondary" type="button">
+                            Siguiente →
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+
+    <!-- ================================================= -->
+    <!-- MODAL DETALLE DE VENTA -->
+    <!-- ================================================= -->
+
+    <div id="modalCompra" class="modal hidden">
+
+        <div class="modal-content">
+
+            <!-- ENCABEZADO -->
+
+            <div class="pedido-modal-header">
+
+                <div class="pedido-modal-title">
+
+                    <div class="pedido-icono">
+                        💰
+                    </div>
+
+                    <div>
+
+                        <h2 id="tituloDetalleVenta">
+                            Detalle de la Venta
+                        </h2>
+
+                        <span class="pedido-subtitle">
+                            Información completa de la venta
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="pedido-modal-actions">
+
+                    <button id="btnImprimirVenta" type="button" class="btn-secondary">
+                        🖨 Imprimir comprobante
+                    </button>
+
+                    <button type="button" class="btn-close" onclick="cerrarModal()" aria-label="Cerrar detalle">
+                        ✕
+                    </button>
 
                 </div>
 
             </div>
 
-        </main>
-    </div>
 
-    <!-- 🔥 MODAL REUTILIZADO -->
-    <div id="modalCompra" class="modal hidden">
-        <div class="modal-content">
+            <!-- CUERPO -->
 
-            <div class="modal-header">
-                <h3>Detalle de Venta</h3>
-                <button class="btn-close" onclick="cerrarModal()">✖</button>
+            <div id="modalBody">
+
+                <!-- ========================================= -->
+                <!-- RESUMEN DE LA VENTA -->
+                <!-- ========================================= -->
+
+                <div class="pedido-resumen-card">
+
+                    <!-- NÚMERO -->
+
+                    <div class="pedido-resumen-item">
+
+                        <div class="pedido-resumen-icon pedido-icon-blue">
+                            🧾
+                        </div>
+
+                        <div class="pedido-resumen-content">
+
+                            <span class="pedido-resumen-label">
+                                Número de venta
+                            </span>
+
+                            <strong id="detalleVentaNumero">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="pedido-resumen-divider"></div>
+
+
+                    <!-- MÉTODO DE PAGO -->
+
+                    <div class="pedido-resumen-item">
+
+                        <div class="pedido-resumen-icon pedido-icon-orange">
+                            💳
+                        </div>
+
+                        <div class="pedido-resumen-content">
+
+                            <span class="pedido-resumen-label">
+                                Método de pago
+                            </span>
+
+                            <strong id="detalleVentaMetodoPago" class="venta-metodo-pago-badge">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="pedido-resumen-divider"></div>
+
+
+                    <!-- FECHA -->
+
+                    <div class="pedido-resumen-item">
+
+                        <div class="pedido-resumen-icon pedido-icon-purple">
+                            🕐
+                        </div>
+
+                        <div class="pedido-resumen-content">
+
+                            <span class="pedido-resumen-label">
+                                Fecha y hora
+                            </span>
+
+                            <strong id="detalleVentaFecha">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ========================================= -->
+                <!-- INFORMACIÓN DEL CLIENTE Y VENTA -->
+                <!-- ========================================= -->
+
+                <div class="pedido-detalle-card pedido-contexto-card">
+
+                    <div class="pedido-section-header">
+
+                        <div class="pedido-section-title">
+
+                            <div class="pedido-section-icon">
+                                👤
+                            </div>
+
+                            <div>
+
+                                <h4>
+                                    Información de la venta
+                                </h4>
+
+                                <span>
+                                    Datos asociados al cliente y la transacción
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="pedido-contexto-grid venta-contexto-grid">
+
+                        <!-- CLIENTE -->
+
+                        <div class="pedido-contexto-item">
+
+                            <div class="pedido-contexto-icon pedido-contexto-blue">
+                                👤
+                            </div>
+
+                            <div class="pedido-contexto-content">
+
+                                <span class="pedido-contexto-label">
+                                    Cliente
+                                </span>
+
+                                <strong id="detalleVentaCliente">
+                                    -
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- MENÚ / CATEGORÍA -->
+
+                        <div class="pedido-contexto-item">
+
+                            <div class="pedido-contexto-icon pedido-contexto-green">
+                                🍽
+                            </div>
+
+                            <div class="pedido-contexto-content">
+
+                                <span class="pedido-contexto-label">
+                                    Menú / categoría
+                                </span>
+
+                                <strong id="detalleVentaCategoria">
+                                    -
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- MESA -->
+
+                        <div class="pedido-contexto-item">
+
+                            <div class="pedido-contexto-icon pedido-contexto-purple">
+                                🪑
+                            </div>
+
+                            <div class="pedido-contexto-content">
+
+                                <span class="pedido-contexto-label">
+                                    Mesa
+                                </span>
+
+                                <strong id="detalleVentaMesa">
+                                    -
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- USUARIO -->
+
+                        <div class="pedido-contexto-item">
+
+                            <div class="pedido-contexto-icon pedido-contexto-blue">
+                                👨‍💼
+                            </div>
+
+                            <div class="pedido-contexto-content">
+
+                                <span class="pedido-contexto-label">
+                                    Atendido por
+                                </span>
+
+                                <strong id="detalleVentaUsuario">
+                                    -
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ========================================= -->
+                <!-- PRODUCTOS DE LA VENTA -->
+                <!-- ========================================= -->
+
+                <div class="pedido-detalle-card">
+
+                    <h4>
+                        🍽 Productos de la venta
+                    </h4>
+
+                    <div id="detalleItemsVenta">
+
+                    </div>
+
+                </div>
+
+
+                <!-- ========================================= -->
+                <!-- TOTAL -->
+                <!-- ========================================= -->
+
+                <div class="pedido-detalle-footer">
+
+                    <div>
+
+                        <strong>
+                            Total de la venta
+                        </strong>
+
+                        <span id="detalleTotalVenta">
+                            $0
+                        </span>
+
+                    </div>
+
+                </div>
+
             </div>
 
-            <div id="modalBody"></div>
-
         </div>
+
     </div>
 
+
+
+    <!-- ================================================= -->
+    <!-- SCRIPTS -->
+    <!-- ================================================= -->
+
     <script type="module" src="../js/auth.js"></script>
+
     <script type="module" src="../js/ventas.js"></script>
+
     <script type="module" src="../js/menu.js" defer></script>
+
     <script type="module" src="../js/layout.js"></script>
 
     <script>

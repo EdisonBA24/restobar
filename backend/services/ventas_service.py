@@ -201,44 +201,103 @@ def crear_venta(data):
 
         #utilidad = total - costo_total
 
+        
         # =============================
         # INSERT VENTA
+        # INCLUYE SERVICIO Y DIRECCION
         # =============================
+
         if is_postgres:
-            cursor.execute(f"""
-                INSERT INTO {VENTAS} (mesa, cliente, cliente_id, total, metodo_pago, usuario, usuario_id, categoria)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+
+            cursor.execute(
+                f"""
+                INSERT INTO {VENTAS}
+                (
+                    mesa,
+                    cliente,
+                    cliente_id,
+                    total,
+                    metodo_pago,
+                    usuario,
+                    usuario_id,
+                    categoria,
+                    tipo_servicio,
+                    direccion_entrega
+                )
+                VALUES
+                (
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder}
+                )
                 RETURNING id
-            """, (
-                data.get("mesa"),
-                data.get("cliente"),
-                data.get("cliente_id"),
-                total,
-                data.get("metodo_pago", "Efectivo"),
-                data.get("usuario", "admin"),
-                #costo_total,
-                #utilidad,
-                usuario_id,
-                data.get("categoria")
-            ))
+                """,
+                (
+                    data.get("mesa"),
+                    data.get("cliente"),
+                    data.get("cliente_id"),
+                    total,
+                    data.get("metodo_pago", "Efectivo"),
+                    data.get("usuario", "admin"),
+                    usuario_id,
+                    data.get("categoria"),
+                    data.get("tipo_servicio"),
+                    data.get("direccion_entrega")
+                )
+            )
+
         else:
-            cursor.execute(f"""
-                INSERT INTO {VENTAS} (mesa, cliente, cliente_id, total, metodo_pago, usuario, usuario_id, categoria)
+
+            cursor.execute(
+                f"""
+                INSERT INTO {VENTAS}
+                (
+                    mesa,
+                    cliente,
+                    cliente_id,
+                    total,
+                    metodo_pago,
+                    usuario,
+                    usuario_id,
+                    categoria,
+                    tipo_servicio,
+                    direccion_entrega
+                )
                 OUTPUT INSERTED.id
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                data.get("mesa"),
-                data.get("cliente"),
-                data.get("cliente_id"),
-                total,
-                data.get("metodo_pago", "Efectivo"),
-                data.get("usuario", "admin"),
-                #costo_total,
-                #utilidad,
-                usuario_id,
-                data.get("categoria")
-            ))  
-            
+                VALUES
+                (
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder},
+                    {placeholder}
+                )
+                """,
+                (
+                    data.get("mesa"),
+                    data.get("cliente"),
+                    data.get("cliente_id"),
+                    total,
+                    data.get("metodo_pago", "Efectivo"),
+                    data.get("usuario", "admin"),
+                    usuario_id,
+                    data.get("categoria"),
+                    data.get("tipo_servicio"),
+                    data.get("direccion_entrega")
+                )
+            )            
 
         venta_id = cursor.fetchone()[0]
 
@@ -455,7 +514,14 @@ def get_ventas():
 
     try:
         cursor.execute(f"""
-            SELECT v.id, v.cliente, v.total, v.fecha, u.nombre AS usuario
+            SELECT 
+                v.id,
+                v.cliente,
+                v.total,
+                v.fecha,
+                u.nombre AS usuario,
+                v.tipo_servicio,
+                v.direccion_entrega
             FROM {VENTAS} v
             LEFT JOIN {USUARIOS} u ON v.usuario_id = u.id
             ORDER BY v.id DESC

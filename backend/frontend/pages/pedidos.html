@@ -107,7 +107,7 @@
                         <span class="menu-arrow">▾</span>
                     </div>
                     <ul class="submenu">
-                        <li onclick="ir('ventas')">📋 Consultar Ventas</li>
+                        <li onclick="ir('ventas')">📋 Historial de Ventas</li>
                     </ul>
                 </li>
 
@@ -241,11 +241,16 @@
 
                                     </label>
 
+
                                     <select id="filtroPeriodo">
 
-                                        <option value="hoy">Hoy</option>
+                                        <option value="hoy">
+                                            Hoy
+                                        </option>
 
-                                        <option value="ayer">Ayer</option>
+                                        <option value="ayer">
+                                            Ayer
+                                        </option>
 
                                         <option value="esta_semana">
                                             Esta semana
@@ -267,7 +272,7 @@
                                             Últimos 30 días
                                         </option>
 
-                                        <option value="personalizado">
+                                        <option value="personalizado" data-custom="true">
                                             Personalizado
                                         </option>
 

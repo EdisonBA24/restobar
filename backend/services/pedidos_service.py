@@ -3,7 +3,14 @@ from flask import session
 from decimal import Decimal, InvalidOperation
 from services.ventas_service import crear_venta
 from config import Config
-from database.db_objects import PEDIDOS, DETALLE_PEDIDOS, PRODUCTOS, USUARIOS, DETALLE_PEDIDO_COMPONENTES
+from database.db_objects import (
+    PEDIDOS,
+    DETALLE_PEDIDOS,
+    PRODUCTOS,
+    USUARIOS,
+    DETALLE_PEDIDO_COMPONENTES,
+    CLIENTES_DIRECCIONES
+)
 import math
 
 
@@ -19,6 +26,145 @@ def to_decimal(value, field):
 
     except (InvalidOperation, Exception):
         raise Exception(f"{field} inválido: {value}")
+
+
+
+# =====================================================
+# DIRECCION DE ENTREGA
+# =====================================================
+
+def _consultar_direccion_entrega(
+    cursor,
+    cliente_id,
+    placeholder,
+    direccion_id=None
+):
+
+    if not cliente_id:
+        return None
+
+    parametros = [cliente_id]
+
+    condicion_direccion = ""
+
+    if direccion_id not in (None, "", 0, "0"):
+
+        condicion_direccion = f"AND id = {placeholder}"
+
+        parametros.append(direccion_id)
+
+    cursor.execute(
+        f"""
+        SELECT
+            nombre,
+            direccion,
+            barrio,
+            referencia
+
+        FROM {CLIENTES_DIRECCIONES}
+
+        WHERE cliente_id = {placeholder}
+
+          AND activo = 1
+
+          {condicion_direccion}
+
+        ORDER BY
+            principal DESC,
+            id ASC
+        """,
+        tuple(parametros)
+    )
+
+    fila = cursor.fetchone()
+
+    if not fila:
+        return None
+
+    nombre, direccion, barrio, referencia = fila
+
+    direccion = str(direccion or "").strip()
+
+    if not direccion:
+        return None
+
+    partes = []
+
+    if nombre:
+        partes.append(
+            f"{str(nombre).strip()}: {direccion}"
+        )
+    else:
+        partes.append(direccion)
+
+    if barrio:
+        partes.append(
+            f"Barrio: {str(barrio).strip()}"
+        )
+
+    if referencia:
+        partes.append(
+            f"Referencia: {str(referencia).strip()}"
+        )
+
+    return " | ".join(partes)[:600]
+
+
+# =====================================================
+# RESOLVER DIRECCION PARA EL PEDIDO
+#
+# Si existe direccion_id, respeta la seleccion
+# del usuario.
+#
+# Si no existe, utiliza la direccion principal
+# activa del cliente.
+# =====================================================
+
+def _resolver_direccion_entrega(
+    cursor,
+    data,
+    placeholder
+):
+
+    tipo_servicio = str(
+        data.get("tipo") or ""
+    ).strip().upper()
+
+    if tipo_servicio != "DOMICILIO":
+        return None
+
+    direccion_manual = str(
+        data.get("direccion_entrega") or ""
+    ).strip()
+
+    if direccion_manual:
+        return direccion_manual[:600]
+
+    cliente_id = data.get("cliente_id")
+
+    if not cliente_id:
+
+        raise ValueError(
+            "Para registrar un pedido a domicilio debe seleccionar un cliente con dirección registrada."
+        )
+
+    direccion_id = data.get("direccion_id")
+
+    direccion = _consultar_direccion_entrega(
+        cursor=cursor,
+        cliente_id=cliente_id,
+        placeholder=placeholder,
+        direccion_id=direccion_id
+    )
+
+    if not direccion:
+
+        raise ValueError(
+            "El cliente seleccionado no tiene una dirección de entrega activa. Registre una dirección antes de crear el pedido."
+        )
+
+    return direccion
+
 
 
 # =============================
@@ -141,24 +287,24 @@ def _calcular_total_pedido(detalles):
 
     return total
 
+
 # =====================================================
 # INSERTAR CABECERA PEDIDO
 # =====================================================
 
 def _insertar_pedido(
-
     cursor,
     data,
     usuario_id,
     total,
     is_postgres,
     placeholder
-
 ):
 
     if is_postgres:
 
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             INSERT INTO {PEDIDOS}
             (
                 mesa,
@@ -168,7 +314,8 @@ def _insertar_pedido(
                 estado,
                 usuario_id,
                 total,
-                categoria
+                categoria,
+                direccion_entrega
             )
             VALUES
             (
@@ -179,32 +326,28 @@ def _insertar_pedido(
                 {placeholder},
                 {placeholder},
                 {placeholder},
+                {placeholder},
                 {placeholder}
             )
             RETURNING id
-        """, (
-
-            data.get("mesa"),
-
-            data.get("tipo"),
-
-            data.get("cliente"),
-
-            data.get("cliente_id"),
-
-            data.get("estado"),
-
-            usuario_id,
-
-            total,
-
-            data.get("categoria")
-
-        ))
+            """,
+            (
+                data.get("mesa"),
+                data.get("tipo"),
+                data.get("cliente"),
+                data.get("cliente_id"),
+                data.get("estado"),
+                usuario_id,
+                total,
+                data.get("categoria"),
+                data.get("direccion_entrega")
+            )
+        )
 
     else:
 
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             INSERT INTO {PEDIDOS}
             (
                 mesa,
@@ -214,7 +357,8 @@ def _insertar_pedido(
                 estado,
                 usuario_id,
                 total,
-                categoria
+                categoria,
+                direccion_entrega
             )
             OUTPUT INSERTED.id
             VALUES
@@ -226,36 +370,29 @@ def _insertar_pedido(
                 {placeholder},
                 {placeholder},
                 {placeholder},
+                {placeholder},
                 {placeholder}
             )
-        """, (
-
-            data.get("mesa"),
-
-            data.get("tipo"),
-
-            data.get("cliente"),
-
-            data.get("cliente_id"),
-
-            data.get("estado"),
-
-            usuario_id,
-
-            total,
-
-            data.get("categoria")
-
-        ))
+            """,
+            (
+                data.get("mesa"),
+                data.get("tipo"),
+                data.get("cliente"),
+                data.get("cliente_id"),
+                data.get("estado"),
+                usuario_id,
+                total,
+                data.get("categoria"),
+                data.get("direccion_entrega")
+            )
+        )
 
     fila = cursor.fetchone()
 
     if not fila:
 
         raise Exception(
-
             "No fue posible crear el pedido."
-
         )
 
     return fila[0]
@@ -577,29 +714,56 @@ def _guardar_constructor(
     return detalle_pedido_id
 
 
-# =============================
-# 🧾 CREAR PEDIDO
-# =============================
+
+# =====================================================
+# CREAR PEDIDO
+# =====================================================
+
 def crear_pedido(data):
 
     conn = get_connection()
     cursor = conn.cursor()
+
     usuario_id = session.get("user_id")
 
     try:
+
         detalles = data.get("detalles", [])
 
         if not detalles:
-            raise Exception("No hay productos en el pedido")
+            raise ValueError(
+                "No hay productos en el pedido."
+            )
 
-        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        is_postgres = (
+            getattr(Config, "DB_ENGINE", "sqlserver")
+            == "postgres"
+        )
+
         placeholder = "%s" if is_postgres else "?"
+
+        # =============================================
+        # RESOLVER DIRECCION DE ENTREGA
+        # =============================================
+
+        data["direccion_entrega"] = (
+            _resolver_direccion_entrega(
+                cursor=cursor,
+                data=data,
+                placeholder=placeholder
+            )
+        )
+
+        # =============================================
+        # CALCULAR TOTAL
+        # =============================================
 
         total = _calcular_total_pedido(detalles)
 
-        # =============================
-        # INSERT PEDIDO
-        # =============================
+        # =============================================
+        # INSERTAR CABECERA
+        # =============================================
+
         pedido_id = _insertar_pedido(
 
             cursor=cursor,
@@ -616,9 +780,10 @@ def crear_pedido(data):
 
         )
 
-        # =============================
-        # DETALLE PEDIDO
-        # =============================
+        # =============================================
+        # GUARDAR DETALLES
+        # =============================================
+
         for item in detalles:
 
             _guardar_detalle(
@@ -638,18 +803,35 @@ def crear_pedido(data):
         conn.commit()
 
         return {
+
             "message": "Pedido registrado correctamente",
+
             "total": float(total),
-            "pedido_id": pedido_id
+
+            "pedido_id": pedido_id,
+
+            "direccion_entrega": data.get(
+                "direccion_entrega"
+            )
+
         }
 
     except Exception as e:
+
         conn.rollback()
-        print("❌ ERROR PEDIDO:", e)
-        raise e
+
+        print(
+            "ERROR CREAR PEDIDO:",
+            e
+        )
+
+        raise
 
     finally:
+
         conn.close()
+
+
 
 # =====================================================
 # OBTENER FILTROS PEDIDOS
@@ -2405,9 +2587,11 @@ def agrupar_detalle_pedido(rows):
     return detalle
 
 
-# =============================
-# 📄 DETALLE PEDIDO
-# =============================
+
+# =====================================================
+# DETALLE PEDIDO
+# =====================================================
+
 def get_pedido_detalle(pedido_id):
 
     conn = get_connection()
@@ -2415,13 +2599,19 @@ def get_pedido_detalle(pedido_id):
 
     try:
 
-        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        is_postgres = (
+            getattr(Config, "DB_ENGINE", "sqlserver")
+            == "postgres"
+        )
+
         placeholder = "%s" if is_postgres else "?"
 
-        # =============================
-        # CABECERA PEDIDO
-        # =============================
-        cursor.execute(f"""
+        # =============================================
+        # CABECERA DEL PEDIDO
+        # =============================================
+
+        cursor.execute(
+            f"""
             SELECT
                 id,
                 mesa,
@@ -2429,86 +2619,101 @@ def get_pedido_detalle(pedido_id):
                 cliente,
                 categoria,
                 estado,
-                fecha
+                fecha,
+                cliente_id,
+                direccion_entrega
+
             FROM {PEDIDOS}
+
             WHERE id = {placeholder}
-        """, (pedido_id,))
+            """,
+            (pedido_id,)
+        )
 
         pedido_row = cursor.fetchone()
 
         if not pedido_row:
             return None
 
+        direccion_entrega = pedido_row[8]
+
+        tipo_servicio = str(
+            pedido_row[2] or ""
+        ).strip().upper()
+
+        # =============================================
+        # RECUPERAR DIRECCION PARA PEDIDOS HISTORICOS
+        #
+        # Si el pedido se creó antes de implementar
+        # direccion_entrega, se consulta la principal.
+        # =============================================
+
+        if (
+            tipo_servicio == "DOMICILIO"
+            and not direccion_entrega
+        ):
+
+            direccion_entrega = (
+                _consultar_direccion_entrega(
+                    cursor=cursor,
+                    cliente_id=pedido_row[7],
+                    placeholder=placeholder
+                )
+            )
+
         pedido = {
+
             "id": pedido_row[0],
+
             "mesa": pedido_row[1],
+
             "tipo": pedido_row[2],
+
             "cliente": pedido_row[3],
+
             "categoria": pedido_row[4],
+
             "estado": pedido_row[5],
-            "fecha": str(pedido_row[6]) if pedido_row[6] else ""
+
+            "fecha": (
+                str(pedido_row[6])
+                if pedido_row[6]
+                else ""
+            ),
+
+            "cliente_id": pedido_row[7],
+
+            "direccion_entrega": direccion_entrega
+
         }
 
-        # =============================
-        # DETALLE CONSULTA ANTIGUA
-        # =============================
-        #cursor.execute(f"""
-        #    SELECT
-        #        dp.producto_id,
-        #        p.nombre,
-        #        dp.cantidad,
-        #        dp.precio
-        #    FROM {DETALLE_PEDIDOS} dp
-        #    JOIN {PRODUCTOS} p
-        #        ON dp.producto_id = p.id
-        #    WHERE dp.pedido_id = {placeholder}
-        #""", (pedido_id,))
+        # =============================================
+        # OBTENER DETALLES
+        # =============================================
 
-        #columns = [c[0] for c in cursor.description]
-
-        #detalle = []
-
-        #for r in cursor.fetchall():
-
-        #    row = dict(zip(columns, r))
-
-        #    row["cantidad"] = float(row.get("cantidad") or 0)
-        #    row["precio"] = float(row.get("precio") or 0)
-
-        #    detalle.append(row)
         detalle = obtener_detalles_pedido(
-
             cursor,
-
             pedido_id,
-
             placeholder
-
         )
+
+        # =============================================
+        # ENRIQUECER DETALLES
+        # =============================================
 
         detalle = enriquecer_detalles_pedido(
-
             cursor,
-
             detalle,
-
             placeholder
-
         )
 
-        print("DETALLE BD")
+        # =============================================
+        # TRANSFORMAR PARA FRONTEND
+        # =============================================
 
-        for d in detalle:
-
-            print(d)
-
-        detalle = transformar_detalle_pedido(detalle)
-
-        print("DETALLE FRONT")
-
-        for d in detalle:
-
-            print(d)
+        detalle = transformar_detalle_pedido(
+            detalle
+        )
 
         return {
 
@@ -2516,107 +2721,250 @@ def get_pedido_detalle(pedido_id):
 
             "detalle": detalle
 
-            #    transformar_detalle_pedido(
-
-            #        detalle
-
-            #    )
-
         }
 
     finally:
+
         conn.close()
 
 
-# =============================
-# 🧾 FACTURAR PEDIDO → VENTA
-# =============================
-def facturar_pedido(pedido_id, metodo_pago="Efectivo", usuario_id=None, *args, **kwargs):
+
+
+# =====================================================
+# FACTURAR PEDIDO → VENTA
+# CONSERVAR DIRECCION DE ENTREGA
+# =====================================================
+
+def facturar_pedido(
+    pedido_id,
+    metodo_pago="Efectivo",
+    usuario_id=None,
+    *args,
+    **kwargs
+):
 
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-        usuario_id = usuario_id or session.get("user_id") or 1
 
-        #print(f"🧾 FACTURAR PEDIDO | id={pedido_id} | metodo={metodo_pago} | usuario_id={usuario_id}")
+        usuario_id = (
+            usuario_id
+            or session.get("user_id")
+            or 1
+        )
 
-        is_postgres = getattr(Config, "DB_ENGINE", "sqlserver") == "postgres"
+        is_postgres = (
+            getattr(Config, "DB_ENGINE", "sqlserver")
+            == "postgres"
+        )
+
         placeholder = "%s" if is_postgres else "?"
 
-        cursor.execute(f"""
-            SELECT id, estado, mesa, cliente, cliente_id, categoria
+        # =============================================
+        # CONSULTAR PEDIDO
+        # =============================================
+
+        cursor.execute(
+            f"""
+            SELECT
+                id,
+                estado,
+                mesa,
+                cliente,
+                cliente_id,
+                categoria,
+                tipo,
+                direccion_entrega
+
             FROM {PEDIDOS}
+
             WHERE id = {placeholder}
-        """, (pedido_id,))
+            """,
+            (pedido_id,)
+        )
 
         pedido = cursor.fetchone()
 
         if not pedido:
-            raise Exception("Pedido no existe")
+            raise Exception("Pedido no existe.")
 
-        if str(pedido[1]).lower() == "facturado":
-            raise Exception("El pedido ya fue facturado")
+        if str(pedido[1]).strip().lower() == "facturado":
+            raise Exception("El pedido ya fue facturado.")
 
-        cursor.execute(f"""
+        # =============================================
+        # RECUPERAR DIRECCION SI ES UN DOMICILIO
+        # =============================================
+
+        tipo_servicio = str(
+            pedido[6] or ""
+        ).strip().upper()
+
+        direccion_entrega = pedido[7]
+
+        if (
+            tipo_servicio == "DOMICILIO"
+            and not direccion_entrega
+        ):
+
+            direccion_entrega = (
+                _consultar_direccion_entrega(
+                    cursor=cursor,
+                    cliente_id=pedido[4],
+                    placeholder=placeholder
+                )
+            )
+
+            # Actualizar la fotografía de dirección
+            # para conservarla en el historial.
+
+            if direccion_entrega:
+
+                cursor.execute(
+                    f"""
+                    UPDATE {PEDIDOS}
+
+                    SET direccion_entrega = {placeholder}
+
+                    WHERE id = {placeholder}
+                    """,
+                    (
+                        direccion_entrega,
+                        pedido_id
+                    )
+                )
+
+        # =============================================
+        # CONSULTAR PRODUCTOS DEL PEDIDO
+        # =============================================
+
+        cursor.execute(
+            f"""
             SELECT
                 producto_id,
                 tipo_item,
                 cantidad,
                 precio
+
             FROM {DETALLE_PEDIDOS}
+
             WHERE pedido_id = {placeholder}
+
             ORDER BY id
-        """, (pedido_id,))
+            """,
+            (pedido_id,)
+        )
 
         detalles_db = cursor.fetchall()
 
         if not detalles_db:
-            raise Exception("Pedido sin productos")
+            raise Exception("Pedido sin productos.")
+
+        # =============================================
+        # CONSTRUIR VENTA
+        # =============================================
 
         data_venta = {
-            "cliente": pedido[3] or f"Mesa {pedido[2]}",
+
+            "cliente": (
+                pedido[3]
+                or f"Mesa {pedido[2]}"
+            ),
+
             "cliente_id": pedido[4],
+
             "mesa": pedido[2],
+
             "categoria": pedido[5],
+
+            "tipo_servicio": tipo_servicio,
+
+            "direccion_entrega": direccion_entrega,
+
             "metodo_pago": metodo_pago,
-            "usuario": session.get("nombreUsuario") or f"user_{usuario_id}",
-            "usuario_id": usuario_id,  # 🔥 clave
+
+            "usuario": (
+                session.get("nombreUsuario")
+                or f"user_{usuario_id}"
+            ),
+
+            "usuario_id": usuario_id,
+
             "detalles": []
+
         }
 
-        for producto_id, tipo_item, cantidad, precio in detalles_db:
+        # =============================================
+        # CONSTRUIR DETALLE DE VENTA
+        # =============================================
+
+        for (
+            producto_id,
+            tipo_item,
+            cantidad,
+            precio
+        ) in detalles_db:
 
             tipo_item = str(
                 tipo_item or "PRODUCTO"
             ).upper()
 
             data_venta["detalles"].append({
+
                 "producto_id": producto_id,
+
                 "tipo_item": tipo_item,
+
                 "cantidad": float(cantidad or 0),
+
                 "precio": float(precio or 0)
+
             })
 
-        resultado = crear_venta(data_venta)
+        # =============================================
+        # REGISTRAR VENTA
+        # =============================================
 
-        cursor.execute(f"""
+        resultado = crear_venta(
+            data_venta
+        )
+
+        # =============================================
+        # ACTUALIZAR ESTADO PEDIDO
+        # =============================================
+
+        cursor.execute(
+            f"""
             UPDATE {PEDIDOS}
+
             SET estado = 'facturado'
+
             WHERE id = {placeholder}
-        """, (pedido_id,))
+            """,
+            (pedido_id,)
+        )
 
         conn.commit()
 
         return {
+
             "message": "Pedido facturado correctamente",
+
             "venta": resultado
+
         }
 
     except Exception as e:
+
         conn.rollback()
-        print("❌ ERROR FACTURAR PEDIDO:", e)
-        raise e
+
+        print(
+            "ERROR FACTURAR PEDIDO:",
+            e
+        )
+
+        raise
 
     finally:
+
         conn.close()

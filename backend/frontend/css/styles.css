@@ -10175,3 +10175,1762 @@ PEDIDO
     }
 
 }
+
+/* =====================================================
+   CATEGORIAS DINAMICAS DEL CATALOGO COMERCIAL
+===================================================== */
+
+.catalogo-menu-categorias {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin: 22px 0;
+}
+
+.catalogo-categoria {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px;
+}
+
+.catalogo-categoria h3 {
+    margin: 0 0 8px;
+    color: #1e293b;
+    font-size: 17px;
+}
+
+.catalogo-categoria-regla,
+.catalogo-categoria-descripcion {
+    margin: 5px 0 12px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.catalogo-categoria select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: #ffffff;
+}
+
+.catalogo-opciones {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(220px, 1fr)
+    );
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.catalogo-opcion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.catalogo-opcion input {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+}
+
+.catalogo-opcion span {
+    flex: 1;
+    color: #334155;
+    font-size: 14px;
+}
+
+.catalogo-opcion small {
+    color: #15803d;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.catalogo-opcion:has(input:disabled) {
+    cursor: default;
+    opacity: 0.75;
+}
+
+.catalogo-menu-resumen {
+    width: 100%;
+}
+
+.catalogo-menu-resumen .builder-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 8px 0;
+}
+
+.catalogo-menu-resumen .builder-item strong {
+    text-align: right;
+}
+
+.menu-card .btn-menu:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@media (max-width: 600px) {
+
+    .catalogo-categoria {
+        padding: 15px;
+    }
+
+    .catalogo-opciones {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+/* =====================================================
+   CANTIDADES DE COMPONENTES REPETIBLES
+===================================================== */
+/*
+.catalogo-opcion input[type="number"] {
+
+    width: 75px;
+
+    min-width: 75px;
+
+    min-height: 36px;
+
+    padding: 6px;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: 7px;
+
+    background: #ffffff;
+
+    text-align: center;
+
+}
+
+.catalogo-opcion input[type="number"]:disabled {
+
+    opacity: 0.65;
+
+    cursor: not-allowed;
+
+}
+*/
+
+/* =====================================================
+   TARJETAS COMPACTAS - CATALOGO COMERCIAL ALMUERZOS
+===================================================== */
+
+.almuerzo-catalogo-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(220px, 260px)
+    );
+
+    gap: 16px;
+
+    justify-content: start;
+
+    align-items: stretch;
+
+}
+
+.almuerzo-catalogo-card {
+
+    width: 100%;
+
+    max-width: 260px;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 14px;
+
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .045);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+
+}
+
+.almuerzo-catalogo-card:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow: 0 8px 22px rgba(15, 23, 42, .10);
+
+}
+
+/* IMAGEN */
+
+.almuerzo-catalogo-image {
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 100%;
+
+    height: 130px;
+
+    overflow: hidden;
+
+    background: #f1f5f9;
+
+}
+
+.almuerzo-catalogo-image img {
+
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+}
+
+.almuerzo-catalogo-placeholder {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 100%;
+
+    height: 100%;
+
+    background: linear-gradient(
+        135deg,
+        #eff6ff,
+        #e2e8f0
+    );
+
+    font-size: 42px;
+
+}
+
+/* ETIQUETAS */
+
+.almuerzo-catalogo-badge {
+
+    position: absolute;
+
+    top: 9px;
+
+    left: 9px;
+
+    padding: 5px 8px;
+
+    border-radius: 6px;
+
+    background: rgba(15, 23, 42, .85);
+
+    color: #ffffff;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+}
+
+.almuerzo-catalogo-featured {
+
+    position: absolute;
+
+    top: 9px;
+
+    right: 9px;
+
+    padding: 5px 8px;
+
+    border-radius: 6px;
+
+    background: #fef3c7;
+
+    color: #92400e;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+}
+
+/* CONTENIDO */
+
+.almuerzo-catalogo-content {
+
+    display: flex;
+
+    flex-direction: column;
+
+    padding: 12px;
+
+    min-height: 190px;
+
+}
+
+.almuerzo-catalogo-content h3 {
+
+    margin: 0 0 4px;
+
+    color: #0f172a;
+
+    font-size: 14px;
+
+    font-weight: 750;
+
+    line-height: 1.35;
+
+}
+
+.almuerzo-catalogo-content > small {
+
+    color: #94a3b8;
+
+    font-size: 10px;
+
+}
+
+.almuerzo-catalogo-description {
+
+    display: -webkit-box;
+
+    -webkit-box-orient: vertical;
+
+    -webkit-line-clamp: 2;
+
+    overflow: hidden;
+
+    min-height: 34px;
+
+    margin: 9px 0;
+
+    color: #64748b;
+
+    font-size: 11px;
+
+    line-height: 1.5;
+
+}
+
+.almuerzo-catalogo-meta {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 8px;
+
+    margin-top: auto;
+
+    padding: 9px 0;
+
+    border-top: 1px solid #e2e8f0;
+
+}
+
+.almuerzo-catalogo-meta span {
+
+    color: #64748b;
+
+    font-size: 10px;
+
+}
+
+.almuerzo-catalogo-meta strong {
+
+    color: #15803d;
+
+    font-size: 15px;
+
+    font-weight: 750;
+
+    white-space: nowrap;
+
+}
+
+/* BOTON */
+
+.almuerzo-catalogo-button {
+
+    width: 100%;
+
+    min-height: 36px;
+
+    padding: 8px 10px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: background .2s ease;
+
+}
+
+.almuerzo-catalogo-button:hover:not(:disabled) {
+
+    background: #1d4ed8;
+
+}
+
+.almuerzo-catalogo-button:disabled {
+
+    opacity: .5;
+
+    cursor: not-allowed;
+
+}
+
+.almuerzo-catalogo-vacio {
+
+    padding: 20px;
+
+    border: 1px dashed #cbd5e1;
+
+    border-radius: 12px;
+
+    color: #64748b;
+
+}
+
+.catalogo-menu-categorias {
+    scroll-margin-top: 100px;
+}
+
+.catalogo-categoria {
+    scroll-margin-top: 100px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 600px) {
+
+    .almuerzo-catalogo-grid {
+
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+        gap: 10px;
+
+    }
+
+    .almuerzo-catalogo-image {
+
+        height: 105px;
+
+    }
+
+    .almuerzo-catalogo-content {
+
+        padding: 9px;
+
+    }
+
+    .almuerzo-catalogo-content h3 {
+
+        font-size: 12px;
+
+    }
+
+}
+
+@media (max-width: 380px) {
+
+    .almuerzo-catalogo-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .almuerzo-catalogo-card {
+
+        max-width: 100%;
+
+    }
+
+}
+
+
+/* =====================================================
+   ACCESO RAPIDO PARA AGREGAR ADICIONES DESDE EL PEDIDO
+===================================================== */
+
+.pedido-adicion-rapida {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    width: 100%;
+
+    margin: 18px 0 22px;
+
+    padding: 15px 18px;
+
+    border: 1px dashed #93c5fd;
+
+    border-radius: 14px;
+
+    background: #eff6ff;
+
+    color: #1e3a8a;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+
+}
+
+.pedido-adicion-rapida:hover {
+
+    background: #dbeafe;
+
+    border-color: #60a5fa;
+
+}
+
+.pedido-adicion-rapida-icon {
+
+    display: grid;
+
+    place-items: center;
+
+    width: 40px;
+
+    height: 40px;
+
+    flex: 0 0 40px;
+
+    border-radius: 10px;
+
+    background: #dbeafe;
+
+    font-size: 21px;
+
+}
+
+.pedido-adicion-rapida-text {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+
+    flex: 1;
+
+    min-width: 0;
+
+}
+
+.pedido-adicion-rapida-text strong {
+
+    font-size: 14px;
+
+}
+
+.pedido-adicion-rapida-text small {
+
+    color: #64748b;
+
+    font-size: 12px;
+
+}
+
+.pedido-adicion-rapida-arrow {
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+}
+
+@media (max-width: 520px) {
+
+    .pedido-adicion-rapida {
+
+        padding: 12px;
+
+    }
+
+    .pedido-adicion-rapida-arrow {
+
+        display: none;
+
+    }
+
+}
+
+
+/* =====================================================
+   CORRECCION DE BOTONES DE ACCION DEL CATALOGO
+===================================================== */
+
+.catalogo-page .catalogo-card-actions {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    justify-content: flex-start;
+
+    gap: 8px;
+
+    width: 100%;
+
+}
+
+.catalogo-page .catalogo-card-actions > .btn-small {
+
+    display: inline-flex !important;
+
+    flex: 0 0 auto;
+
+    flex-direction: row;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 6px;
+
+    width: auto !important;
+
+    min-width: max-content;
+
+    height: auto !important;
+
+    min-height: 38px;
+
+    padding: 8px 12px !important;
+
+    border-radius: 8px !important;
+
+    white-space: nowrap;
+
+    line-height: 1.15;
+
+    font-size: 12px;
+
+    text-align: center;
+
+}
+
+.catalogo-page .catalogo-card-actions > .btn-edit {
+
+    width: auto !important;
+
+    height: auto !important;
+
+    min-width: 82px;
+
+    padding: 8px 12px !important;
+
+    border-radius: 8px !important;
+
+}
+
+/* =====================================================
+   CATEGORIAS COMERCIALES
+===================================================== */
+
+.catalogo-page .catalogo-category-card {
+
+    display: grid;
+
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    align-items: center;
+
+    column-gap: 14px;
+
+    row-gap: 12px;
+
+}
+
+.catalogo-page .catalogo-category-info {
+
+    grid-column: 1;
+
+    min-width: 0;
+
+}
+
+.catalogo-page .catalogo-category-status {
+
+    grid-column: 2;
+
+    align-self: start;
+
+}
+
+.catalogo-page .catalogo-category-card > .catalogo-card-actions {
+
+    grid-column: 1 / -1;
+
+    justify-content: flex-start;
+
+}
+
+/* =====================================================
+   CATEGORIAS DE COMPOSICION DEL MENU
+===================================================== */
+
+.catalogo-page .menu-categoria-card {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+}
+
+.catalogo-page .menu-categoria-card .catalogo-card-actions {
+
+    margin-top: 2px;
+
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 700px) {
+
+    .catalogo-page .catalogo-card-actions {
+
+        gap: 6px;
+
+    }
+
+    .catalogo-page .catalogo-card-actions > .btn-small {
+
+        font-size: 11px;
+
+        padding: 8px 10px !important;
+
+    }
+
+}
+
+/* =====================================================
+   RESPONSIVE GLOBAL - ERP PARCHE EL ANTOJO
+   Base para escritorio, tablet y dispositivos móviles
+===================================================== */
+
+/* -----------------------------------------------------
+   1. CONTENEDORES
+----------------------------------------------------- */
+
+html,
+body {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    overflow-x: hidden;
+
+}
+
+.layout {
+
+    width: 100%;
+
+    min-width: 0;
+
+}
+
+.main {
+
+    flex: 1 1 0;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+}
+
+.main > *,
+.card,
+.form-grid,
+.form-group,
+.form-grid > * {
+
+    min-width: 0;
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+}
+
+/* -----------------------------------------------------
+   2. CAMPOS DE FORMULARIOS
+----------------------------------------------------- */
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+select,
+textarea {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+}
+
+input[type="file"] {
+
+    display: block;
+
+    width: 100%;
+
+    max-width: 100%;
+
+}
+
+button,
+.btn-primary,
+.btn-secondary {
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+}
+
+/* -----------------------------------------------------
+   3. TABLAS CON DESPLAZAMIENTO HORIZONTAL
+----------------------------------------------------- */
+
+.table-responsive,
+.table-container,
+.table-wrapper,
+.tabla-container,
+.usuarios-table-wrap {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    overflow-x: auto;
+
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+
+}
+
+/* -----------------------------------------------------
+   4. PEDIDOS - ESTRUCTURA ESCRITORIO
+----------------------------------------------------- */
+
+.pedido-builder {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+}
+
+.tab-panel {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+}
+
+.pedido-workspace {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(270px, 1fr);
+
+    grid-template-areas:
+
+        "separador separador"
+
+        "titulo titulo"
+
+        "articulos resumen"
+
+        "vacio resumen"
+
+        "adicion resumen";
+
+    align-items: start;
+
+    gap: 18px 24px;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+}
+
+/* Ubicación de cada elemento del pedido */
+
+.pedido-workspace > hr {
+
+    grid-area: separador;
+
+    width: 100%;
+
+    min-width: 0;
+
+    margin: 0;
+
+}
+
+.pedido-workspace > .section-title {
+
+    grid-area: titulo;
+
+    min-width: 0;
+
+    margin: 0;
+
+}
+
+.pedido-workspace > #divPedido {
+
+    grid-area: articulos;
+
+    width: 100%;
+
+    min-width: 0;
+
+}
+
+.pedido-workspace > #mensajeVacio {
+
+    grid-area: vacio;
+
+    width: 100%;
+
+    min-width: 0;
+
+}
+
+.pedido-workspace > .pedido-adicion-rapida {
+
+    grid-area: adicion;
+
+    width: 100%;
+
+    min-width: 0;
+
+    margin: 0;
+
+}
+
+.pedido-workspace > .resumen-compra {
+
+    grid-area: resumen;
+
+    width: 100% !important;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    margin: 0 !important;
+
+    align-self: start;
+
+    box-sizing: border-box;
+
+}
+
+/* -----------------------------------------------------
+   5. RESUMEN DEL CONSTRUCTOR
+----------------------------------------------------- */
+
+#divResumen {
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    justify-content: flex-start !important;
+
+    align-items: stretch !important;
+
+    gap: 14px;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+}
+
+#divResumen > * {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+}
+
+#divResumen .builder-summary-header {
+
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+    min-width: 0;
+
+}
+
+#divResumen .builder-summary-header > div {
+
+    min-width: 0;
+
+    flex: 1 1 160px;
+
+}
+
+#divResumen .builder-summary-title,
+#divResumen .builder-summary-status {
+
+    max-width: 100%;
+
+    overflow-wrap: anywhere;
+
+}
+
+#divResumen .builder-divider {
+
+    width: 100%;
+
+    height: 1px;
+
+    flex: 0 0 1px;
+
+}
+
+#divResumen .builder-items {
+
+    width: 100%;
+
+    min-width: 0;
+
+}
+
+#divResumen .builder-item {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(100px, .8fr)
+        minmax(0, 1.2fr);
+
+    gap: 8px;
+
+    width: 100%;
+
+    min-width: 0;
+
+}
+
+#divResumen .builder-item span,
+#divResumen .builder-item strong {
+
+    min-width: 0;
+
+    max-width: 100%;
+
+    overflow-wrap: anywhere;
+
+}
+
+#divResumen .builder-item strong {
+
+    text-align: right;
+
+}
+
+#divResumen .builder-summary-price {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    width: 100%;
+
+}
+
+/* -----------------------------------------------------
+   6. TARJETAS DE PEDIDOS
+----------------------------------------------------- */
+
+.pedido-card {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+}
+
+.pedido-card-header {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+}
+
+.pedido-componentes {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    width: 100%;
+
+    min-width: 0;
+
+}
+
+.pedido-componente {
+
+    min-width: 0;
+
+    max-width: 100%;
+
+    gap: 8px;
+
+    flex-wrap: wrap;
+
+}
+
+.pedido-componente span,
+.pedido-componente strong {
+
+    min-width: 0;
+
+    overflow-wrap: anywhere;
+
+}
+
+.pedido-card-footer {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    min-width: 0;
+
+}
+
+/* -----------------------------------------------------
+   7. TABLET
+----------------------------------------------------- */
+
+@media (max-width: 900px) {
+
+    .pedido-workspace {
+
+        grid-template-columns: minmax(0, 1fr);
+
+        grid-template-areas:
+
+            "separador"
+
+            "titulo"
+
+            "articulos"
+
+            "vacio"
+
+            "adicion"
+
+            "resumen";
+
+        gap: 16px;
+
+    }
+
+    .pedido-workspace > .resumen-compra {
+
+        width: 100% !important;
+
+        margin: 0 !important;
+
+    }
+
+}
+
+/* -----------------------------------------------------
+   8. MOVILES
+----------------------------------------------------- */
+
+@media (max-width: 768px) {
+
+    .main {
+
+        padding: 12px;
+
+    }
+
+    .card {
+
+        padding: 14px;
+
+    }
+
+    .pedido-builder {
+
+        padding: 14px;
+
+        margin-top: 16px;
+
+    }
+
+    .tab-panel {
+
+        padding: 14px;
+
+    }
+
+    #panelConstruir .form-grid {
+
+        grid-template-columns: minmax(0, 1fr);
+
+        gap: 14px;
+
+    }
+
+    #btnAgregar {
+
+        width: 100%;
+
+        min-width: 0;
+
+    }
+
+    .resumen-compra {
+
+        width: 100%;
+
+        max-width: 100%;
+
+        padding: 14px;
+
+    }
+
+    .pedido-card {
+
+        padding: 14px;
+
+    }
+
+    .pedido-card-header {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+    }
+
+    .pedido-precio {
+
+        font-size: 22px;
+
+    }
+
+    .pedido-componentes {
+
+        grid-template-columns: minmax(0, 1fr);
+
+    }
+
+    .pedido-card-footer {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+    }
+
+    .pedido-card-footer > * {
+
+        width: 100%;
+
+    }
+
+}
+
+/* -----------------------------------------------------
+   9. TELEFONOS PEQUEÑOS
+----------------------------------------------------- */
+
+@media (max-width: 480px) {
+
+    .main {
+
+        padding: 10px;
+
+    }
+
+    .card {
+
+        padding: 12px;
+
+    }
+
+    .pedido-builder,
+    .tab-panel {
+
+        padding: 12px;
+
+    }
+
+    #divResumen {
+
+        padding: 12px;
+
+    }
+
+    #divResumen .builder-summary-icon {
+
+        width: 44px;
+
+        height: 44px;
+
+        flex: 0 0 44px;
+
+        font-size: 22px;
+
+    }
+
+    #divResumen .builder-summary-title {
+
+        font-size: 17px;
+
+    }
+
+    #divResumen .builder-item {
+
+        grid-template-columns:
+            minmax(80px, .75fr)
+            minmax(0, 1.25fr);
+
+        font-size: 12px;
+
+    }
+
+    .pedido-adicion-rapida {
+
+        padding: 12px;
+
+    }
+
+}
+
+
+/* =====================================================
+   STEPPER DE CANTIDADES - CATALOGO DE MENUS
+===================================================== */
+
+.catalogo-opciones {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+
+    gap: 10px;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+}
+
+.catalogo-opcion--stepper {
+
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 8px 10px;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    min-height: 58px;
+
+    padding: 9px 10px;
+
+    box-sizing: border-box;
+
+    cursor: default;
+
+}
+
+.catalogo-opcion-nombre {
+
+    display: block;
+
+    min-width: 0;
+
+    max-width: 100%;
+
+    color: #334155;
+
+    font-size: 13px;
+
+    line-height: 1.35;
+
+    overflow-wrap: anywhere;
+
+    word-break: normal;
+
+}
+
+/* Contenedor de los tres controles */
+
+.catalogo-stepper {
+
+    display: grid;
+
+    grid-template-columns:
+        36px 32px 36px;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 4px;
+
+    width: 112px;
+
+    min-width: 112px;
+
+    flex: 0 0 112px;
+
+}
+
+/* Botones + y - */
+
+.catalogo-stepper-btn {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 36px;
+
+    height: 36px;
+
+    min-width: 36px;
+
+    min-height: 36px;
+
+    padding: 0;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #1e293b;
+
+    font-size: 21px;
+
+    font-weight: 700;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    user-select: none;
+
+    touch-action: manipulation;
+
+    transition:
+        background .15s ease,
+        border-color .15s ease,
+        transform .15s ease;
+
+}
+
+.catalogo-stepper-minus {
+
+    color: #475569;
+
+}
+
+.catalogo-stepper-plus {
+
+    border-color: #bfdbfe;
+
+    background: #eff6ff;
+
+    color: #2563eb;
+
+}
+
+.catalogo-stepper-btn:hover:not(:disabled) {
+
+    background: #dbeafe;
+
+    border-color: #60a5fa;
+
+}
+
+.catalogo-stepper-btn:active:not(:disabled) {
+
+    transform: scale(.94);
+
+}
+
+.catalogo-stepper-btn:disabled {
+
+    opacity: .35;
+
+    cursor: not-allowed;
+
+}
+
+/* Cantidad central */
+
+.catalogo-stepper-value {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 32px;
+
+    height: 34px;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 7px;
+
+    background: #f8fafc;
+
+    color: #0f172a;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    font-variant-numeric: tabular-nums;
+
+}
+
+/* Precio adicional */
+
+.catalogo-opcion--stepper > small {
+
+    grid-column: 1 / -1;
+
+    color: #15803d;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    white-space: normal;
+
+}
+
+/* Evitar desbordamiento en móviles */
+
+@media (max-width: 600px) {
+
+    .catalogo-opciones {
+
+        grid-template-columns: minmax(0, 1fr);
+
+        gap: 9px;
+
+    }
+
+    .catalogo-opcion--stepper {
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            112px;
+
+        gap: 7px;
+
+        padding: 9px;
+
+    }
+
+    .catalogo-opcion-nombre {
+
+        font-size: 12px;
+
+    }
+
+}
+
+@media (max-width: 350px) {
+
+    .catalogo-opcion--stepper {
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            104px;
+
+        gap: 5px;
+
+        padding: 7px;
+
+    }
+
+    .catalogo-stepper {
+
+        grid-template-columns:
+            32px 28px 32px;
+
+        gap: 4px;
+
+        width: 100px;
+
+        min-width: 100px;
+
+        flex-basis: 100px;
+
+    }
+
+    .catalogo-stepper-btn {
+
+        width: 32px;
+
+        min-width: 32px;
+
+        height: 34px;
+
+        min-height: 34px;
+
+    }
+
+    .catalogo-stepper-value {
+
+        width: 28px;
+
+        height: 32px;
+
+    }
+
+}

@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+from utils.security import puede_modificar_precios
 from flask import Blueprint, request, jsonify, session
 from services.productos_service import (
     get_all_productos,
@@ -24,6 +26,89 @@ def responder_resultado(result):
 # =============================
 def validar_sesion():
     return "user_id" in session
+
+
+
+# =====================================================
+# VALIDAR PERMISOS PARA MODIFICAR PRECIO DE PRODUCTO
+# =====================================================
+
+def validar_precio_producto(
+    data,
+    precio_actual=None
+):
+
+    if "precio_venta" not in data:
+        return None
+
+    try:
+
+        precio_nuevo = Decimal(
+            str(data.get("precio_venta") or 0)
+        )
+
+    except (InvalidOperation, TypeError, ValueError):
+
+        return jsonify({
+
+            "status": "error",
+
+            "message": "El precio de venta no tiene un valor válido."
+
+        }), 400
+
+    if precio_nuevo < 0:
+
+        return jsonify({
+
+            "status": "error",
+
+            "message": "El precio de venta no puede ser negativo."
+
+        }), 400
+
+    # =============================================
+    # CREACION
+    # =============================================
+
+    if precio_actual is None:
+
+        hay_precio = precio_nuevo > 0
+
+    # =============================================
+    # ACTUALIZACION
+    # =============================================
+
+    else:
+
+        anterior = Decimal(
+            str(precio_actual or 0)
+        )
+
+        hay_precio = precio_nuevo != anterior
+
+    # =============================================
+    # AUTORIZACION
+    # =============================================
+
+    if (
+        hay_precio
+        and not puede_modificar_precios()
+    ):
+
+        return jsonify({
+
+            "status": "error",
+
+            "message": (
+                "Solo un administrador puede crear o modificar "
+                "el precio de venta de un producto."
+            )
+
+        }), 403
+
+    return None
+
 
 
 # =============================
@@ -150,63 +235,167 @@ def autocomplete_productos():
         }), 500
 
 
-# =============================
-# CREATE
-# =============================
+
+# =====================================================
+# CREAR PRODUCTO
+# =====================================================
+
 @productos_bp.route("/productos", methods=["POST"])
 def crear_producto():
 
     if not validar_sesion():
-        return jsonify({"status": "unauthorized"}), 401
-    
+
+        return jsonify({
+            "status": "unauthorized"
+        }), 401
+
     try:
-        data = request.json
+
+        data = request.get_json(
+            silent=True
+        ) or {}
 
         if not data:
+
             return jsonify({
+
                 "status": "error",
-                "message": "No se enviaron datos"
+
+                "message": "No se enviaron datos."
+
             }), 400
 
-        # 🔥 trazabilidad
+        # =============================================
+        # VALIDAR PRECIO
+        # =============================================
+
+        error_precio = validar_precio_producto(
+            data
+        )
+
+        if error_precio:
+            return error_precio
+
+        # =============================================
+        # TRAZABILIDAD
+        # =============================================
+
         data["usuario_id"] = session.get("user_id")
 
-        return responder_resultado(create_producto(data))
+        return responder_resultado(
+            create_producto(data)
+        )
 
     except Exception as e:
-        print("❌ ERROR CREAR:", e)
+
+        print(
+            "ERROR CREAR PRODUCTO:",
+            e
+        )
+
         return jsonify({
+
             "status": "error",
-            "message": str(e)
+
+            "message": "No fue posible crear el producto."
+
         }), 500
 
 
-# =============================
-# UPDATE
-# =============================
+
+
+# =====================================================
+# ACTUALIZAR PRODUCTO
+# =====================================================
+
 @productos_bp.route("/productos/<int:id>", methods=["PUT"])
 def actualizar_producto(id):
 
     if not validar_sesion():
-        return jsonify({"status": "unauthorized"}), 401
-    
+
+        return jsonify({
+            "status": "unauthorized"
+        }), 401
+
     try:
-        data = request.json
+
+        data = request.get_json(
+            silent=True
+        ) or {}
 
         if not data:
+
             return jsonify({
+
                 "status": "error",
-                "message": "No se enviaron datos"
+
+                "message": "No se enviaron datos para actualizar."
+
             }), 400
 
-        return responder_resultado(update_producto(id, data))
+        # =============================================
+        # CONSULTAR PRODUCTO ACTUAL
+        # =============================================
+
+        producto_actual = get_producto_por_id(id)
+
+        if not producto_actual:
+
+            return jsonify({
+
+                "status": "error",
+
+                "message": "Producto no encontrado."
+
+            }), 404
+
+        precio_actual = producto_actual.get(
+            "precio_venta"
+        )
+
+        # =============================================
+        # PRESERVAR PRECIO SI NO VIENE EN EL REQUEST
+        # =============================================
+
+        if "precio_venta" not in data:
+
+            data["precio_venta"] = precio_actual or 0
+
+        # =============================================
+        # VALIDAR PERMISO DE MODIFICACION
+        # =============================================
+
+        error_precio = validar_precio_producto(
+            data,
+            precio_actual
+        )
+
+        if error_precio:
+            return error_precio
+
+        # =============================================
+        # ACTUALIZAR
+        # =============================================
+
+        return responder_resultado(
+            update_producto(id, data)
+        )
 
     except Exception as e:
-        print("❌ ERROR UPDATE:", e)
+
+        print(
+            "ERROR ACTUALIZAR PRODUCTO:",
+            e
+        )
+
         return jsonify({
+
             "status": "error",
-            "message": str(e)
+
+            "message": "No fue posible actualizar el producto."
+
         }), 500
+
 
 
 # =============================

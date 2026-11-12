@@ -2,7 +2,19 @@ from flask import Flask, jsonify, send_from_directory
 from pathlib import Path
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
+
 import os
+
+from dotenv import load_dotenv
+
+
+# =====================================================
+# VARIABLES DE ENTORNO
+# =====================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+load_dotenv(BASE_DIR / ".env")
 
 # 🔥 NUEVO: importar tu script
 from init_admin import init_admin
@@ -23,13 +35,13 @@ from routes.clientes import clientes_bp
 from routes.usuarios import usuarios_bp
 from routes.pagos import pagos_bp
 from routes.proveedores import proveedores_bp
+from routes.catalogo import catalogo_bp
+from routes.catalogo_menus import catalogo_menus_bp
 
 # =============================
 # FRONTEND
 # =============================
-BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR / "frontend"
-
 
 def create_app():
     app = Flask(
@@ -38,6 +50,10 @@ def create_app():
     static_url_path=""
     )
     app.json.sort_keys = False
+    # Límite de solicitud para cargas de imágenes.
+    # La imagen original se comprime antes de enviarse a Storage.
+
+    app.config["MAX_CONTENT_LENGTH"] = 21 * 1024 * 1024
     app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
 
     from datetime import timedelta
@@ -102,6 +118,8 @@ def create_app():
     # =============================
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(productos_bp, url_prefix="/api")
+    app.register_blueprint(catalogo_bp, url_prefix="/api")
+    app.register_blueprint(catalogo_menus_bp, url_prefix="/api")
     app.register_blueprint(unidades_bp, url_prefix="/api")
     app.register_blueprint(compras_bp, url_prefix="/api")
     app.register_blueprint(recetas_bp, url_prefix="/api")

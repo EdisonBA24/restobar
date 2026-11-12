@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <title>Catálogo Comercial - Parche el Antojo</title>
+
+    <link rel="stylesheet" href="../css/styles.css?v=4">
+    <link rel="stylesheet" href="../css/catalogo.css?v=2">
+</head>
+
+<body class="catalogo-page">
+
+    <div class="layout">
+
+        <aside class="sidebar">
+
+            <img src="../assets/logo.ico" alt="Parche el Antojo" class="logo" width="80%"
+                style="margin:20px auto;display:block;">
+
+            <ul>
+
+                <li class="menu-item solo-admin" data-catalogo-entry>
+                    <div class="menu-title">
+                        <span>🏠 Dashboard</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('dashboard')">📋 Resumen del día</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>👥 Clientes</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('clientes')">📋 Gestión de Clientes</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>📦 Productos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('productos')">📋 Gestión de Productos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">
+                        <span>🗂️ Catálogo Comercial</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li class="active">🏷️ Administración del catálogo</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>🍳 Recetas</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_receta')">➕ Crear Receta</li>
+                        <li onclick="ir('recetas')">📋 Consultar Recetas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>🛒 Compras</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('compras')">📋 Gestión de Compras</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>🧾 Pedidos</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('crear_pedido_desayuno')">🥞 Desayunos</li>
+                        <li onclick="ir('crear_pedido_almuerzo')">🍛 Almuerzos</li>
+                        <li onclick="ir('crear_pedido_comidas_rapidas')">🍔 Comidas rápidas</li>
+                        <li onclick="ir('crear_pedido_licores')">🥃 Licores / Bebidas</li>
+                        <li onclick="ir('pedidos')">📋 Consultar Pedidos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-title">
+                        <span>💰 Ventas</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('ventas')">📋 Historial de Ventas</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">
+                        <span>📊 Reportes</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('reporte_inventario')">📦 Inventario</li>
+                        <li onclick="ir('reporte_ventas')">💰 Ventas</li>
+                        <li onclick="ir('reporte_costos')">📊 Costos</li>
+                    </ul>
+                </li>
+
+                <li class="menu-item solo-admin">
+                    <div class="menu-title">
+                        <span>👤 Usuarios</span>
+                        <span class="menu-arrow">▾</span>
+                    </div>
+                    <ul class="submenu">
+                        <li onclick="ir('usuarios')">📋 Gestión de Usuarios</li>
+                    </ul>
+                </li>
+
+            </ul>
+
+        </aside>
+
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <main class="main">
+
+            <header class="header header-user app-header">
+
+                <button id="menuToggle" class="menu-toggle" aria-label="Abrir menú">
+                    ☰
+                </button>
+
+                <h1>Catálogo Comercial</h1>
+
+                <div class="user-box">
+
+                    <span id="nombreUsuario">👤 Usuario</span>
+
+                    <button onclick="logout()" class="btn-logout">
+                        Cerrar sesión
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- ================================================= -->
+            <!-- ENCABEZADO -->
+            <!-- ================================================= -->
+
+            <section class="catalogo-page-header">
+
+                <div>
+
+                    <h2>Administración del catálogo</h2>
+
+                    <p>
+                        Administra las líneas comerciales, categorías,
+                        productos, menús, combos y precios de Parche el Antojo.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================================================= -->
+            <!-- LINEAS DE NEGOCIO -->
+            <!-- ================================================= -->
+
+            <section class="card catalogo-lineas-card">
+
+                <div class="catalogo-toolbar">
+
+                    <div class="form-group">
+
+                        <label for="catalogoLinea">
+                            Línea de negocio
+                        </label>
+
+                        <select id="catalogoLinea">
+
+                            <option value="">
+                                Cargando líneas...
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="catalogo-toolbar-info">
+
+                        <span id="catalogoLineaDescripcion">
+                            Selecciona una línea comercial.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================================================= -->
+            <!-- PESTAÑAS -->
+            <!-- ================================================= -->
+
+            <section class="catalogo-tabs">
+
+                <button type="button" class="catalogo-tab active" data-tab="items">
+                    📦 Artículos y menús
+                </button>
+
+                <button type="button" class="catalogo-tab" data-tab="categorias">
+                    🏷️ Categorías comerciales
+                </button>
+
+            </section>
+
+
+            <!-- ================================================= -->
+            <!-- VISTA ARTICULOS -->
+            <!-- ================================================= -->
+
+            <section id="panelItems" class="card catalogo-panel">
+
+                <div class="catalogo-panel-header">
+
+                    <div>
+
+                        <h3>Artículos comerciales</h3>
+
+                        <p>
+                            Productos individuales, menús y combos disponibles.
+                        </p>
+
+                    </div>
+
+                    <button type="button" id="btnNuevoItem" class="btn-primary">
+                        ➕ Nuevo artículo
+                    </button>
+
+                </div>
+
+
+                <div class="catalogo-filtros">
+
+                    <div class="form-group">
+
+                        <label for="buscarItem">
+                            Buscar artículo
+                        </label>
+
+                        <input type="search" id="buscarItem" placeholder="Buscar por nombre o código...">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="filtroTipoItem">
+                            Tipo de artículo
+                        </label>
+
+                        <select id="filtroTipoItem">
+
+                            <option value="">
+                                Todos
+                            </option>
+
+                            <option value="PRODUCTO">
+                                Productos
+                            </option>
+
+                            <option value="MENU">
+                                Menús
+                            </option>
+
+                            <option value="COMBO">
+                                Combos
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <div id="catalogoItemsGrid" class="catalogo-items-grid">
+
+                    <div class="catalogo-loading">
+                        Cargando artículos comerciales...
+                    </div>
+
+                </div>
+
+                <div id="catalogoItemsEmpty" class="catalogo-empty hidden">
+
+                    <span>📦</span>
+
+                    <strong>
+                        No hay artículos registrados
+                    </strong>
+
+                    <p>
+                        Comienza creando un artículo, menú o combo para esta línea.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================================================= -->
+            <!-- VISTA CATEGORIAS -->
+            <!-- ================================================= -->
+
+            <section id="panelCategorias" class="card catalogo-panel hidden">
+
+                <div class="catalogo-panel-header">
+
+                    <div>
+
+                        <h3>Categorías comerciales</h3>
+
+                        <p>
+                            Organiza cómo se visualizarán los artículos en el catálogo.
+                        </p>
+
+                    </div>
+
+                    <button type="button" id="btnNuevaCategoria" class="btn-primary">
+                        ➕ Nueva categoría
+                    </button>
+
+                </div>
+
+
+                <div id="catalogoCategoriasList" class="catalogo-categorias-list">
+
+                    <div class="catalogo-loading">
+                        Cargando categorías...
+                    </div>
+
+                </div>
+
+                <div id="catalogoCategoriasEmpty" class="catalogo-empty hidden">
+
+                    <span>🏷️</span>
+
+                    <strong>
+                        Todavía no hay categorías
+                    </strong>
+
+                    <p>
+                        Crea categorías como Promociones, Combos, Hamburguesas o Bebidas.
+                    </p>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MODAL CATEGORIA -->
+    <!-- ================================================= -->
+
+    <div id="modalCategoriaCatalogo" class="catalogo-modal hidden">
+
+        <div class="catalogo-modal-content">
+
+            <div class="catalogo-modal-header">
+
+                <div>
+                    <h3 id="tituloModalCategoria">
+                        Nueva categoría
+                    </h3>
+
+                    <p>
+                        Organización comercial del catálogo.
+                    </p>
+                </div>
+
+                <button type="button" class="catalogo-modal-close" data-close-modal="modalCategoriaCatalogo">
+                    ✕
+                </button>
+
+            </div>
+
+
+            <form id="formCategoriaCatalogo">
+
+                <input type="hidden" id="categoriaCatalogoId">
+
+                <div class="catalogo-form-grid">
+
+                    <div class="form-group">
+
+                        <label for="categoriaCodigo">
+                            Código *
+                        </label>
+
+                        <input type="text" id="categoriaCodigo" maxlength="50" placeholder="Ej. PROMOCIONES" required>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="categoriaNombre">
+                            Nombre *
+                        </label>
+
+                        <input type="text" id="categoriaNombre" maxlength="120" placeholder="Nombre de la categoría"
+                            required>
+
+                    </div>
+
+                    <div class="form-group catalogo-form-full">
+
+                        <label for="categoriaDescripcion">
+                            Descripción
+                        </label>
+
+                        <textarea id="categoriaDescripcion" rows="3" maxlength="300"></textarea>
+
+                    </div>
+
+                    <!-- Imagen opcional de la categoría -->
+
+                    <div class="form-group catalogo-form-full">
+
+                        <label for="categoriaImagen">
+                            URL de imagen (opcional)
+                        </label>
+
+                        <input type="url" id="categoriaImagen" maxlength="1000" placeholder="https://...">
+
+                        <small>
+                            Imagen representativa de la categoría comercial.
+                        </small>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="categoriaOrden">
+                            Orden
+                        </label>
+
+                        <input type="number" id="categoriaOrden" min="0" value="0">
+
+                    </div>
+
+                    <div class="form-group catalogo-checkbox-field">
+
+                        <label>
+                            <input type="checkbox" id="categoriaActiva" checked>
+                            Categoría activa
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="catalogo-modal-actions">
+
+                    <button type="button" class="btn-secondary" data-close-modal="modalCategoriaCatalogo">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" id="btnGuardarCategoria" class="btn-primary">
+                        Guardar categoría
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MODAL ARTICULO -->
+    <!-- ================================================= -->
+
+    <div id="modalItemCatalogo" class="catalogo-modal hidden">
+
+        <div class="catalogo-modal-content catalogo-modal-wide">
+
+            <div class="catalogo-modal-header">
+
+                <div>
+
+                    <h3 id="tituloModalItem">
+                        Nuevo artículo comercial
+                    </h3>
+
+                    <p>
+                        Configuración básica del artículo.
+                    </p>
+
+                </div>
+
+                <button type="button" class="catalogo-modal-close" data-close-modal="modalItemCatalogo">
+                    ✕
+                </button>
+
+            </div>
+
+
+            <form id="formItemCatalogo">
+
+                <input type="hidden" id="itemCatalogoId">
+
+                <div class="catalogo-form-grid">
+
+                    <div class="form-group">
+
+                        <label for="itemTipo">
+                            Tipo de artículo *
+                        </label>
+
+                        <select id="itemTipo" required>
+
+                            <option value="MENU">
+                                Menú configurable
+                            </option>
+
+                            <option value="COMBO">
+                                Combo
+                            </option>
+
+                            <option value="PRODUCTO">
+                                Producto existente
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="itemCodigo">
+                            Código *
+                        </label>
+
+                        <input type="text" id="itemCodigo" maxlength="80" required>
+
+                    </div>
+
+
+                    <div class="form-group catalogo-producto-selector hidden">
+
+                        <label for="itemProducto">
+                            Producto del inventario *
+                        </label>
+
+                        <select id="itemProducto">
+
+                            <option value="">
+                                Seleccione un producto
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="itemNombre">
+                            Nombre *
+                        </label>
+
+                        <input type="text" id="itemNombre" maxlength="150" required>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="itemCategoria">
+                            Categoría comercial
+                        </label>
+
+                        <select id="itemCategoria">
+
+                            <option value="">
+                                Sin categoría
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group catalogo-form-full">
+
+                        <label for="itemDescripcion">
+                            Descripción
+                        </label>
+
+                        <textarea id="itemDescripcion" rows="3" maxlength="500"></textarea>
+
+                    </div>
+
+
+                    <div class="form-group catalogo-form-full">
+
+                        <label for="itemImagenArchivo">
+                            Cargar fotografía desde el equipo
+                        </label>
+
+                        <input type="file" id="itemImagenArchivo" accept="image/jpeg,image/png,image/webp">
+
+                        <small>
+                            Formatos JPG, PNG y WebP. La fotografía se optimizará
+                            automáticamente antes de enviarse a Supabase.
+                        </small>
+
+                        <small id="itemImagenEstado" aria-live="polite">
+                        </small>
+
+                        <div class="catalogo-image-preview">
+
+                            <img id="itemImagenPreview" alt="Vista previa del artículo" class="hidden">
+
+                            <span id="itemImagenPlaceholder">
+                                📷 Vista previa de la imagen
+                            </span>
+
+                        </div>
+
+                        <label for="itemImagen">
+                            URL de imagen
+                        </label>
+
+                        <input type="url" id="itemImagen" maxlength="1000" placeholder="https://...">
+
+                        <small>
+                            La URL se completa automáticamente al cargar una fotografía.
+                        </small>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="itemOrden">
+                            Orden de visualización
+                        </label>
+
+                        <input type="number" id="itemOrden" min="0" value="0">
+
+                    </div>
+
+
+                    <div class="form-group catalogo-checkbox-field">
+
+                        <label>
+                            <input type="checkbox" id="itemActivo" checked>
+                            Artículo activo
+                        </label>
+
+                        <label>
+                            <input type="checkbox" id="itemDestacado">
+                            Destacado
+                        </label>
+
+                    </div>
+
+
+                    <div id="itemPermitePersonalizarContainer"
+                        class="form-group catalogo-checkbox-field catalogo-form-full">
+
+                        <label>
+                            <input type="checkbox" id="itemPermitePersonalizar" checked>
+                            Permitir personalización del menú
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="catalogo-modal-actions">
+
+                    <button type="button" class="btn-secondary" data-close-modal="modalItemCatalogo">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" id="btnGuardarItem" class="btn-primary">
+                        Guardar artículo
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MODAL PRECIOS -->
+    <!-- ================================================= -->
+
+    <div id="modalPreciosCatalogo" class="catalogo-modal hidden">
+
+        <div class="catalogo-modal-content">
+
+            <div class="catalogo-modal-header">
+
+                <div>
+
+                    <h3>Administrar precios</h3>
+
+                    <p id="nombreItemPrecios">
+                        Artículo comercial
+                    </p>
+
+                </div>
+
+                <button type="button" class="catalogo-modal-close" data-close-modal="modalPreciosCatalogo">
+                    ✕
+                </button>
+
+            </div>
+
+
+            <div class="catalogo-price-notice">
+                <strong>Solo ADMIN puede modificar precios.</strong>
+                <span>
+                    Cuando no exista un precio específico se utilizará
+                    el precio GENERAL.
+                </span>
+            </div>
+
+
+            <form id="formPreciosCatalogo">
+
+                <div class="catalogo-prices-grid">
+
+                    <div class="catalogo-price-row" data-service="GENERAL">
+
+                        <div>
+                            <strong>Precio general</strong>
+                            <small>Precio predeterminado</small>
+                        </div>
+
+                        <input type="number" class="precio-servicio" min="0" step="0.01" placeholder="0">
+
+                        <label>
+                            <input type="checkbox" class="precio-activo" checked>
+                            Activo
+                        </label>
+
+                    </div>
+
+
+                    <div class="catalogo-price-row" data-service="MESA">
+
+                        <div>
+                            <strong>Precio en mesa</strong>
+                            <small>Atención en el establecimiento</small>
+                        </div>
+
+                        <input type="number" class="precio-servicio" min="0" step="0.01" placeholder="Usar general">
+
+                        <label>
+                            <input type="checkbox" class="precio-activo" checked>
+                            Activo
+                        </label>
+
+                    </div>
+
+
+                    <div class="catalogo-price-row" data-service="LLEVAR">
+
+                        <div>
+                            <strong>Precio para llevar</strong>
+                            <small>Pedido para recoger</small>
+                        </div>
+
+                        <input type="number" class="precio-servicio" min="0" step="0.01" placeholder="Usar general">
+
+                        <label>
+                            <input type="checkbox" class="precio-activo" checked>
+                            Activo
+                        </label>
+
+                    </div>
+
+
+                    <div class="catalogo-price-row" data-service="DOMICILIO">
+
+                        <div>
+                            <strong>Precio domicilio</strong>
+                            <small>Entrega al cliente</small>
+                        </div>
+
+                        <input type="number" class="precio-servicio" min="0" step="0.01" placeholder="Usar general">
+
+                        <label>
+                            <input type="checkbox" class="precio-activo" checked>
+                            Activo
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group catalogo-form-full">
+
+                    <label for="motivoCambioPrecio">
+                        Motivo de modificación
+                    </label>
+
+                    <input type="text" id="motivoCambioPrecio" maxlength="300"
+                        placeholder="Ej. Actualización de precios de noviembre">
+
+                </div>
+
+
+                <div class="catalogo-modal-actions">
+
+                    <button type="button" id="btnVerHistorialPrecios" class="btn-secondary">
+                        📜 Ver historial
+                    </button>
+
+                    <button type="button" class="btn-secondary" data-close-modal="modalPreciosCatalogo">
+                        Cerrar
+                    </button>
+
+                    <button type="submit" id="btnGuardarPrecios" class="btn-primary">
+                        Guardar precios
+                    </button>
+
+                </div>
+
+            </form>
+
+
+            <div id="catalogoHistorialPrecios" class="catalogo-history hidden">
+
+                <h4>Historial de modificaciones</h4>
+
+                <div id="catalogoHistorialPreciosLista"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================================= -->
+    <!-- MODAL CONFIGURACION DE MENU -->
+    <!-- ================================================= -->
+
+    <div id="modalConfiguracionMenu" class="catalogo-modal hidden">
+
+        <div class="catalogo-modal-content catalogo-modal-wide">
+
+            <div class="catalogo-modal-header">
+
+                <div>
+
+                    <h3 id="menuConfigTitulo">
+                        Configuración del menú
+                    </h3>
+
+                    <p>
+                        Administra las categorías y opciones que componen este menú.
+                    </p>
+
+                </div>
+
+                <button type="button" class="catalogo-modal-close" data-close-modal="modalConfiguracionMenu">
+                    ✕
+                </button>
+
+            </div>
+
+
+            <div class="menu-config-summary">
+
+                <span>
+                    🍽️ Configuración comercial
+                </span>
+
+                <span id="menuConfigEstado">
+                    Menú activo
+                </span>
+
+            </div>
+
+
+            <div class="catalogo-panel-header menu-config-toolbar">
+
+                <div>
+
+                    <h4>
+                        Categorías del menú
+                    </h4>
+
+                    <p>
+                        Ejemplo: Sopas, Proteínas, Secos, Ensaladas y Bebidas.
+                    </p>
+
+                </div>
+
+                <button type="button" id="btnNuevaCategoriaMenu" class="btn-primary">
+                    ➕ Agregar categoría
+                </button>
+
+            </div>
+
+
+            <div id="menuCategoriasLista" class="menu-categorias-grid">
+
+                <div class="catalogo-loading">
+                    Cargando configuración...
+                </div>
+
+            </div>
+
+
+            <div id="menuCategoriasEmpty" class="catalogo-empty hidden">
+
+                <span>🍽️</span>
+
+                <strong>
+                    Este menú todavía no tiene categorías.
+                </strong>
+
+                <p>
+                    Agrega las categorías para comenzar a construir su composición.
+                </p>
+
+            </div>
+
+
+            <div class="catalogo-modal-actions">
+
+                <button type="button" class="btn-secondary" data-close-modal="modalConfiguracionMenu">
+                    Cerrar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MODAL CATEGORIA INTERNA DE MENU -->
+    <!-- ================================================= -->
+
+    <div id="modalCategoriaMenu" class="catalogo-modal hidden">
+
+        <div class="catalogo-modal-content">
+
+            <div class="catalogo-modal-header">
+
+                <div>
+
+                    <h3 id="tituloCategoriaMenu">
+                        Nueva categoría del menú
+                    </h3>
+
+                    <p>
+                        Define las reglas de selección de esta categoría.
+                    </p>
+
+                </div>
+
+                <button type="button" class="catalogo-modal-close" data-close-modal="modalCategoriaMenu">
+                    ✕
+                </button>
+
+            </div>
+
+
+            <form id="formCategoriaMenu">
+
+                <input type="hidden" id="menuCategoriaId">
+
+
+                <div class="catalogo-form-grid">
+
+                    <div class="form-group">
+
+                        <label for="menuCategoriaCodigo">
+                            Código *
+                        </label>
+
+                        <input type="text" id="menuCategoriaCodigo" maxlength="50" placeholder="Ej. SOPA" required>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="menuCategoriaNombre">
+                            Nombre *
+                        </label>
+
+                        <input type="text" id="menuCategoriaNombre" maxlength="120" placeholder="Ej. Sopas" required>
+
+                    </div>
+
+
+                    <div class="form-group catalogo-form-full">
+
+                        <label for="menuCategoriaDescripcion">
+                            Descripción
+                        </label>
+
+                        <textarea id="menuCategoriaDescripcion" rows="2" maxlength="300"></textarea>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="menuCategoriaMin">
+                            Selecciones mínimas *
+                        </label>
+
+                        <input type="number" id="menuCategoriaMin" min="0" value="1" required>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="menuCategoriaMax">
+                            Selecciones máximas *
+                        </label>
+
+                        <input type="number" id="menuCategoriaMax" min="1" value="1" required>
+
+                    </div>
+
+
+                    <div class="form-group catalogo-checkbox-field">
+
+                        <label>
+
+                            <input type="checkbox" id="menuCategoriaObligatoria" checked>
+
+                            Categoría obligatoria
+
+                        </label>
+
+                    </div>
+
+
+                    <div class="form-group catalogo-checkbox-field">
+
+                        <label>
+
+                            <input type="checkbox" id="menuCategoriaRepetidos">
+
+                            Permitir productos repetidos
+
+                        </label>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="menuCategoriaOrden">
+                            Orden
+                        </label>
+
+                        <input type="number" id="menuCategoriaOrden" min="0" value="0">
+
+                    </div>
+
+
+                    <div class="form-group catalogo-checkbox-field">
+
+                        <label>
+
+                            <input type="checkbox" id="menuCategoriaActiva" checked>
+
+                            Categoría activa
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="catalogo-modal-actions">
+
+                    <button type="button" class="btn-secondary" data-close-modal="modalCategoriaMenu">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" id="btnGuardarCategoriaMenu" class="btn-primary">
+                        Guardar categoría
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MODAL PRODUCTOS DE CATEGORIA -->
+    <!-- ================================================= -->
+
+    <div id="modalProductosCategoriaMenu" class="catalogo-modal hidden">
+
+        <div class="catalogo-modal-content catalogo-modal-wide">
+
+            <div class="catalogo-modal-header">
+
+                <div>
+
+                    <h3 id="tituloProductosCategoriaMenu">
+                        Productos disponibles
+                    </h3>
+
+                    <p>
+                        Selecciona los productos que podrán incluirse en esta categoría.
+                    </p>
+
+                </div>
+
+                <button type="button" class="catalogo-modal-close" data-close-modal="modalProductosCategoriaMenu">
+                    ✕
+                </button>
+
+            </div>
+
+
+            <div class="menu-productos-info">
+
+                <strong>
+                    📦 Productos del inventario
+                </strong>
+
+                <span>
+                    Se muestran recetas activas. Los insumos no se pueden agregar directamente.
+                </span>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="buscarProductosCategoriaMenu">
+                    Buscar producto
+                </label>
+
+                <input type="search" id="buscarProductosCategoriaMenu" placeholder="Buscar por nombre o código...">
+
+            </div>
+
+
+            <div id="productosCategoriaMenuLista" class="menu-productos-lista">
+
+                <div class="catalogo-loading">
+                    Cargando productos...
+                </div>
+
+            </div>
+
+
+            <div id="productosCategoriaMenuEmpty" class="catalogo-empty hidden">
+
+                <span>📦</span>
+
+                <strong>
+                    No hay productos disponibles.
+                </strong>
+
+                <p>
+                    Verifica que existan recetas activas en el inventario.
+                </p>
+
+            </div>
+
+
+            <div class="catalogo-modal-actions">
+
+                <button type="button" class="btn-secondary" data-close-modal="modalProductosCategoriaMenu">
+                    Cancelar
+                </button>
+
+                <button type="button" id="btnGuardarProductosCategoriaMenu" class="btn-primary">
+                    Guardar productos
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================================= -->
+    <!-- NOTIFICACIONES -->
+    <!-- ================================================= -->
+
+    <div id="catalogoToastContainer" class="catalogo-toast-container" aria-live="polite"></div>
+
+
+    <!-- ================================================= -->
+    <!-- SCRIPTS -->
+    <!-- ================================================= -->
+
+    <script type="module" src="../js/auth.js"></script>
+
+    <script type="module" src="../js/catalogo.js"></script>
+
+    <script type="module" src="../js/menu.js" defer></script>
+
+    <script type="module" src="../js/layout.js"></script>
+
+    <script>
+        function ir(p) {
+            window.location.href = `${p}.html`;
+        }
+    </script>
+
+</body>
+
+</html>

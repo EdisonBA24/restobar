@@ -26,7 +26,11 @@ let elementosDOM = {};
 
 let direccionSeleccionada = null;
 
-const MENUS = {
+let catalogoMenus = [];
+
+const preciosCatalogoCache = new Map();
+
+/*const MENUS = {
 
     EJECUTIVO: {
 
@@ -64,6 +68,7 @@ const MENUS = {
     }
 
 };
+*/
 
 const MODOS = {
 
@@ -73,7 +78,7 @@ const MODOS = {
 
 };
 
-const CABECERAS = {
+/*const CABECERAS = {
 
     ADICION: {
 
@@ -116,6 +121,21 @@ const CABECERAS = {
 
         descripcion:
             "Seleccione los componentes incluidos en la Cazuela."
+
+    }
+
+};
+*/
+const CABECERAS = {
+
+    ADICION: {
+
+        titulo: "🍽️ Agregar Adiciones",
+
+        badge: "Adiciones del almuerzo",
+
+        descripcion:
+            "Seleccione cada uno de los componentes que desea agregar como adición."
 
     }
 
@@ -202,6 +222,18 @@ function cacheDOM() {
         panelMenus:
             document.getElementById("panelMenus"),
 
+        camposAdicion:
+            document.getElementById("camposAdicion"),
+
+        categoriasCatalogoMenu:
+            document.getElementById("categoriasCatalogoMenu"),
+
+        catalogoMenusGrid:
+            document.getElementById("catalogoMenusGrid"),
+
+        resumenCatalogoMenu:
+            document.getElementById("resumenCatalogoMenu"),
+
         /*=========================================
         = CONSTRUCTOR
         =========================================*/
@@ -255,6 +287,9 @@ function cacheDOM() {
 
         btnGuardar:
             document.getElementById("btnGuardar"),
+
+        btnAgregarAdicionRapida:
+            document.getElementById("btnAgregarAdicionRapida"),
 
         /*=========================================
         = CONTENEDORES
@@ -396,6 +431,8 @@ async function init() {
 
     await cargarComponentes();
 
+    await cargarCatalogoMenus();
+
     /*
      * =============================
      * APLICAR SERVICIO
@@ -497,6 +534,11 @@ function registrarEventos() {
 
     );
 
+    elementosDOM.btnAgregarAdicionRapida?.addEventListener(
+        "click",
+        agregarAdicionDesdePedido
+    );
+
     elementosDOM.btnCancelar?.addEventListener(
 
         "click",
@@ -544,6 +586,16 @@ function registrarEventos() {
         );
 
     });
+
+    elementosDOM.categoriasCatalogoMenu?.addEventListener(
+        "change",
+        manejarCambioCategoriaCatalogo
+    );
+
+    elementosDOM.categoriasCatalogoMenu?.addEventListener(
+        "click",
+        manejarClickStepperCatalogo
+    );
 
     elementosDOM.btnCancelarClienteRapido
         .addEventListener(
@@ -1099,33 +1151,29 @@ function llenarDirecciones(direcciones) {
  ********************************************************************/
 function cambiarTipoAlmuerzo(configuracion) {
 
-    // Solo creamos el constructor si todavía no existe
     if (!almuerzoActual) {
-
         crearNuevoAlmuerzo();
-
     }
 
-    // Si estamos editando/cambiando el tipo del constructor actual,
-    // conservamos los datos generales del pedido:
-    //
-    // - clienteSeleccionado
-    // - cliente
-    // - tipoServicio
-    // - mesaSeleccionada
-    // - direccionSeleccionada
-    //
-    // Estos datos pertenecen al pedido, no al almuerzo.
+    almuerzoActual.catalogoItemId = null;
+    almuerzoActual.codigoCatalogo = null;
+    almuerzoActual.lineaCodigo = null;
+    almuerzoActual.tipoCatalogo = null;
+    almuerzoActual.configuracionMenu = null;
+    almuerzoActual.categoriasMenu = [];
+    almuerzoActual.componentesSeleccionados = [];
 
     almuerzoActual.modo = configuracion.modo;
-
     almuerzoActual.tipo = configuracion.tipo;
-
     almuerzoActual.nombre = configuracion.nombre;
-
     almuerzoActual.precioBase = configuracion.precioBase;
 
-    // Recalcular el precio según la nueva configuración
+    elementosDOM.camposAdicion.classList.remove("hidden");
+
+    elementosDOM.categoriasCatalogoMenu.classList.add("hidden");
+
+    elementosDOM.resumenCatalogoMenu.classList.add("hidden");
+
     almuerzoActual.calcularPrecio();
 
     actualizarCabeceraConstructor();
@@ -1213,7 +1261,7 @@ function actualizarProteinaSegunTipo() {
 /********************************************************************
  * PRECIO DEL MENÚ DEL DÍA SEGÚN SERVICIO
  ********************************************************************/
-
+/*
 function obtenerPrecioMenu(tipoMenu) {
 
     const menu =
@@ -1224,12 +1272,12 @@ function obtenerPrecioMenu(tipoMenu) {
         return 0;
 
     }
-
-    /*
-     * Solo Menú del Día cambia
-     * de precio según servicio.
-     */
-
+*/
+/*
+ * Solo Menú del Día cambia
+ * de precio según servicio.
+ */
+/*
     if (
         tipoMenu === "EJECUTIVO"
         &&
@@ -1243,11 +1291,12 @@ function obtenerPrecioMenu(tipoMenu) {
     return menu.precio;
 
 }
-
+*/
 
 /********************************************************************
  * SELECCIONAR MENÚ
  ********************************************************************/
+/*
 function seleccionarMenu(tipo) {
 
     const menu =
@@ -1299,25 +1348,163 @@ function seleccionarMenu(tipo) {
         ?.classList.add("active");
 
 }
+*/
 
+function agregarAdicionDesdePedido() {
+
+    // No cambiar de constructor mientras se edita
+    // un artículo que ya está en el pedido.
+    if (editandoId) {
+
+        mostrarToast(
+            "Finalice o cancele la edición actual antes de agregar otra adición.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    // Si hay un menú en construcción y todavía no se ha
+    // agregado, confirmar antes de descartarlo.
+    if (almuerzoActual?.catalogoItemId) {
+
+        const continuar = confirm(
+            "Tiene un menú sin agregar. ¿Desea descartarlo y agregar una adición?"
+        );
+
+        if (!continuar)
+            return;
+
+    }
+
+    const tarjetaAdiciones = [
+        ...elementosDOM.tarjetasTipoPedido
+    ].find(card =>
+        card.dataset.panel === "panelConstruir"
+    );
+
+    if (!tarjetaAdiciones) {
+
+        mostrarToast(
+            "No se encontró el constructor de Adiciones.",
+            "error"
+        );
+
+        return;
+
+    }
+
+    // =============================================
+    // ACTIVAR PESTAÑA DE ADICIONES
+    // =============================================
+
+    elementosDOM.tarjetasTipoPedido.forEach(card => {
+
+        card.classList.remove("active");
+
+    });
+
+    tarjetaAdiciones.classList.add("active");
+
+    document.querySelectorAll(".tab-panel").forEach(panel => {
+
+        panel.classList.remove("active");
+
+        panel.classList.add("hidden");
+
+    });
+
+    elementosDOM.contenidoPedido.classList.remove("hidden");
+
+    elementosDOM.panelConstruir.classList.remove("hidden");
+
+    elementosDOM.panelConstruir.classList.add("active");
+
+    // =============================================
+    // CREAR UN CONSTRUCTOR LIMPIO
+    // =============================================
+
+    crearNuevoAlmuerzo();
+
+    cambiarTipoAlmuerzo({
+
+        modo: MODOS.ADICION,
+
+        tipo: "ADICION",
+
+        nombre: "Adición",
+
+        precioBase: 0
+
+    });
+
+    // =============================================
+    // DESPLAZAR A LOS COMPONENTES
+    // =============================================
+
+    desplazarAComponentesPedido(almuerzoActual);
+
+}
 
 /********************************************************************
  * SELECCIONAR TIPO DE PEDIDO
  ********************************************************************/
 function seleccionarTipoPedido(card) {
 
-    elementosDOM.tarjetasTipoPedido.forEach(
-        tarjeta => tarjeta.classList.remove("active")
-    );
+    if (editandoId) {
+
+        mostrarToast(
+            "Finalice o cancele la edición antes de cambiar el tipo de constructor.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    const panelDestino = card.dataset.panel;
+
+    elementosDOM.tarjetasTipoPedido.forEach(tarjeta => {
+        tarjeta.classList.remove("active");
+    });
 
     card.classList.add("active");
 
-    const menu = card.dataset.menu;
+    document.querySelectorAll(".tab-panel").forEach(panel => {
 
-    /*
-     * ADICIÓN
-     */
-    if (!menu) {
+        panel.classList.remove("active");
+
+        panel.classList.add("hidden");
+
+    });
+
+    const panel = document.getElementById(panelDestino);
+
+    if (!panel)
+        return;
+
+    elementosDOM.contenidoPedido.classList.remove("hidden");
+
+    panel.classList.remove("hidden");
+
+    panel.classList.add("active");
+
+    // La pestaña de Adiciones conserva sus cinco selectores.
+    if (panelDestino === "panelConstruir") {
+
+        if (almuerzoActual?.catalogoItemId) {
+
+            const continuar = confirm(
+                "Tiene un menú del catálogo sin agregar. ¿Desea descartarlo y cambiar a Adiciones?"
+            );
+
+            if (!continuar)
+                return;
+
+        }
+
+        crearNuevoAlmuerzo();
 
         cambiarTipoAlmuerzo({
 
@@ -1330,60 +1517,6 @@ function seleccionarTipoPedido(card) {
             precioBase: 0
 
         });
-
-    }
-
-
-    /*
-     * MENÚ
-     */
-    else if (MENUS[menu]) {
-
-        cambiarTipoAlmuerzo({
-
-            modo: MODOS.MENU,
-
-            tipo:
-                MENUS[menu].tipo,
-
-            nombre:
-                MENUS[menu].nombre,
-
-            precioBase:
-                obtenerPrecioMenu(menu)
-
-        });
-
-    }
-
-
-    elementosDOM.contenidoPedido.classList.remove("hidden");
-
-
-    /*
-     * Mostrar el panel correspondiente
-     */
-    document
-        .querySelectorAll(".tab-panel")
-        .forEach(panel => {
-
-            panel.classList.remove("active");
-
-            panel.classList.add("hidden");
-
-        });
-
-
-    const panel = document.getElementById(
-        card.dataset.panel
-    );
-
-
-    if (panel) {
-
-        panel.classList.remove("hidden");
-
-        panel.classList.add("active");
 
     }
 
@@ -1692,61 +1825,30 @@ function actualizarSopasSegunTipo() {
 
 async function cambiarTipoServicio() {
 
-    tipoServicio =
-        elementosDOM.tipoServicio?.value || "";
+    // Actualizar el estado con el servicio seleccionado.
+    tipoServicio = String(
+        elementosDOM.tipoServicio?.value || "GENERAL"
+    ).trim().toUpperCase();
 
-    /*
-     * =============================
-     * PRECIO MENÚ DEL DÍA
-     * =============================
-     */
+    // Resolver nuevamente los precios según la modalidad.
+    await actualizarPreciosCatalogoMenus();
 
-    if (
-        almuerzoActual
-        &&
-        almuerzoActual.tipo ===
-        MENUS.EJECUTIVO.tipo
-    ) {
+    // =============================================
+    // MESA
+    // =============================================
 
-        almuerzoActual.precioBase =
-            obtenerPrecioMenu(
-                "EJECUTIVO"
-            );
+    if (elementosDOM.grupoMesa) {
 
-        almuerzoActual.calcularPrecio();
+        if (tipoServicio === "MESA") {
 
-    }
+            elementosDOM.grupoMesa.classList.remove("hidden");
 
+        } else {
 
-    /*
-     * =============================
-     * MESA
-     * =============================
-     */
+            elementosDOM.grupoMesa.classList.add("hidden");
 
-    if (
-        elementosDOM.grupoMesa
-    ) {
-
-        if (
-            tipoServicio === "MESA"
-        ) {
-
-            elementosDOM.grupoMesa
-                .classList.remove("hidden");
-
-        }
-        else {
-
-            elementosDOM.grupoMesa
-                .classList.add("hidden");
-
-            if (
-                elementosDOM.mesa
-            ) {
-
+            if (elementosDOM.mesa) {
                 elementosDOM.mesa.value = "";
-
             }
 
             mesaSeleccionada = null;
@@ -1755,51 +1857,37 @@ async function cambiarTipoServicio() {
 
     }
 
+    // =============================================
+    // DOMICILIO
+    // =============================================
 
-    /*
-     * =============================
-     * DOMICILIO
-     * =============================
-     */
+    if (tipoServicio === "DOMICILIO") {
 
-    if (
-        tipoServicio === "DOMICILIO"
-    ) {
+        elementosDOM.grupoDireccion?.classList.remove("hidden");
 
-        elementosDOM.grupoDireccion
-            ?.classList.remove("hidden");
-
-        if (
-            clienteSeleccionado
-        ) {
+        if (clienteSeleccionado) {
 
             await cargarDireccionesCliente(
                 clienteSeleccionado
             );
 
-        }
-        else {
+        } else {
 
             limpiarDirecciones();
 
         }
 
-    }
-    else {
+    } else {
 
-        elementosDOM.grupoDireccion
-            ?.classList.add("hidden");
+        elementosDOM.grupoDireccion?.classList.add("hidden");
 
         limpiarDirecciones();
 
     }
 
-
-    /*
-     * =============================
-     * RESUMEN
-     * =============================
-     */
+    // =============================================
+    // ACTUALIZAR RESUMEN
+    // =============================================
 
     actualizarResumenActual();
 
@@ -1813,6 +1901,12 @@ async function cambiarTipoServicio() {
 function crearNuevoAlmuerzo() {
 
     almuerzoActual = new Almuerzo();
+
+    elementosDOM.camposAdicion.classList.remove("hidden");
+
+    elementosDOM.categoriasCatalogoMenu.classList.add("hidden");
+
+    elementosDOM.resumenCatalogoMenu.classList.add("hidden");
 
     editandoId = null;
 
@@ -1834,30 +1928,23 @@ function actualizarCabeceraConstructor() {
     if (!almuerzoActual)
         return;
 
-    let config = CABECERAS.ADICION;
+    if (almuerzoActual.catalogoItemId) {
 
-    if (almuerzoActual.modo === MODOS.MENU) {
+        elementosDOM.tituloConstructor.textContent =
+            `🍽️ ${almuerzoActual.nombre}`;
 
-        switch (almuerzoActual.tipo) {
+        elementosDOM.badgeConstructor.textContent =
+            "Configuración del catálogo";
 
-            case MENUS.EJECUTIVO.tipo:
+        elementosDOM.descripcionConstructor.textContent =
+            almuerzoActual.configuracionMenu?.instrucciones
+            || "Seleccione los componentes disponibles para este menú.";
 
-                config = CABECERAS.MENU_EJECUTIVO;
-                break;
-
-            case MENUS.PREMIUM.tipo:
-
-                config = CABECERAS.MENU_PREMIUM;
-                break;
-
-            case MENUS.ESPECIAL.tipo:
-
-                config = CABECERAS.MENU_ESPECIAL;
-                break;
-
-        }
+        return;
 
     }
+
+    const config = CABECERAS.ADICION;
 
     elementosDOM.tituloConstructor.textContent =
         config.titulo;
@@ -1939,6 +2026,1556 @@ async function cargarComponentes() {
         mostrarCargando(false);
 
     }
+
+}
+
+/* =====================================================
+   CATALOGO COMERCIAL DE ALMUERZOS
+===================================================== */
+
+async function cargarCatalogoMenus() {
+
+    try {
+
+        const respuestaLineas = await apiFetch(
+            "/catalogo/lineas"
+        );
+
+        if (respuestaLineas?.status !== "success") {
+            throw new Error(
+                respuestaLineas?.message ||
+                "No fue posible consultar las líneas comerciales."
+            );
+        }
+
+        const lineaAlmuerzos = (
+            respuestaLineas.data || []
+        ).find(linea =>
+            String(linea.codigo || "").toUpperCase() === "ALMUERZOS"
+        );
+
+        if (!lineaAlmuerzos) {
+
+            catalogoMenus = [];
+
+            renderizarTarjetasCatalogoMenus();
+
+            return;
+
+        }
+
+        const respuestaItems = await apiFetch(
+            `/catalogo/items?linea_id=${lineaAlmuerzos.id}&page=1&page_size=100`
+        );
+
+        if (respuestaItems?.status !== "success") {
+            throw new Error(
+                respuestaItems?.message ||
+                "No fue posible consultar los artículos de Almuerzos."
+            );
+        }
+
+        const items = respuestaItems.data?.items || [];
+
+        catalogoMenus = items.filter(item =>
+            ["MENU", "COMBO"].includes(
+                String(item.tipo_item || "").toUpperCase()
+            )
+        );
+
+        await actualizarPreciosCatalogoMenus();
+
+    } catch (error) {
+
+        console.error(
+            "Error cargando catálogo de Almuerzos:",
+            error
+        );
+
+        catalogoMenus = [];
+
+        renderizarTarjetasCatalogoMenus();
+
+        mostrarError(
+            error.message ||
+            "No fue posible cargar los menús comerciales."
+        );
+
+    }
+
+}
+
+
+async function resolverPrecioCatalogo(itemId) {
+
+    const servicio = tipoServicio || "GENERAL";
+
+    const cacheKey = `${itemId}:${servicio}`;
+
+    if (preciosCatalogoCache.has(cacheKey)) {
+        return preciosCatalogoCache.get(cacheKey);
+    }
+
+    try {
+
+        const respuesta = await apiFetch(
+            `/catalogo/items/${itemId}/precio?tipo_servicio=${encodeURIComponent(servicio)}`
+        );
+
+        if (respuesta?.status !== "success") {
+            preciosCatalogoCache.set(cacheKey, null);
+            return null;
+        }
+
+        const precio = Number(respuesta.data?.precio);
+
+        const resultado = Number.isFinite(precio)
+            ? precio
+            : null;
+
+        preciosCatalogoCache.set(cacheKey, resultado);
+
+        return resultado;
+
+    } catch (error) {
+
+        console.warn(
+            `No hay precio disponible para el artículo ${itemId}:`,
+            error.message
+        );
+
+        preciosCatalogoCache.set(cacheKey, null);
+
+        return null;
+
+    }
+
+}
+
+
+async function actualizarPreciosCatalogoMenus() {
+
+    if (!catalogoMenus.length) {
+        renderizarTarjetasCatalogoMenus();
+        return;
+    }
+
+    await Promise.all(
+        catalogoMenus.map(async menu => {
+
+            menu.precioActual = await resolverPrecioCatalogo(
+                menu.id
+            );
+
+        })
+    );
+
+    // Actualizar los menús que ya están en el pedido.
+    for (const almuerzo of almuerzosPedido) {
+
+        if (!almuerzo.catalogoItemId)
+            continue;
+
+        const menu = catalogoMenus.find(
+            item =>
+                Number(item.id) ===
+                Number(almuerzo.catalogoItemId)
+        );
+
+        if (
+            menu &&
+            menu.precioActual !== null &&
+            menu.precioActual !== undefined
+        ) {
+
+            almuerzo.precioBase = menu.precioActual;
+
+            almuerzo.calcularPrecio();
+
+        }
+
+    }
+
+    // Actualizar también el artículo que se está editando.
+    if (almuerzoActual?.catalogoItemId) {
+
+        const menuActual = catalogoMenus.find(
+            item =>
+                Number(item.id) ===
+                Number(almuerzoActual.catalogoItemId)
+        );
+
+        if (
+            menuActual &&
+            menuActual.precioActual !== null &&
+            menuActual.precioActual !== undefined
+        ) {
+
+            almuerzoActual.precioBase =
+                menuActual.precioActual;
+
+            almuerzoActual.calcularPrecio();
+
+        }
+
+    }
+
+    renderizarTarjetasCatalogoMenus();
+
+    actualizarResumenActual();
+
+    renderPedido();
+
+}
+
+
+function renderizarTarjetasCatalogoMenus() {
+
+    const contenedor = elementosDOM.catalogoMenusGrid;
+
+    if (!contenedor)
+        return;
+
+    contenedor.innerHTML = "";
+
+    if (!catalogoMenus.length) {
+
+        const vacio = document.createElement("div");
+
+        vacio.className = "almuerzo-catalogo-vacio";
+
+        vacio.textContent =
+            "No hay menús o combos activos configurados para Almuerzos.";
+
+        contenedor.appendChild(vacio);
+
+        return;
+
+    }
+
+    catalogoMenus.forEach(menu => {
+
+        // =============================================
+        // TARJETA
+        // =============================================
+
+        const tarjeta = document.createElement("article");
+
+        tarjeta.className = "almuerzo-catalogo-card";
+
+        // =============================================
+        // IMAGEN
+        // =============================================
+
+        const media = document.createElement("div");
+
+        media.className = "almuerzo-catalogo-image";
+
+        const imagenUrl = String(
+            menu.imagen_url || ""
+        ).trim();
+
+        const esImagenSegura = /^https?:\/\//i.test(
+            imagenUrl
+        );
+
+        const crearPlaceholder = () => {
+
+            const placeholder = document.createElement("div");
+
+            placeholder.className =
+                "almuerzo-catalogo-placeholder";
+
+            placeholder.textContent =
+                String(menu.tipo_item).toUpperCase() === "COMBO"
+                    ? "🍱"
+                    : "🍽️";
+
+            return placeholder;
+
+        };
+
+        if (esImagenSegura) {
+
+            const imagen = document.createElement("img");
+
+            imagen.src = imagenUrl;
+
+            imagen.alt = menu.nombre || "Menú";
+
+            imagen.loading = "lazy";
+
+            imagen.addEventListener(
+                "error",
+                () => {
+
+                    imagen.remove();
+
+                    if (!media.querySelector(
+                        ".almuerzo-catalogo-placeholder"
+                    )) {
+
+                        media.appendChild(
+                            crearPlaceholder()
+                        );
+
+                    }
+
+                },
+                { once: true }
+            );
+
+            media.appendChild(imagen);
+
+        } else {
+
+            media.appendChild(
+                crearPlaceholder()
+            );
+
+        }
+
+        // =============================================
+        // ETIQUETA DEL TIPO DE ARTICULO
+        // =============================================
+
+        const tipo = document.createElement("span");
+
+        tipo.className = "almuerzo-catalogo-badge";
+
+        tipo.textContent = menu.tipo_item || "MENU";
+
+        media.appendChild(tipo);
+
+        // =============================================
+        // DESTACADO
+        // =============================================
+
+        if (menu.destacado) {
+
+            const destacado = document.createElement("span");
+
+            destacado.className =
+                "almuerzo-catalogo-featured";
+
+            destacado.textContent = "Destacado";
+
+            media.appendChild(destacado);
+
+        }
+
+        // =============================================
+        // CONTENIDO
+        // =============================================
+
+        const contenido = document.createElement("div");
+
+        contenido.className =
+            "almuerzo-catalogo-content";
+
+        const nombre = document.createElement("h3");
+
+        nombre.textContent =
+            menu.nombre || "Artículo comercial";
+
+        const codigo = document.createElement("small");
+
+        codigo.textContent = menu.codigo || "";
+
+        const descripcion = document.createElement("p");
+
+        descripcion.className =
+            "almuerzo-catalogo-description";
+
+        descripcion.textContent =
+            menu.descripcion || "Menú configurado por administración.";
+
+        // =============================================
+        // PRECIO Y CATEGORIA
+        // =============================================
+
+        const meta = document.createElement("div");
+
+        meta.className = "almuerzo-catalogo-meta";
+
+        const categoria = document.createElement("span");
+
+        categoria.textContent =
+            menu.categoria_nombre || "Almuerzos";
+
+        const precio = document.createElement("strong");
+
+        const precioDisponible =
+            menu.precioActual !== null &&
+            menu.precioActual !== undefined;
+
+        precio.textContent = precioDisponible
+            ? formatearMoneda(menu.precioActual)
+            : "Sin precio";
+
+        meta.appendChild(categoria);
+
+        meta.appendChild(precio);
+
+        // =============================================
+        // BOTON
+        // =============================================
+
+        const boton = document.createElement("button");
+
+        boton.type = "button";
+
+        boton.className =
+            "almuerzo-catalogo-button";
+
+        boton.textContent = precioDisponible
+            ? "Seleccionar menú"
+            : "Precio no configurado";
+
+        boton.disabled = !precioDisponible;
+
+        boton.addEventListener("click", () => {
+
+            seleccionarMenuCatalogo(menu.id);
+
+        });
+
+        // =============================================
+        // ARMAR TARJETA
+        // =============================================
+
+        contenido.appendChild(nombre);
+
+        contenido.appendChild(codigo);
+
+        contenido.appendChild(descripcion);
+
+        contenido.appendChild(meta);
+
+        contenido.appendChild(boton);
+
+        tarjeta.appendChild(media);
+
+        tarjeta.appendChild(contenido);
+
+        contenedor.appendChild(tarjeta);
+
+    });
+
+}
+
+
+function crearComponenteCatalogo(
+    categoria,
+    producto
+) {
+
+    const precioAdicional = Number(
+        producto.precio_adicional || 0
+    );
+
+    return {
+
+        menu_categoria_id: Number(categoria.id),
+
+        categoria_codigo: categoria.codigo || null,
+
+        categoria_nombre: categoria.nombre,
+
+        producto_id: Number(producto.producto_id),
+
+        producto_nombre: producto.producto_nombre,
+
+        cantidad: 1,
+
+        precio_adicional_unitario: precioAdicional,
+
+        subtotal_adicional: precioAdicional,
+
+        predeterminado: Boolean(producto.predeterminado),
+
+        orden_categoria: Number(categoria.orden || 0),
+
+        orden_producto: Number(producto.orden || 0)
+
+    };
+
+}
+
+
+function obtenerComponentesPredeterminados(categorias) {
+
+    const seleccionados = [];
+
+    (categorias || []).forEach(categoria => {
+
+        (categoria.productos || [])
+            .filter(producto => Boolean(producto.predeterminado))
+            .forEach(producto => {
+
+                seleccionados.push(
+                    crearComponenteCatalogo(
+                        categoria,
+                        producto
+                    )
+                );
+
+            });
+
+    });
+
+    return seleccionados;
+
+}
+
+
+async function seleccionarMenuCatalogo(itemId) {
+
+    const menu = catalogoMenus.find(
+        item => Number(item.id) === Number(itemId)
+    );
+
+    if (!menu)
+        return;
+
+    try {
+
+        mostrarCargando(true);
+
+        // Consultar el precio vigente en el servidor
+        // en lugar de reutilizar el valor almacenado en caché.
+
+        preciosCatalogoCache.delete(
+            `${itemId}:${tipoServicio || "GENERAL"}`
+        );
+
+        const [respuestaConfiguracion, precio] = await Promise.all([
+
+            apiFetch(
+                `/catalogo/items/${itemId}/configuracion-menu`
+            ),
+
+            resolverPrecioCatalogo(itemId)
+
+        ]);
+
+        if (respuestaConfiguracion?.status !== "success") {
+
+            throw new Error(
+                respuestaConfiguracion?.message ||
+                "No fue posible consultar la configuración del menú."
+            );
+
+        }
+
+        if (precio === null) {
+
+            throw new Error(
+                "Este menú no tiene un precio configurado para el tipo de servicio seleccionado."
+            );
+
+        }
+
+        const configuracion = respuestaConfiguracion.data;
+
+        if (!configuracion?.categorias?.length) {
+
+            throw new Error(
+                "Este menú todavía no tiene categorías configuradas."
+            );
+
+        }
+
+        const nuevo = new Almuerzo();
+
+        nuevo.modo = MODOS.MENU;
+
+        nuevo.tipo = String(menu.tipo_item).toUpperCase();
+
+        nuevo.nombre = menu.nombre;
+
+        nuevo.precioBase = precio;
+
+        nuevo.catalogoItemId = Number(menu.id);
+
+        nuevo.codigoCatalogo = menu.codigo || null;
+
+        nuevo.lineaCodigo = menu.linea_codigo || "ALMUERZOS";
+
+        nuevo.tipoCatalogo = nuevo.tipo;
+
+        nuevo.configuracionMenu = (
+            configuracion.configuracion || {}
+        );
+
+        nuevo.categoriasMenu = configuracion.categorias || [];
+
+        nuevo.componentesSeleccionados =
+            obtenerComponentesPredeterminados(
+                nuevo.categoriasMenu
+            );
+
+        nuevo.observaciones = "";
+
+        nuevo.calcularPrecio();
+
+        almuerzoActual = nuevo;
+
+        editandoId = null;
+
+        elementosDOM.txtObservaciones.value = "";
+
+        elementosDOM.camposAdicion.classList.add("hidden");
+
+        elementosDOM.categoriasCatalogoMenu.classList.remove("hidden");
+
+        renderizarCategoriasCatalogoMenu(almuerzoActual);
+
+        elementosDOM.contenidoPedido.classList.remove("hidden");
+
+        document.querySelectorAll(".tab-panel").forEach(panel => {
+
+            panel.classList.remove("active");
+
+            panel.classList.add("hidden");
+
+        });
+
+        elementosDOM.panelConstruir.classList.remove("hidden");
+
+        elementosDOM.panelConstruir.classList.add("active");
+
+        actualizarCabeceraConstructor();
+
+        actualizarEstadoEdicion();
+
+        actualizarResumenActual();
+
+        // =============================================
+        // DESPLAZAR HACIA LOS COMPONENTES DEL MENU
+        // =============================================
+
+        requestAnimationFrame(() => {
+
+            const contenedor =
+                elementosDOM.categoriasCatalogoMenu;
+
+            if (!contenedor)
+                return;
+
+            const primeraCategoria = contenedor.querySelector(
+                ".catalogo-categoria"
+            );
+
+            const destino = primeraCategoria || contenedor;
+
+            const posicion =
+                destino.getBoundingClientRect().top +
+                window.scrollY -
+                100;
+
+            window.scrollTo({
+
+                top: Math.max(0, posicion),
+
+                behavior: "smooth"
+
+            });
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Error seleccionando menú del catálogo:",
+            error
+        );
+
+        mostrarError(error.message);
+
+    } finally {
+
+        mostrarCargando(false);
+
+    }
+
+}
+
+
+function renderizarCategoriasCatalogoMenu(almuerzo) {
+
+    const contenedor = elementosDOM.categoriasCatalogoMenu;
+
+    if (!contenedor) return;
+
+    contenedor.innerHTML = "";
+
+    const categorias = almuerzo?.categoriasMenu || [];
+
+    const permitePersonalizar =
+        almuerzo?.configuracionMenu?.permite_personalizar !== false;
+
+    if (!categorias.length) {
+
+        contenedor.textContent =
+            "Este menú no tiene categorías configuradas.";
+
+        return;
+
+    }
+
+    categorias.forEach(categoria => {
+
+        const seccion = document.createElement("section");
+
+        seccion.className = "catalogo-categoria";
+
+        const titulo = document.createElement("h3");
+
+        titulo.textContent = categoria.nombre;
+
+        const min = Number(
+            categoria.min_selecciones || 0
+        );
+
+        const max = Number(
+            categoria.max_selecciones || 0
+        );
+
+        const esObligatoria = Boolean(
+            categoria.obligatorio
+        );
+
+        const minimoReal = esObligatoria
+            ? Math.max(1, min)
+            : 0;
+
+        const regla = document.createElement("p");
+
+        regla.className = "catalogo-categoria-regla";
+
+        if (!esObligatoria) {
+
+            regla.textContent = max > 0
+                ? `Opcional. Puede omitirla o seleccionar hasta ${max} opción(es).`
+                : "Opcional. Puede omitir esta categoría.";
+
+        } else {
+
+            regla.textContent = max > 0
+                ? `Obligatoria. Seleccione entre ${minimoReal} y ${max} opción(es).`
+                : `Obligatoria. Seleccione mínimo ${minimoReal} opción(es).`;
+
+        }
+
+        seccion.appendChild(titulo);
+
+        if (categoria.descripcion) {
+
+            const descripcion = document.createElement("p");
+
+            descripcion.className = "catalogo-categoria-descripcion";
+
+            descripcion.textContent = categoria.descripcion;
+
+            seccion.appendChild(descripcion);
+
+        }
+
+        seccion.appendChild(regla);
+
+        const productos = categoria.productos || [];
+
+        const seleccionados = (
+            almuerzo.componentesSeleccionados || []
+        ).filter(componente =>
+            Number(componente.menu_categoria_id) ===
+            Number(categoria.id)
+        );
+
+        if (!productos.length) {
+
+            const mensaje = document.createElement("p");
+
+            mensaje.textContent =
+                "No hay productos activos asociados a esta categoría.";
+
+            seccion.appendChild(mensaje);
+
+            contenedor.appendChild(seccion);
+
+            return;
+
+        }
+
+        // =============================================
+        // CATEGORÍA CON UNA SOLA SELECCIÓN
+        // =============================================
+
+        if (max === 1) {
+
+            const select = document.createElement("select");
+
+            select.dataset.categoriaId = categoria.id;
+
+            select.disabled = !permitePersonalizar;
+
+            const opcionInicial = document.createElement("option");
+
+            opcionInicial.value = "";
+
+            opcionInicial.textContent = minimoReal > 0
+                ? "Seleccione una opción"
+                : "Sin selección";
+
+            select.appendChild(opcionInicial);
+
+            productos.forEach(producto => {
+
+                const opcion = document.createElement("option");
+
+                opcion.value = producto.producto_id;
+
+                const adicional = Number(
+                    producto.precio_adicional || 0
+                );
+
+                opcion.textContent = adicional > 0
+                    ? `${producto.producto_nombre} (+${formatearMoneda(adicional)})`
+                    : producto.producto_nombre;
+
+                select.appendChild(opcion);
+
+            });
+
+            const predeterminado = seleccionados[0];
+
+            select.value = predeterminado
+                ? String(predeterminado.producto_id)
+                : "";
+
+            seccion.appendChild(select);
+
+        }
+
+        // =============================================
+        // PERMITE REPETIR PRODUCTOS: CONTROL + / -
+        // =============================================
+
+        else if (categoria.permitir_repetidos) {
+
+            const lista = document.createElement("div");
+
+            lista.className = "catalogo-opciones";
+
+            productos.forEach(producto => {
+
+                const fila = document.createElement("div");
+
+                fila.className =
+                    "catalogo-opcion catalogo-opcion--stepper";
+
+                // -------------------------------------
+                // NOMBRE DEL PRODUCTO
+                // -------------------------------------
+
+                const nombre = document.createElement("span");
+
+                nombre.className = "catalogo-opcion-nombre";
+
+                nombre.textContent = producto.producto_nombre;
+
+                // -------------------------------------
+                // CANTIDAD PREVIAMENTE SELECCIONADA
+                // -------------------------------------
+
+                const cantidadSeleccionada = seleccionados.reduce(
+                    (total, componente) => {
+
+                        if (
+                            Number(componente.producto_id) ===
+                            Number(producto.producto_id)
+                        ) {
+
+                            return total + Number(
+                                componente.cantidad || 1
+                            );
+
+                        }
+
+                        return total;
+
+                    },
+                    0
+                );
+
+                // -------------------------------------
+                // CONTROL DE CANTIDAD
+                // -------------------------------------
+
+                const stepper = document.createElement("div");
+
+                stepper.className = "catalogo-stepper";
+
+                stepper.setAttribute("role", "group");
+
+                stepper.setAttribute(
+                    "aria-label",
+                    `Cantidad de ${producto.producto_nombre}`
+                );
+
+                // BOTÓN DISMINUIR
+
+                const btnMenos = document.createElement("button");
+
+                btnMenos.type = "button";
+
+                btnMenos.className =
+                    "catalogo-stepper-btn catalogo-stepper-minus";
+
+                btnMenos.dataset.stepperAction = "decrement";
+
+                btnMenos.dataset.stepperCategoriaId = categoria.id;
+
+                btnMenos.dataset.stepperProductoId =
+                    producto.producto_id;
+
+                btnMenos.textContent = "−";
+
+                btnMenos.setAttribute(
+                    "aria-label",
+                    `Disminuir ${producto.producto_nombre}`
+                );
+
+                // CONTADOR
+
+                const contador = document.createElement("span");
+
+                contador.className = "catalogo-stepper-value";
+
+                contador.dataset.categoriaId = categoria.id;
+
+                contador.dataset.productoId = producto.producto_id;
+
+                contador.dataset.cantidad = cantidadSeleccionada;
+
+                contador.textContent = cantidadSeleccionada;
+
+                contador.setAttribute("aria-live", "polite");
+
+                // BOTÓN AUMENTAR
+
+                const btnMas = document.createElement("button");
+
+                btnMas.type = "button";
+
+                btnMas.className =
+                    "catalogo-stepper-btn catalogo-stepper-plus";
+
+                btnMas.dataset.stepperAction = "increment";
+
+                btnMas.dataset.stepperCategoriaId = categoria.id;
+
+                btnMas.dataset.stepperProductoId =
+                    producto.producto_id;
+
+                btnMas.textContent = "+";
+
+                btnMas.setAttribute(
+                    "aria-label",
+                    `Aumentar ${producto.producto_nombre}`
+                );
+
+                // -------------------------------------
+                // ESTADO INICIAL
+                // -------------------------------------
+
+                btnMenos.disabled =
+                    !permitePersonalizar ||
+                    cantidadSeleccionada <= 0;
+
+                btnMas.disabled = !permitePersonalizar;
+
+                stepper.appendChild(btnMenos);
+
+                stepper.appendChild(contador);
+
+                stepper.appendChild(btnMas);
+
+                // -------------------------------------
+                // PRECIO ADICIONAL
+                // -------------------------------------
+
+                const adicional = Number(
+                    producto.precio_adicional || 0
+                );
+
+                fila.appendChild(nombre);
+
+                fila.appendChild(stepper);
+
+                if (adicional > 0) {
+
+                    const precioExtra = document.createElement("small");
+
+                    precioExtra.textContent =
+                        `+ ${formatearMoneda(adicional)} por unidad`;
+
+                    fila.appendChild(precioExtra);
+
+                }
+
+                lista.appendChild(fila);
+
+            });
+
+            seccion.appendChild(lista);
+
+        }
+
+        // =============================================
+        // SELECCIÓN NORMAL SIN REPETICIONES
+        // =============================================
+
+        else {
+
+            const lista = document.createElement("div");
+
+            lista.className = "catalogo-opciones";
+
+            productos.forEach(producto => {
+
+                const fila = document.createElement("label");
+
+                fila.className = "catalogo-opcion";
+
+                const input = document.createElement("input");
+
+                input.type = "checkbox";
+
+                input.value = producto.producto_id;
+
+                input.dataset.categoriaId = categoria.id;
+
+                input.disabled = !permitePersonalizar;
+
+                input.checked = seleccionados.some(componente =>
+                    Number(componente.producto_id) ===
+                    Number(producto.producto_id)
+                );
+
+                const nombre = document.createElement("span");
+
+                nombre.textContent = producto.producto_nombre;
+
+                fila.appendChild(input);
+
+                fila.appendChild(nombre);
+
+                const adicional = Number(
+                    producto.precio_adicional || 0
+                );
+
+                if (adicional > 0) {
+
+                    const precioExtra = document.createElement("small");
+
+                    precioExtra.textContent =
+                        `+ ${formatearMoneda(adicional)}`;
+
+                    fila.appendChild(precioExtra);
+
+                }
+
+                lista.appendChild(fila);
+
+            });
+
+            seccion.appendChild(lista);
+
+        }
+
+        if (!permitePersonalizar) {
+
+            const aviso = document.createElement("small");
+
+            aviso.className = "catalogo-categoria-regla";
+
+            aviso.textContent =
+                "Esta categoría utiliza los componentes predeterminados.";
+
+            seccion.appendChild(aviso);
+
+        }
+
+        contenedor.appendChild(seccion);
+
+    });
+
+}
+
+
+// =====================================================
+// ACTUALIZAR ESTADO DE LOS CONTROLES + / -
+// =====================================================
+
+function actualizarEstadoStepperCategoria(categoria) {
+
+    const categoriaId = Number(categoria.id);
+
+    const contadores =
+        elementosDOM.categoriasCatalogoMenu.querySelectorAll(
+            `.catalogo-stepper-value[data-categoria-id="${categoriaId}"]`
+        );
+
+    const maximo = Number(
+        categoria.max_selecciones || 0
+    );
+
+    const permitePersonalizar =
+        almuerzoActual?.configuracionMenu?.permite_personalizar !== false;
+
+    // Total seleccionado en toda la categoría.
+    const totalSeleccionado = Array.from(contadores).reduce(
+        (total, contador) => {
+
+            return total + Math.max(
+                0,
+                Number(contador.dataset.cantidad || 0)
+            );
+
+        },
+        0
+    );
+
+    contadores.forEach(contador => {
+
+        const cantidad = Number(
+            contador.dataset.cantidad || 0
+        );
+
+        const stepper = contador.closest(
+            ".catalogo-stepper"
+        );
+
+        if (!stepper)
+            return;
+
+        const btnMenos = stepper.querySelector(
+            ".catalogo-stepper-minus"
+        );
+
+        const btnMas = stepper.querySelector(
+            ".catalogo-stepper-plus"
+        );
+
+        if (btnMenos) {
+
+            btnMenos.disabled =
+                !permitePersonalizar ||
+                cantidad <= 0;
+
+        }
+
+        if (btnMas) {
+
+            btnMas.disabled =
+                !permitePersonalizar ||
+                (
+                    maximo > 0 &&
+                    totalSeleccionado >= maximo
+                );
+
+        }
+
+    });
+
+}
+
+
+// =====================================================
+// MANEJAR BOTONES + / -
+// =====================================================
+
+function manejarClickStepperCatalogo(event) {
+
+    const boton = event.target.closest(
+        ".catalogo-stepper-btn"
+    );
+
+    if (!boton)
+        return;
+
+    if (
+        !elementosDOM.categoriasCatalogoMenu.contains(
+            boton
+        )
+    ) {
+        return;
+    }
+
+    if (boton.disabled)
+        return;
+
+    const categoriaId = Number(
+        boton.dataset.stepperCategoriaId
+    );
+
+    const productoId = Number(
+        boton.dataset.stepperProductoId
+    );
+
+    const categoria = almuerzoActual?.categoriasMenu?.find(
+        item => Number(item.id) === categoriaId
+    );
+
+    if (!categoria)
+        return;
+
+    const contador =
+        elementosDOM.categoriasCatalogoMenu.querySelector(
+            `.catalogo-stepper-value[data-categoria-id="${categoriaId}"][data-producto-id="${productoId}"]`
+        );
+
+    if (!contador)
+        return;
+
+    let cantidadActual = Math.max(
+        0,
+        Number(contador.dataset.cantidad || 0)
+    );
+
+    const maximo = Number(
+        categoria.max_selecciones || 0
+    );
+
+    // =============================================
+    // AUMENTAR
+    // =============================================
+
+    if (
+        boton.dataset.stepperAction === "increment"
+    ) {
+
+        const contadores =
+            elementosDOM.categoriasCatalogoMenu.querySelectorAll(
+                `.catalogo-stepper-value[data-categoria-id="${categoriaId}"]`
+            );
+
+        const totalSeleccionado = Array.from(
+            contadores
+        ).reduce(
+            (total, item) => {
+
+                return total + Number(
+                    item.dataset.cantidad || 0
+                );
+
+            },
+            0
+        );
+
+        if (
+            maximo > 0 &&
+            totalSeleccionado >= maximo
+        ) {
+
+            mostrarToast(
+                `La categoría ${categoria.nombre} permite máximo ${maximo} selección(es).`,
+                "warning"
+            );
+
+            return;
+
+        }
+
+        cantidadActual++;
+
+    }
+
+    // =============================================
+    // DISMINUIR
+    // =============================================
+
+    else if (
+        boton.dataset.stepperAction === "decrement"
+    ) {
+
+        cantidadActual = Math.max(
+            0,
+            cantidadActual - 1
+        );
+
+    } else {
+
+        return;
+
+    }
+
+    // =============================================
+    // ACTUALIZAR CONTADOR
+    // =============================================
+
+    contador.dataset.cantidad = cantidadActual;
+
+    contador.textContent = cantidadActual;
+
+    // Actualizar disponibilidad de todos los
+    // botones pertenecientes a esta categoría.
+    actualizarEstadoStepperCategoria(categoria);
+
+    // Recalcular precio y componentes seleccionados.
+    actualizarSeleccionCatalogo();
+
+}
+
+
+function manejarCambioCategoriaCatalogo(event) {
+
+    const control = event.target;
+
+    if (!control?.dataset?.categoriaId)
+        return;
+
+    const categoriaId = control.dataset.categoriaId;
+
+    const categoria = almuerzoActual?.categoriasMenu?.find(
+        item =>
+            Number(item.id) === Number(categoriaId)
+    );
+
+    if (!categoria)
+        return;
+
+    const max = Number(
+        categoria.max_selecciones || 0
+    );
+
+    // =============================================
+    // CONTROL DE CANTIDADES REPETIDAS
+    // =============================================
+
+    if (control.type === "number") {
+
+        let cantidad = Math.max(
+            0,
+            parseInt(control.value || "0", 10) || 0
+        );
+
+        const controles = elementosDOM.categoriasCatalogoMenu
+            .querySelectorAll(
+                `input[type="number"][data-categoria-id="${categoriaId}"]`
+            );
+
+        let otrasCantidades = 0;
+
+        controles.forEach(input => {
+
+            if (input !== control) {
+
+                otrasCantidades += Math.max(
+                    0,
+                    parseInt(input.value || "0", 10) || 0
+                );
+
+            }
+
+        });
+
+        if (max > 0) {
+
+            const disponible = Math.max(
+                0,
+                max - otrasCantidades
+            );
+
+            if (cantidad > disponible) {
+
+                cantidad = disponible;
+
+                mostrarToast(
+                    `La categoría ${categoria.nombre} permite máximo ${max} selección(es).`,
+                    "warning"
+                );
+
+            }
+
+        }
+
+        control.value = cantidad;
+
+    }
+
+    // =============================================
+    // CONTROL DE CHECKBOX
+    // =============================================
+
+    if (
+        control.type === "checkbox" &&
+        control.checked &&
+        max > 0
+    ) {
+
+        const seleccionados = elementosDOM.categoriasCatalogoMenu
+            .querySelectorAll(
+                `input[type="checkbox"][data-categoria-id="${categoriaId}"]:checked`
+            ).length;
+
+        if (seleccionados > max) {
+
+            control.checked = false;
+
+            mostrarToast(
+                `La categoría ${categoria.nombre} permite máximo ${max} selección(es).`,
+                "warning"
+            );
+
+            return;
+
+        }
+
+    }
+
+    actualizarSeleccionCatalogo();
+
+}
+
+
+function actualizarSeleccionCatalogo() {
+
+    if (!almuerzoActual?.catalogoItemId)
+        return;
+
+    const seleccionados = [];
+
+    (almuerzoActual.categoriasMenu || []).forEach(categoria => {
+
+        const controles =
+            elementosDOM.categoriasCatalogoMenu.querySelectorAll(
+                `[data-categoria-id="${categoria.id}"]`
+            );
+
+        controles.forEach(control => {
+
+            // =====================================
+            // SELECT: MAXIMO 1
+            // =====================================
+
+            if (control.tagName === "SELECT") {
+
+                if (!control.value)
+                    return;
+
+                const producto = categoria.productos.find(
+                    item =>
+                        Number(item.producto_id) ===
+                        Number(control.value)
+                );
+
+                if (producto) {
+
+                    seleccionados.push(
+                        crearComponenteCatalogo(
+                            categoria,
+                            producto
+                        )
+                    );
+
+                }
+
+                return;
+
+            }
+
+            // =====================================
+            // STEPPER: PRODUCTOS REPETIBLES
+            // =====================================
+
+            if (
+                control.classList.contains(
+                    "catalogo-stepper-value"
+                )
+            ) {
+
+                const cantidad = Math.max(
+                    0,
+                    parseInt(
+                        control.dataset.cantidad || "0",
+                        10
+                    ) || 0
+                );
+
+                if (cantidad <= 0)
+                    return;
+
+                const producto = categoria.productos.find(
+                    item =>
+                        Number(item.producto_id) ===
+                        Number(control.dataset.productoId)
+                );
+
+                if (!producto)
+                    return;
+
+                const componente = crearComponenteCatalogo(
+                    categoria,
+                    producto
+                );
+
+                // Una sola fila con la cantidad acumulada.
+                componente.cantidad = cantidad;
+
+                componente.subtotal_adicional = Number(
+                    (
+                        Number(componente.precio_adicional_unitario || 0) *
+                        cantidad
+                    ).toFixed(2)
+                );
+
+                seleccionados.push(componente);
+
+                return;
+
+            }
+
+            // =====================================
+            // CHECKBOX: SIN REPETICIONES
+            // =====================================
+
+            if (
+                control.type === "checkbox" &&
+                control.checked
+            ) {
+
+                const producto = categoria.productos.find(
+                    item =>
+                        Number(item.producto_id) ===
+                        Number(control.value)
+                );
+
+                if (producto) {
+
+                    seleccionados.push(
+                        crearComponenteCatalogo(
+                            categoria,
+                            producto
+                        )
+                    );
+
+                }
+
+            }
+
+        });
+
+    });
+
+    almuerzoActual.componentesSeleccionados =
+        seleccionados;
+
+    almuerzoActual.calcularPrecio();
+
+    actualizarResumenActual();
 
 }
 
@@ -2123,6 +3760,69 @@ function agregarAlPedido() {
 
     renderPedido();
 
+    if (almuerzo.catalogoItemId) {
+
+        elementosDOM.panelConstruir.classList.remove("active");
+
+        elementosDOM.panelConstruir.classList.add("hidden");
+
+        elementosDOM.panelMenus.classList.remove("hidden");
+
+        elementosDOM.panelMenus.classList.add("active");
+
+        elementosDOM.tarjetasTipoPedido.forEach(card => {
+
+            card.classList.toggle(
+                "active",
+                card.dataset.panel === "panelMenus"
+            );
+
+        });
+
+    }
+
+}
+
+function desplazarAComponentesPedido(almuerzo = almuerzoActual) {
+
+    requestAnimationFrame(() => {
+
+        let destino = null;
+
+        if (almuerzo?.catalogoItemId) {
+
+            // Menú comercial: llevar al usuario
+            // a las categorías de su composición.
+            destino =
+                elementosDOM.categoriasCatalogoMenu
+                    ?.querySelector(".catalogo-categoria")
+                || elementosDOM.categoriasCatalogoMenu;
+
+        } else {
+
+            // Adición: llevar a los selectores actuales.
+            destino = elementosDOM.camposAdicion;
+
+        }
+
+        if (!destino)
+            return;
+
+        const posicion =
+            destino.getBoundingClientRect().top +
+            window.scrollY -
+            110;
+
+        window.scrollTo({
+
+            top: Math.max(0, posicion),
+
+            behavior: "smooth"
+
+        });
+
+    });
+
 }
 
 function editarAlmuerzo(id) {
@@ -2139,6 +3839,22 @@ function editarAlmuerzo(id) {
     editandoId = id;
 
     almuerzoActual = almuerzo.duplicar();
+
+    if (almuerzoActual.catalogoItemId) {
+
+        elementosDOM.camposAdicion.classList.add("hidden");
+
+        elementosDOM.categoriasCatalogoMenu.classList.remove("hidden");
+
+        renderizarCategoriasCatalogoMenu(almuerzoActual);
+
+    } else {
+
+        elementosDOM.camposAdicion.classList.remove("hidden");
+
+        elementosDOM.categoriasCatalogoMenu.classList.add("hidden");
+
+    }
 
     actualizarCabeceraConstructor();
 
@@ -2225,13 +3941,7 @@ function editarAlmuerzo(id) {
 
     actualizarResumenActual();
 
-    window.scrollTo({
-
-        top: 0,
-
-        behavior: "smooth"
-
-    });
+    desplazarAComponentesPedido(almuerzoActual);
 
 }
 
@@ -2388,45 +4098,39 @@ function crearCardAlmuerzo(
 
             <div class="pedido-componentes">
 
-                <div class="pedido-componente">
+                ${almuerzo.catalogoItemId
 
-                    <label>🍲 Sopa</label>
+            ? generarComponentesCatalogoCard(almuerzo)
 
-                    <span>${almuerzo.sopa?.nombre ?? "—"}</span>
+            : `
 
-                </div>
+                        <div class="pedido-componente">
+                            <label>🍲 Sopa</label>
+                            <span>${almuerzo.sopa?.nombre ?? "—"}</span>
+                        </div>
 
-                <div class="pedido-componente">
+                        <div class="pedido-componente">
+                            <label>🥩 Proteína</label>
+                            <span>${almuerzo.proteina?.nombre ?? "—"}</span>
+                        </div>
 
-                    <label>🥩 Proteína</label>
+                        <div class="pedido-componente">
+                            <label>🍚 Seco</label>
+                            <span>${almuerzo.seco?.nombre ?? "—"}</span>
+                        </div>
 
-                    <span>${almuerzo.proteina?.nombre ?? "—"}</span>
+                        <div class="pedido-componente">
+                            <label>🥗 Ensalada</label>
+                            <span>${almuerzo.ensalada?.nombre ?? "—"}</span>
+                        </div>
 
-                </div>
+                        <div class="pedido-componente">
+                            <label>🥤 Jugo</label>
+                            <span>${almuerzo.jugo?.nombre ?? "—"}</span>
+                        </div>
 
-                <div class="pedido-componente">
-
-                    <label>🍚 Seco</label>
-
-                    <span>${almuerzo.seco?.nombre ?? "—"}</span>
-
-                </div>
-
-                <div class="pedido-componente">
-
-                    <label>🥗 Ensalada</label>
-
-                    <span>${almuerzo.ensalada?.nombre ?? "—"}</span>
-
-                </div>
-
-                <div class="pedido-componente">
-
-                    <label>🥤 Jugo</label>
-
-                    <span>${almuerzo.jugo?.nombre ?? "—"}</span>
-
-                </div>
+                    `
+        }
 
             </div>
 
@@ -2499,105 +4203,160 @@ function cancelarEdicion() {
  ********************************************************************/
 function actualizarResumenActual() {
 
-    //=========================================
-    // VALIDACIONES
-    //=========================================
-
     if (!almuerzoActual)
         return;
 
-    //=========================================
-    // CABECERA DEL PANEL
-    //=========================================
+    almuerzoActual.calcularPrecio();
 
     elementosDOM.lblTipoPedido.textContent =
         almuerzoActual.nombre;
 
     elementosDOM.lblEstadoPedido.textContent =
-        almuerzoActual.modo === MODOS.MENU
-            ? "Construyendo menú"
+        almuerzoActual.catalogoItemId
+            ? "Menú del catálogo"
             : "Adición al pedido";
 
-    //=========================================
-    // COMPONENTES
-    //=========================================
+    const resumenDinamico =
+        elementosDOM.resumenCatalogoMenu;
 
-    elementosDOM.resSopa.textContent =
-        almuerzoActual.sopa
-            ? almuerzoActual.sopa.nombre
-            : "Sin seleccionar";
+    const resumenLegacy = [
+        elementosDOM.resSopa,
+        elementosDOM.resProteina,
+        elementosDOM.resSeco,
+        elementosDOM.resEnsalada,
+        elementosDOM.resJugo
+    ];
 
-    const mostrarProteina =
-        almuerzoActual.tipo === "ADICION"
-        ||
-        almuerzoActual.tipo === "MENU_EJECUTIVO";
+    if (almuerzoActual.catalogoItemId) {
 
+        resumenLegacy.forEach(elemento => {
+            elemento.closest(".builder-item")?.classList.add("hidden");
+        });
 
-    if (
-        mostrarProteina
-    ) {
+        resumenDinamico.classList.remove("hidden");
 
-        elementosDOM.resProteina
-            .closest(".builder-item")
-            ?.classList.remove("hidden");
+        resumenDinamico.innerHTML = "";
+
+        if (!almuerzoActual.componentesSeleccionados.length) {
+
+            const mensaje = document.createElement("p");
+
+            mensaje.textContent =
+                "Todavía no hay componentes seleccionados.";
+
+            resumenDinamico.appendChild(mensaje);
+
+        }
+
+        almuerzoActual.componentesSeleccionados.forEach(componente => {
+
+            const fila = document.createElement("div");
+
+            fila.className = "builder-item";
+
+            const categoria = document.createElement("span");
+
+            categoria.textContent =
+                `${componente.categoria_nombre}: `;
+
+            const producto = document.createElement("strong");
+
+            const cantidad = Number(
+                componente.cantidad || 1
+            );
+
+            producto.textContent = cantidad > 1
+                ? `${componente.producto_nombre} × ${cantidad}`
+                : componente.producto_nombre;
+
+            fila.appendChild(categoria);
+
+            fila.appendChild(producto);
+
+            resumenDinamico.appendChild(fila);
+
+        });
+
+    } else {
+
+        resumenDinamico.classList.add("hidden");
+
+        resumenLegacy.forEach(elemento => {
+            elemento.closest(".builder-item")?.classList.remove("hidden");
+        });
+
+        elementosDOM.resSopa.textContent =
+            almuerzoActual.sopa?.nombre || "Sin seleccionar";
 
         elementosDOM.resProteina.textContent =
-            almuerzoActual.proteina
-                ? almuerzoActual.proteina.nombre
-                : "Sin seleccionar";
+            almuerzoActual.proteina?.nombre || "Sin seleccionar";
+
+        elementosDOM.resSeco.textContent =
+            almuerzoActual.seco?.nombre || "Sin seleccionar";
+
+        elementosDOM.resEnsalada.textContent =
+            almuerzoActual.ensalada?.nombre || "Sin seleccionar";
+
+        elementosDOM.resJugo.textContent =
+            almuerzoActual.jugo?.nombre || "Sin seleccionar";
+
+        actualizarEstadoResumen(elementosDOM.resSopa);
+
+        actualizarEstadoResumen(elementosDOM.resProteina);
+
+        actualizarEstadoResumen(elementosDOM.resSeco);
+
+        actualizarEstadoResumen(elementosDOM.resEnsalada);
+
+        actualizarEstadoResumen(elementosDOM.resJugo);
 
     }
-    else {
-
-        elementosDOM.resProteina
-            .closest(".builder-item")
-            ?.classList.add("hidden");
-
-    }
-
-    elementosDOM.resSeco.textContent =
-        almuerzoActual.seco
-            ? almuerzoActual.seco.nombre
-            : "Sin seleccionar";
-
-    elementosDOM.resEnsalada.textContent =
-        almuerzoActual.ensalada
-            ? almuerzoActual.ensalada.nombre
-            : "Sin seleccionar";
-
-    elementosDOM.resJugo.textContent =
-        almuerzoActual.jugo
-            ? almuerzoActual.jugo.nombre
-            : "Sin seleccionar";
-
-    //=========================================
-    // TOTAL
-    //=========================================
 
     elementosDOM.lblSubtotal.textContent =
         formatearMoneda(almuerzoActual.precio);
 
-    //=========================================
-    // ESTADO VISUAL
-    //=========================================
+}
 
-    actualizarEstadoResumen(elementosDOM.resSopa);
+function escaparHTML(valor) {
 
-    if (
-        mostrarProteina
-    ) {
+    return String(valor ?? "").replace(
+        /[&<>"']/g,
+        caracter => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        })[caracter]
+    );
 
-        actualizarEstadoResumen(
-            elementosDOM.resProteina
-        );
+}
 
-    }
 
-    actualizarEstadoResumen(elementosDOM.resSeco);
+function generarComponentesCatalogoCard(almuerzo) {
 
-    actualizarEstadoResumen(elementosDOM.resEnsalada);
+    return (almuerzo.componentesSeleccionados || [])
+        .map(componente => `
 
-    actualizarEstadoResumen(elementosDOM.resJugo);
+            <div class="pedido-componente">
+
+                <label>
+                    ${escaparHTML(componente.categoria_nombre)}
+                </label>
+
+                <span>
+                    ${escaparHTML(componente.producto_nombre)}
+                    ${
+                        Number(componente.cantidad || 1) > 1
+                        ? ` × ${Number(componente.cantidad)}`
+                        : ""
+                    }
+                </span>
+
+            </div>
+
+        `)
+        .join("");
 
 }
 
@@ -2637,10 +4396,12 @@ function actualizarResumenPedido() {
     const total = obtenerTotalPedido();
 
     const cantidadMenus = almuerzosPedido.filter(item =>
-        item.tipo?.startsWith("MENU_")
+        item.catalogoItemId ||
+        item.modo === MODOS.MENU
     ).length;
 
     const cantidadAdiciones = almuerzosPedido.filter(item =>
+        !item.catalogoItemId &&
         item.tipo === "ADICION"
     ).length;
 
@@ -2782,6 +4543,49 @@ function construirDetallesPedido() {
 
     almuerzosPedido.forEach(almuerzo => {
 
+        // =====================================
+        // ARTICULO DEL CATALOGO
+        // =====================================
+
+        if (almuerzo.catalogoItemId) {
+
+            detalles.push({
+
+                tipo_item: almuerzo.tipoCatalogo,
+
+                catalogo_item_id: almuerzo.catalogoItemId,
+
+                cantidad: 1,
+
+                precio: almuerzo.precio,
+
+                observaciones: almuerzo.observaciones,
+
+                componentes: (
+                    almuerzo.componentesSeleccionados || []
+                ).map(componente => ({
+
+                    menu_categoria_id:
+                        componente.menu_categoria_id,
+
+                    producto_id:
+                        componente.producto_id,
+
+                    cantidad:
+                        componente.cantidad || 1
+
+                }))
+
+            });
+
+            return;
+
+        }
+
+        // =====================================
+        // ADICIONES EXISTENTES
+        // =====================================
+
         const componentes = [];
 
         [
@@ -2792,20 +4596,29 @@ function construirDetallesPedido() {
             almuerzo.jugo
         ].forEach(item => {
 
-            if (!item) return;
+            if (!item)
+                return;
 
             componentes.push({
+
                 producto_id: item.id
+
             });
 
         });
 
         detalles.push({
+
             tipo_item: almuerzo.tipo || "ADICION",
+
             cantidad: 1,
+
             precio: almuerzo.precio,
+
             observaciones: almuerzo.observaciones,
+
             componentes
+
         });
 
     });
@@ -2955,92 +4768,92 @@ function validarAlmuerzo() {
 
     const faltantes = [];
 
-    const tipo =
-        almuerzoActual?.tipo || "ADICION";
+    // =====================================
+    // MENU DEL CATALOGO
+    // =====================================
 
+    if (almuerzoActual?.catalogoItemId) {
 
-    /*
-     * =============================
-     * SOPA
-     * =============================
-     */
+        const categorias =
+            almuerzoActual.categoriasMenu || [];
 
-    if (
-        !almuerzoActual.sopa
-    ) {
+        const componentes =
+            almuerzoActual.componentesSeleccionados || [];
 
-        faltantes.push(
-            "Sopa"
-        );
+        if (!categorias.length) {
 
-    }
+            return [
+                "El menú no tiene categorías configuradas."
+            ];
 
+        }
 
-    /*
-     * =============================
-     * PROTEÍNA
-     * =============================
-     *
-     * Solo es obligatoria para:
-     *
-     * - ADICION
-     * - MENU_EJECUTIVO
-     */
+        categorias.forEach(categoria => {
 
-    const requiereProteina =
-        tipo === "ADICION"
-        ||
-        tipo === "MENU_EJECUTIVO";
+            const seleccionados = componentes.filter(
+                componente =>
+                    Number(componente.menu_categoria_id) ===
+                    Number(categoria.id)
+            ).length;
 
+            let minimo = Number(
+                categoria.min_selecciones || 0
+            );
 
-    if (
-        requiereProteina
-        &&
-        !almuerzoActual.proteina
-    ) {
+            const maximo = Number(
+                categoria.max_selecciones || 0
+            );
 
-        faltantes.push(
-            "Proteína"
-        );
+            if (categoria.obligatorio && minimo < 1) {
+                minimo = 1;
+            }
 
-    }
+            if (
+                categoria.obligatorio &&
+                seleccionados < Math.max(1, minimo)
+            ) {
 
+                faltantes.push(
+                    `${categoria.nombre}: mínimo ${Math.max(1, minimo)} selección(es)`
+                );
 
-    /*
-     * =============================
-     * RESTO DE COMPONENTES
-     * =============================
-     */
+            }
 
-    if (
-        !almuerzoActual.seco
-    ) {
+            if (
+                maximo > 0 &&
+                seleccionados > maximo
+            ) {
 
-        faltantes.push(
-            "Seco"
-        );
+                faltantes.push(
+                    `${categoria.nombre}: máximo ${maximo} selección(es)`
+                );
 
-    }
+            }
 
-    if (
-        !almuerzoActual.ensalada
-    ) {
+        });
 
-        faltantes.push(
-            "Ensalada"
-        );
+        return faltantes;
 
     }
 
-    if (
-        !almuerzoActual.jugo
-    ) {
+    // =====================================
+    // ADICIONES ACTUALES
+    // =====================================
 
-        faltantes.push(
-            "Jugo"
-        );
+    if (!almuerzoActual.sopa)
+        faltantes.push("Sopa");
 
-    }
+    if (!almuerzoActual.proteina)
+        faltantes.push("Proteína");
+
+    if (!almuerzoActual.seco)
+        faltantes.push("Seco");
+
+    if (!almuerzoActual.ensalada)
+        faltantes.push("Ensalada");
+
+    if (!almuerzoActual.jugo)
+        faltantes.push("Jugo");
 
     return faltantes;
 
@@ -3363,6 +5176,13 @@ function obtenerCantidadComponentes() {
 
         (total, almuerzo) => {
 
+            if (almuerzo.catalogoItemId) {
+
+                return total +
+                    (almuerzo.componentesSeleccionados || []).length;
+
+            }
+
             let cantidad = 0;
 
             if (almuerzo.sopa) cantidad++;
@@ -3394,8 +5214,6 @@ function debugPedido() {
     console.table(almuerzosPedido);
 
 }
-
-window.seleccionarMenu = seleccionarMenu;
 
 window.editarAlmuerzo = editarAlmuerzo;
 

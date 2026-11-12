@@ -2,9 +2,11 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Pedido Almuerzo</title>
-    <link rel="stylesheet" href="../css/styles.css?v=2">
+    <link rel="stylesheet" href="../css/styles.css?v=4">
 </head>
 
 <body data-categoria="SOPA" || data-categoria="PROTEINA">
@@ -284,7 +286,7 @@
 
                     <div class="tipo-pedido-grid">
 
-                        <div class="tipo-pedido-card active" data-panel="panelConstruir">
+                        <div class="tipo-pedido-card active" data-panel="panelConstruir" hidden>
 
                             <div class="tipo-icono">
 
@@ -323,8 +325,7 @@
 
                             <p>
 
-                                Menú del día, Menú del día para llevar,
-                                Especiales Y Cazuela.
+                                Menús y combos configurados en el catálogo comercial.
 
                             </p>
 
@@ -363,7 +364,7 @@
 
                             </div>
 
-                            <div class="form-grid">
+                            <div id="camposAdicion" class="form-grid">
 
                                 <div class="form-group">
 
@@ -435,12 +436,21 @@
 
                                 </div>
 
+                            </div>
+
+                            <!-- Categorías dinámicas del catálogo -->
+                            <div id="categoriasCatalogoMenu" class="catalogo-menu-categorias hidden">
+                            </div>
+
+                            <div class="form-grid">
+
                                 <div class="form-group full">
 
                                     <label>Observaciones</label>
 
                                     <textarea id="txtObservaciones" rows="3"
-                                        placeholder="Observaciones del almuerzo..."></textarea>
+                                        placeholder="Observaciones del almuerzo...">
+                                    </textarea>
 
                                 </div>
 
@@ -542,6 +552,9 @@
 
                                     </div>
 
+                                    <div id="resumenCatalogoMenu" class="catalogo-menu-resumen hidden">
+                                    </div>
+
                                 </div>
 
                                 <div class="builder-summary-price">
@@ -585,186 +598,40 @@
                             <div class="panel-info">
 
                                 <span class="panel-badge">
-                                    Seleccione el tipo de menú
+                                    Menús disponibles
                                 </span>
 
                                 <p>
-                                    Después podrá escoger los componentes del menú.
+                                    Seleccione el menú que desea agregar al pedido.
+                                    Podrá configurar sus componentes según las reglas establecidas.
                                 </p>
 
                             </div>
 
-                            <div class="menu-grid">
+                            <div class="panel-info">
 
-                                <!-- EJECUTIVO -->
+                                <span class="panel-badge">
+                                    Catálogo comercial de Almuerzos
+                                </span>
 
-                                <div class="menu-card">
+                                <p>
+                                    Seleccione un menú o combo configurado por administración.
+                                    Los precios y componentes se consultan automáticamente.
+                                </p>
 
-                                    <div class="menu-card-header">
-                                        🍽 Menú del día
-                                    </div>
+                            </div>
 
-                                    <div class="menu-price">
-                                        $18.500
-                                    </div>
-
-                                    <div class="menu-description">
-
-                                        Incluye:
-
-                                        <br>
-
-                                        • Sopa
-
-                                        <br>
-
-                                        • Proteína
-
-                                        <br>
-
-                                        • Seco
-
-                                        <br>
-
-                                        • Ensalada
-
-                                        <br>
-
-                                        • Jugo
-
-                                        <br><br>
-
-                                        <strong>
-                                            Para llevar: $19.000
-                                        </strong>
-
-                                    </div>
-
-                                    <button class="btn-primary btn-menu" onclick="seleccionarMenu('EJECUTIVO')">
-                                        Seleccionar
-                                    </button>
-
-                                </div>
-
-                                <!-- PREMIUM -->
+                            <div id="catalogoMenusGrid" class="almuerzo-catalogo-grid">
 
                                 <div class="menu-card">
 
                                     <div class="menu-card-header">
-                                        ⭐ Especiales
+                                        Cargando menús...
                                     </div>
 
-                                    <div class="menu-price">
-                                        $25.000
-                                    </div>
-
-                                    <!-- <div class="menu-description">
-
-                                        Sanchocho, Mondongo, Ajiaco.
-
-                                    </div> -->
                                     <div class="menu-description">
-
-                                        Incluye:
-
-                                        <br>
-
-                                        • Sopa
-
-                                        <!--<br>
-
-                                        • Proteína-->
-
-                                        <br>
-
-                                        • Seco
-
-                                        <br>
-
-                                        • Ensalada
-
-                                        <br>
-
-                                        • Jugo
-
-                                        <br><br>
-
-                                        Sopas disponibles:
-
-                                        <br>
-
-                                        • Sancocho
-
-                                        <br>
-
-                                        • Mondongo
-
-                                        <br>
-
-                                        • Ajiaco
-
+                                        Consultando el catálogo comercial.
                                     </div>
-
-                                    <button class="btn-primary btn-menu" onclick="seleccionarMenu('PREMIUM')">
-                                        Seleccionar
-                                    </button>
-
-                                </div>
-
-                                <!-- ESPECIAL -->
-
-                                <div class="menu-card">
-
-                                    <div class="menu-card-header">
-                                        🥘 Cazuela
-                                    </div>
-
-                                    <div class="menu-price">
-                                        $27.000
-                                    </div>
-
-                                    <!-- <div class="menu-description">
-
-                                        Cazuela de Frijoles.
-
-                                    </div> -->
-                                    <div class="menu-description">
-
-                                        Incluye:
-
-                                        <br>
-
-                                        • Sopa
-
-                                        <!--<br>
-
-                                        • Proteína-->
-
-                                        <br>
-
-                                        • Seco
-
-                                        <br>
-
-                                        • Ensalada
-
-                                        <br>
-
-                                        • Jugo
-
-                                        <br><br>
-
-                                        Sopa disponible:
-
-                                        <br>
-
-                                        • Cazuela de frijol
-
-                                    </div>
-
-                                    <button class="btn-primary btn-menu" onclick="seleccionarMenu('ESPECIAL')">
-                                        Seleccionar
-                                    </button>
 
                                 </div>
 
@@ -797,6 +664,33 @@
                             No hay almuerzos agregados.
 
                         </div>
+
+                        <!-- ============================================= -->
+                        <!-- ACCESO RAPIDO PARA AGREGAR ADICIONES -->
+                        <!-- ============================================= -->
+
+                        <button type="button" id="btnAgregarAdicionRapida" class="pedido-adicion-rapida">
+
+                            <span class="pedido-adicion-rapida-icon" aria-hidden="true">
+                                ➕
+                            </span>
+
+                            <span class="pedido-adicion-rapida-text">
+
+                                <strong>Agregar una adición</strong>
+
+                                <small>
+                                    Agregue sopa, proteína, seco, ensalada o jugo
+                                    sin regresar a la parte superior.
+                                </small>
+
+                            </span>
+
+                            <span class="pedido-adicion-rapida-arrow">
+                                Agregar →
+                            </span>
+
+                        </button>
 
                         <div class="resumen-compra" style="margin-top:25px;">
 

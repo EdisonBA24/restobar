@@ -9,7 +9,21 @@ from database.db_objects import (
     PRODUCTOS,
     USUARIOS,
     DETALLE_PEDIDO_COMPONENTES,
-    CLIENTES_DIRECCIONES
+    CLIENTES_DIRECCIONES,
+
+    # Fotografías históricas de pedidos
+    DETALLE_PEDIDO_CATALOGO_SNAPSHOT,
+    DETALLE_PEDIDO_COMPONENTES_SNAPSHOT,
+
+    # Catálogo comercial
+    CATALOGO_ITEMS,
+    CATALOGO_LINEAS,
+    CATALOGO_PRECIOS,
+
+    # Configuración de menús
+    MENU_CONFIGURACIONES,
+    MENU_CATEGORIAS,
+    MENU_CATEGORIA_PRODUCTOS
 )
 import math
 
@@ -27,6 +41,663 @@ def to_decimal(value, field):
     except (InvalidOperation, Exception):
         raise Exception(f"{field} inválido: {value}")
 
+
+
+# =====================================================
+# SNAPSHOTS Y VALIDACIONES DEL CATALOGO
+# =====================================================
+
+LINEAS_POR_TIPO_CONSTRUCTOR = {
+    "ALMUERZO": "ALMUERZOS",
+    "ADICION": "ALMUERZOS",
+    "MENU_EJECUTIVO": "ALMUERZOS",
+    "MENU_PREMIUM": "ALMUERZOS",
+    "MENU_ESPECIAL": "ALMUERZOS",
+    "DESAYUNO": "DESAYUNOS",
+    "COMIDA_RAPIDA": "COMIDAS_RAPIDAS",
+    "LICOR": "LICORERA",
+    "MENU": "ALMUERZOS",
+    "COMBO": "COMIDAS_RAPIDAS"
+}
+
+
+NOMBRES_POR_TIPO_CONSTRUCTOR = {
+    "ALMUERZO": "Menú del Día",
+    "ADICION": "Adición",
+    "MENU_EJECUTIVO": "Menú del Día",
+    "MENU_PREMIUM": "Especiales",
+    "MENU_ESPECIAL": "Cazuela",
+    "DESAYUNO": "Desayuno",
+    "COMIDA_RAPIDA": "Comida Rápida",
+    "LICOR": "Licor",
+    "MENU": "Menú",
+    "COMBO": "Combo"
+}
+
+
+def _tipo_servicio_snapshot(tipo_servicio):
+
+    tipo = str(
+        tipo_servicio or "GENERAL"
+    ).strip().upper()
+
+    permitidos = {
+        "GENERAL",
+        "MESA",
+        "LLEVAR",
+        "DOMICILIO"
+    }
+
+    return tipo if tipo in permitidos else "GENERAL"
+
+
+def _decimal_snapshot(value):
+
+    return Decimal(
+        str(value if value is not None else 0)
+    )
+
+
+def _insertar_snapshot_cabecera(
+    cursor,
+    detalle_pedido_id,
+    snapshot,
+    cantidad,
+    precio,
+    observaciones,
+    placeholder
+):
+
+    cantidad = _decimal_snapshot(cantidad)
+    precio = _decimal_snapshot(precio)
+
+    precio_base = _decimal_snapshot(
+        snapshot.get("precio_base", precio)
+    )
+
+    precio_adicional = _decimal_snapshot(
+        snapshot.get("precio_adicional_unitario", 0)
+    )
+
+    subtotal = (
+        cantidad * precio
+    ).quantize(Decimal("0.01"))
+
+    cursor.execute(
+        f"""
+        INSERT INTO {DETALLE_PEDIDO_CATALOGO_SNAPSHOT}
+        (
+            detalle_pedido_id,
+            catalogo_item_id,
+            linea_codigo,
+            item_codigo,
+            nombre_item,
+            tipo_item_catalogo,
+            tipo_servicio,
+            precio_base,
+            precio_adicional_unitario,
+            precio_unitario_final,
+            cantidad,
+            subtotal_linea,
+            observaciones
+        )
+        VALUES
+        (
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder}
+        )
+        """,
+        (
+            detalle_pedido_id,
+            snapshot.get("catalogo_item_id"),
+            snapshot["linea_codigo"],
+            snapshot.get("item_codigo"),
+            snapshot["nombre_item"],
+            snapshot["tipo_item_catalogo"],
+            snapshot["tipo_servicio"],
+            precio_base,
+            precio_adicional,
+            precio,
+            cantidad,
+            subtotal,
+            observaciones
+        )
+    )
+
+
+def _insertar_snapshot_componente(
+    cursor,
+    detalle_pedido_id,
+    componente,
+    placeholder
+):
+
+    cursor.execute(
+        f"""
+        INSERT INTO {DETALLE_PEDIDO_COMPONENTES_SNAPSHOT}
+        (
+            detalle_pedido_id,
+            menu_categoria_id,
+            categoria_codigo,
+            categoria_nombre,
+            producto_id,
+            producto_nombre,
+            cantidad,
+            precio_adicional_unitario,
+            subtotal_adicional,
+            predeterminado,
+            orden_categoria,
+            orden_producto
+        )
+        VALUES
+        (
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder},
+            {placeholder}
+        )
+        """,
+        (
+            detalle_pedido_id,
+            componente.get("menu_categoria_id"),
+            componente.get("categoria_codigo"),
+            componente["categoria_nombre"],
+            componente["producto_id"],
+            componente["producto_nombre"],
+            componente.get("cantidad", 1),
+            componente.get("precio_adicional_unitario", 0),
+            componente.get("subtotal_adicional", 0),
+            bool(componente.get("predeterminado", False)),
+            componente.get("orden_categoria", 0),
+            componente.get("orden_producto", 0)
+        )
+    )
+
+
+def _resolver_precio_catalogo(
+    cursor,
+    catalogo_item_id,
+    tipo_servicio,
+    placeholder,
+    is_postgres
+):
+
+    true_sql = "TRUE" if is_postgres else "1"
+
+    cursor.execute(
+        f"""
+        SELECT
+            tipo_servicio,
+            precio
+
+        FROM {CATALOGO_PRECIOS}
+
+        WHERE catalogo_item_id = {placeholder}
+
+          AND activo = {true_sql}
+
+          AND tipo_servicio IN (
+                {placeholder},
+                'GENERAL'
+          )
+
+        ORDER BY CASE
+            WHEN tipo_servicio = {placeholder} THEN 0
+            ELSE 1
+        END
+        """,
+        (
+            catalogo_item_id,
+            tipo_servicio,
+            tipo_servicio
+        )
+    )
+
+    row = cursor.fetchone()
+
+    if not row:
+
+        raise ValueError(
+            "El artículo comercial no tiene un precio activo "
+            f"para la modalidad {tipo_servicio} ni un precio GENERAL."
+        )
+
+    return _decimal_snapshot(row[1])
+
+
+def _preparar_detalle_catalogo(
+    cursor,
+    item,
+    tipo_servicio,
+    placeholder,
+    is_postgres
+):
+    """
+    Valida artículos comerciales y resuelve sus precios
+    directamente desde la base de datos.
+
+    Cuando el detalle no proviene del catálogo, no modifica
+    su precio ni su estructura actual.
+    """
+
+    catalogo_item_id = item.get("catalogo_item_id")
+
+    if not catalogo_item_id:
+        return
+
+    try:
+
+        catalogo_item_id = int(catalogo_item_id)
+
+    except (TypeError, ValueError):
+
+        raise ValueError(
+            "El identificador del artículo comercial no es válido."
+        )
+
+    true_sql = "TRUE" if is_postgres else "1"
+
+    cursor.execute(
+        f"""
+        SELECT
+            ci.id,
+            cl.codigo,
+            ci.codigo,
+            ci.tipo_item,
+            ci.nombre,
+            ci.producto_id,
+            ci.activo,
+            cl.activo,
+            mc.activo
+
+        FROM {CATALOGO_ITEMS} ci
+
+        INNER JOIN {CATALOGO_LINEAS} cl
+            ON cl.id = ci.linea_id
+
+        LEFT JOIN {MENU_CONFIGURACIONES} mc
+            ON mc.catalogo_item_id = ci.id
+
+        WHERE ci.id = {placeholder}
+        """,
+        (catalogo_item_id,)
+    )
+
+    row = cursor.fetchone()
+
+    if not row:
+
+        raise ValueError(
+            "El artículo comercial seleccionado no existe."
+        )
+
+    if not bool(row[6]) or not bool(row[7]):
+
+        raise ValueError(
+            "El artículo comercial o su línea están inactivos."
+        )
+
+    tipo_catalogo = str(
+        row[3] or ""
+    ).strip().upper()
+
+    tipo_servicio = _tipo_servicio_snapshot(
+        tipo_servicio
+    )
+
+    precio_base = _resolver_precio_catalogo(
+        cursor,
+        catalogo_item_id,
+        tipo_servicio,
+        placeholder,
+        is_postgres
+    )
+
+    snapshot = {
+        "catalogo_item_id": catalogo_item_id,
+        "linea_codigo": row[1],
+        "item_codigo": row[2],
+        "nombre_item": row[4],
+        "tipo_item_catalogo": tipo_catalogo,
+        "tipo_servicio": tipo_servicio,
+        "precio_base": precio_base,
+        "precio_adicional_unitario": Decimal("0")
+    }
+
+    # -------------------------------------------------
+    # PRODUCTO NORMAL
+    # -------------------------------------------------
+
+    if tipo_catalogo == "PRODUCTO":
+
+        producto_catalogo_id = row[5]
+
+        producto_enviado = item.get("producto_id")
+
+        if producto_enviado is not None:
+
+            if int(producto_enviado) != int(producto_catalogo_id):
+
+                raise ValueError(
+                    "El producto enviado no coincide con el "
+                    "producto vinculado al artículo comercial."
+                )
+
+        producto_id = producto_catalogo_id
+
+        cursor.execute(
+            f"""
+            SELECT id
+
+            FROM {PRODUCTOS}
+
+            WHERE id = {placeholder}
+
+              AND activo = 1
+            """,
+            (producto_id,)
+        )
+
+        if not cursor.fetchone():
+
+            raise ValueError(
+                "El producto vinculado está inactivo o no existe."
+            )
+
+        item["producto_id"] = producto_id
+        item["tipo_item"] = "PRODUCTO"
+        item["nombre"] = row[4]
+        item["precio"] = precio_base
+        item["_catalogo_snapshot"] = snapshot
+
+        return
+
+    # -------------------------------------------------
+    # MENU O COMBO
+    # -------------------------------------------------
+
+    if tipo_catalogo not in {"MENU", "COMBO"}:
+
+        raise ValueError(
+            f"Tipo de artículo comercial no soportado: {tipo_catalogo}"
+        )
+
+    if row[8] is not None and not bool(row[8]):
+
+        raise ValueError(
+            "La configuración del menú está inactiva."
+        )
+
+    componentes = item.get("componentes") or []
+
+    cursor.execute(
+        f"""
+        SELECT
+            id,
+            codigo,
+            nombre,
+            obligatorio,
+            min_selecciones,
+            max_selecciones,
+            permitir_repetidos,
+            orden
+
+        FROM {MENU_CATEGORIAS}
+
+        WHERE menu_item_id = {placeholder}
+
+          AND activo = {true_sql}
+
+        ORDER BY orden, id
+        """,
+        (catalogo_item_id,)
+    )
+
+    categorias_rows = cursor.fetchall()
+
+    if not categorias_rows:
+
+        raise ValueError(
+            "El menú no tiene categorías activas configuradas."
+        )
+
+    categorias = {}
+
+    for categoria in categorias_rows:
+
+        categorias[categoria[0]] = {
+            "id": categoria[0],
+            "codigo": categoria[1],
+            "nombre": categoria[2],
+            "obligatorio": bool(categoria[3]),
+            "min": int(categoria[4] or 0),
+            "max": int(categoria[5] or 0),
+            "permitir_repetidos": bool(categoria[6]),
+            "orden": int(categoria[7] or 0),
+            "cantidad": 0,
+            "productos": set()
+        }
+
+    componentes_snapshot = []
+    adicional_total = Decimal("0")
+
+    for indice, componente in enumerate(componentes, start=1):
+
+        menu_categoria_id = componente.get(
+            "menu_categoria_id"
+        )
+
+        producto_id = componente.get(
+            "producto_id",
+            componente.get("id")
+        )
+
+        if not menu_categoria_id or not producto_id:
+
+            raise ValueError(
+                "Cada componente del menú debe incluir "
+                "menu_categoria_id y producto_id."
+            )
+
+        try:
+
+            menu_categoria_id = int(menu_categoria_id)
+            producto_id = int(producto_id)
+
+        except (TypeError, ValueError):
+
+            raise ValueError(
+                "Los identificadores de los componentes no son válidos."
+            )
+
+        categoria = categorias.get(menu_categoria_id)
+
+        if not categoria:
+
+            raise ValueError(
+                "Una de las categorías seleccionadas no pertenece "
+                "al menú o está inactiva."
+            )
+
+        cursor.execute(
+            f"""
+            SELECT
+                p.id,
+                p.nombre,
+                mcp.precio_adicional,
+                mcp.predeterminado,
+                mcp.orden
+
+            FROM {MENU_CATEGORIA_PRODUCTOS} mcp
+
+            INNER JOIN {PRODUCTOS} p
+                ON p.id = mcp.producto_id
+
+            WHERE mcp.menu_categoria_id = {placeholder}
+
+              AND mcp.producto_id = {placeholder}
+
+              AND mcp.activo = {true_sql}
+
+              AND p.activo = 1
+            """,
+            (
+                menu_categoria_id,
+                producto_id
+            )
+        )
+
+        producto = cursor.fetchone()
+
+        if not producto:
+
+            raise ValueError(
+                "Uno de los productos seleccionados no está "
+                "asociado activamente a su categoría."
+            )
+
+        cantidad_componente = _decimal_snapshot(
+            componente.get("cantidad", 1)
+        )
+
+        if cantidad_componente <= 0:
+
+            raise ValueError(
+                "La cantidad de un componente debe ser mayor que cero."
+            )
+
+        precio_adicional = _decimal_snapshot(
+            producto[2]
+        )
+
+        subtotal_adicional = (
+            precio_adicional * cantidad_componente
+        ).quantize(Decimal("0.01"))
+
+        adicional_total += subtotal_adicional
+
+        categoria["cantidad"] += int(cantidad_componente)
+
+        if cantidad_componente != cantidad_componente.to_integral_value():
+
+            raise ValueError(
+            "La cantidad de selecciones de un componente debe ser un número entero."
+        )
+
+        if (
+            not categoria["permitir_repetidos"]
+            and (
+                producto_id in categoria["productos"]
+                or cantidad_componente > 1
+            )
+        ):
+
+            raise ValueError(
+                f"No se permite repetir productos en "
+                f"la categoría {categoria['nombre']}."
+            )
+
+        categoria["productos"].add(producto_id)
+
+        componentes_snapshot.append({
+
+            "menu_categoria_id": menu_categoria_id,
+
+            "categoria_codigo": categoria["codigo"],
+
+            "categoria_nombre": categoria["nombre"],
+
+            "producto_id": producto[0],
+
+            "producto_nombre": producto[1],
+
+            "cantidad": cantidad_componente,
+
+            "precio_adicional_unitario": precio_adicional,
+
+            "subtotal_adicional": subtotal_adicional,
+
+            "predeterminado": bool(producto[3]),
+
+            "orden_categoria": categoria["orden"],
+
+            "orden_producto": int(producto[4] or indice)
+
+        })
+
+        # Normalizar el identificador que se guardará
+        # en la tabla actual de componentes.
+        componente["producto_id"] = producto_id
+
+    # -------------------------------------------------
+    # VALIDAR REGLAS DE TODAS LAS CATEGORÍAS
+    # -------------------------------------------------
+
+    for categoria in categorias.values():
+
+        cantidad = categoria["cantidad"]
+
+        # =============================================
+        # VALIDAR MINIMO SOLO SI ES OBLIGATORIA
+        # =============================================
+
+        if categoria["obligatorio"]:
+
+            minimo = max(
+                1,
+                categoria["min"]
+            )
+
+            if cantidad < minimo:
+
+                raise ValueError(
+                    f"La categoría {categoria['nombre']} requiere "
+                    f"mínimo {minimo} selección(es)."
+                )
+
+        # =============================================
+        # EL MAXIMO SIEMPRE SE RESPETA
+        # =============================================
+
+        maximo = categoria["max"]
+
+        if maximo > 0 and cantidad > maximo:
+
+            raise ValueError(
+                f"La categoría {categoria['nombre']} permite "
+                f"máximo {maximo} selección(es)."
+            )
+
+    precio_final = (
+        precio_base + adicional_total
+    ).quantize(Decimal("0.01"))
+
+    snapshot["precio_adicional_unitario"] = adicional_total
+
+    item["tipo_item"] = tipo_catalogo
+    item["nombre"] = row[4]
+    item["precio"] = precio_final
+    item["_catalogo_snapshot"] = snapshot
+    item["_componentes_snapshot"] = componentes_snapshot
 
 
 # =====================================================
@@ -408,7 +1079,8 @@ def _guardar_detalle(
     pedido_id,
     item,
     is_postgres,
-    placeholder
+    placeholder,
+    tipo_servicio="GENERAL"
 
 ):
 
@@ -425,7 +1097,6 @@ def _guardar_detalle(
 
     #if tipo_item.startswith("MENU") or tipo_item == "ADICION":
     CONSTRUCTORES = {
-
         "ALMUERZO",
         "ADICION",
         "MENU_EJECUTIVO",
@@ -433,8 +1104,9 @@ def _guardar_detalle(
         "MENU_ESPECIAL",
         "DESAYUNO",
         "COMIDA_RAPIDA",
-        "LICOR"
-
+        "LICOR",
+        "MENU",
+        "COMBO"
     }
 
     if tipo_item in CONSTRUCTORES:
@@ -449,7 +1121,9 @@ def _guardar_detalle(
 
             is_postgres=is_postgres,
 
-            placeholder=placeholder
+            placeholder=placeholder,
+
+            tipo_servicio=tipo_servicio
 
         )
 
@@ -463,7 +1137,9 @@ def _guardar_detalle(
 
         is_postgres=is_postgres,
 
-        placeholder=placeholder
+        placeholder=placeholder,
+
+        tipo_servicio=tipo_servicio
 
     )
 
@@ -472,85 +1148,121 @@ def _guardar_detalle(
 # =====================================================
 
 def _guardar_producto(
-
     cursor,
     pedido_id,
     item,
     is_postgres,
-    placeholder
-
+    placeholder,
+    tipo_servicio="GENERAL"
 ):
 
     producto_id = item.get("producto_id")
 
     if not producto_id:
-
-        raise Exception(
-
-            "El producto no tiene ID."
-
-        )
+        raise ValueError("El producto no tiene ID.")
 
     cantidad = to_decimal(
-
         item.get("cantidad", 0),
-
         "Cantidad"
-
     )
 
     precio = to_decimal(
-
         item.get("precio", 0),
-
         "Precio"
-
     )
 
     tipo_item = str(
-
         item.get("tipo_item", "PRODUCTO")
-
     ).upper()
 
-    cursor.execute(
+    if is_postgres:
 
-        f"""
-        INSERT INTO {DETALLE_PEDIDOS}
-        (
-            pedido_id,
-            tipo_item,
-            producto_id,
-            cantidad,
-            precio
-        )
-        VALUES
-        (
-            {placeholder},
-            {placeholder},
-            {placeholder},
-            {placeholder},
-            {placeholder}
-        )
-        """,
-
-        (
-
-            pedido_id,
-
-            tipo_item,
-
-            producto_id,
-
-            cantidad,
-
-            precio
-
+        cursor.execute(
+            f"""
+            INSERT INTO {DETALLE_PEDIDOS}
+            (
+                pedido_id,
+                tipo_item,
+                producto_id,
+                cantidad,
+                precio
+            )
+            VALUES
+            (
+                {placeholder},
+                {placeholder},
+                {placeholder},
+                {placeholder},
+                {placeholder}
+            )
+            RETURNING id
+            """,
+            (
+                pedido_id,
+                tipo_item,
+                producto_id,
+                cantidad,
+                precio
+            )
         )
 
-    )
+    else:
 
-    return True
+        cursor.execute(
+            f"""
+            INSERT INTO {DETALLE_PEDIDOS}
+            (
+                pedido_id,
+                tipo_item,
+                producto_id,
+                cantidad,
+                precio
+            )
+            OUTPUT INSERTED.id
+            VALUES
+            (
+                {placeholder},
+                {placeholder},
+                {placeholder},
+                {placeholder},
+                {placeholder}
+            )
+            """,
+            (
+                pedido_id,
+                tipo_item,
+                producto_id,
+                cantidad,
+                precio
+            )
+        )
+
+    fila = cursor.fetchone()
+
+    if not fila:
+        raise Exception(
+            "No fue posible recuperar el detalle del producto."
+        )
+
+    detalle_pedido_id = fila[0]
+
+    snapshot = item.get("_catalogo_snapshot")
+
+    # Solo los productos vinculados al catálogo
+    # necesitan fotografía comercial en este flujo.
+    if snapshot:
+
+        _insertar_snapshot_cabecera(
+            cursor=cursor,
+            detalle_pedido_id=detalle_pedido_id,
+            snapshot=snapshot,
+            cantidad=cantidad,
+            precio=precio,
+            observaciones=item.get("observaciones"),
+            placeholder=placeholder
+        )
+
+    return detalle_pedido_id
 
 
 # =====================================================
@@ -558,49 +1270,36 @@ def _guardar_producto(
 # =====================================================
 
 def _guardar_constructor(
-
     cursor,
     pedido_id,
     item,
     is_postgres,
-    placeholder
-
+    placeholder,
+    tipo_servicio="GENERAL"
 ):
 
     cantidad = to_decimal(
-
         item.get("cantidad", 1),
-
         "Cantidad"
-
     )
 
     precio = to_decimal(
-
         item.get("precio", 0),
-
         "Precio"
-
     )
 
     tipo_item = str(
-
         item.get("tipo_item", "ALMUERZO")
-
     ).upper()
 
-    print(
-        "CONSTRUCTOR:",
-        tipo_item
-    )
-
-    # ============================================
-    # INSERT DETALLE
-    # ============================================
+    # =============================================
+    # INSERTAR DETALLE DEL PEDIDO
+    # =============================================
 
     if is_postgres:
 
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             INSERT INTO {DETALLE_PEDIDOS}
             (
                 pedido_id,
@@ -618,21 +1317,19 @@ def _guardar_constructor(
                 {placeholder}
             )
             RETURNING id
-        """, (
-
-            pedido_id,
-
-            tipo_item,
-
-            cantidad,
-
-            precio
-
-        ))
+            """,
+            (
+                pedido_id,
+                tipo_item,
+                cantidad,
+                precio
+            )
+        )
 
     else:
 
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             INSERT INTO {DETALLE_PEDIDOS}
             (
                 pedido_id,
@@ -650,49 +1347,116 @@ def _guardar_constructor(
                 {placeholder},
                 {placeholder}
             )
-        """, (
-
-            pedido_id,
-
-            tipo_item,
-
-            cantidad,
-
-            precio
-
-        ))
+            """,
+            (
+                pedido_id,
+                tipo_item,
+                cantidad,
+                precio
+            )
+        )
 
     fila = cursor.fetchone()
 
     if not fila:
-
         raise Exception(
-
             "No fue posible crear el detalle del constructor."
-
         )
 
     detalle_pedido_id = fila[0]
 
-    componentes = item.get(
-
-        "componentes",
-
-        []
-
-    )
+    componentes = item.get("componentes") or []
 
     if not componentes:
-
-        raise Exception(
-
+        raise ValueError(
             "El constructor no tiene componentes."
-
         )
 
-    for componente in componentes:
+    # =============================================
+    # PREPARAR FOTOGRAFÍA COMERCIAL
+    # =============================================
 
-        cursor.execute(f"""
+    snapshot = item.get("_catalogo_snapshot")
+
+    if not snapshot:
+
+        nombre_item = (
+            item.get("nombre")
+            or NOMBRES_POR_TIPO_CONSTRUCTOR.get(
+                tipo_item,
+                tipo_item.replace("_", " ").title()
+            )
+        )
+
+        snapshot = {
+
+            "catalogo_item_id": None,
+
+            "linea_codigo": (
+                item.get("linea_codigo")
+                or LINEAS_POR_TIPO_CONSTRUCTOR.get(
+                    tipo_item,
+                    "ALMUERZOS"
+                )
+            ),
+
+            "item_codigo": (
+                item.get("codigo")
+                or tipo_item
+            ),
+
+            "nombre_item": nombre_item,
+
+            "tipo_item_catalogo": "MENU",
+
+            "tipo_servicio": _tipo_servicio_snapshot(
+                tipo_servicio
+            ),
+
+            # En los constructores anteriores,
+            # el precio recibido ya representa el
+            # valor completo del artículo.
+            "precio_base": precio,
+
+            "precio_adicional_unitario": Decimal("0")
+
+        }
+
+    _insertar_snapshot_cabecera(
+        cursor=cursor,
+        detalle_pedido_id=detalle_pedido_id,
+        snapshot=snapshot,
+        cantidad=cantidad,
+        precio=precio,
+        observaciones=item.get("observaciones"),
+        placeholder=placeholder
+    )
+
+    componentes_snapshot = item.get(
+        "_componentes_snapshot"
+    )
+
+    # =============================================
+    # INSERTAR COMPONENTES
+    # =============================================
+
+    for indice, componente in enumerate(
+        componentes,
+        start=1
+    ):
+
+        producto_id = componente.get(
+            "producto_id",
+            componente.get("id")
+        )
+
+        if not producto_id:
+            raise ValueError(
+                "Un componente no tiene producto_id."
+            )
+
+        cursor.execute(
+            f"""
             INSERT INTO {DETALLE_PEDIDO_COMPONENTES}
             (
                 detalle_pedido_id,
@@ -703,13 +1467,92 @@ def _guardar_constructor(
                 {placeholder},
                 {placeholder}
             )
-        """, (
+            """,
+            (
+                detalle_pedido_id,
+                producto_id
+            )
+        )
 
-            detalle_pedido_id,
+        # =========================================
+        # SNAPSHOT DE COMPONENTES DEL CATÁLOGO
+        # =========================================
 
-            componente["producto_id"]
+        if componentes_snapshot is not None:
 
-        ))
+            if indice > len(componentes_snapshot):
+
+                raise ValueError(
+                    "La cantidad de componentes históricos "
+                    "no coincide con los componentes del pedido."
+                )
+
+            snapshot_componente = (
+                componentes_snapshot[indice - 1]
+            )
+
+        else:
+
+            # Compatibilidad con el formulario anterior:
+            # los nombres se consultan directamente
+            # desde la tabla de productos.
+
+            cursor.execute(
+                f"""
+                SELECT
+                    id,
+                    nombre,
+                    categoria
+
+                FROM {PRODUCTOS}
+
+                WHERE id = {placeholder}
+                """,
+                (producto_id,)
+            )
+
+            producto = cursor.fetchone()
+
+            if not producto:
+
+                raise ValueError(
+                    f"El producto {producto_id} no existe."
+                )
+
+            snapshot_componente = {
+
+                "menu_categoria_id": None,
+
+                "categoria_codigo": None,
+
+                "categoria_nombre": (
+                    producto[2] or "COMPONENTE"
+                ),
+
+                "producto_id": producto[0],
+
+                "producto_nombre": producto[1],
+
+                "cantidad": Decimal("1"),
+
+                "precio_adicional_unitario": Decimal("0"),
+
+                "subtotal_adicional": Decimal("0"),
+
+                "predeterminado": False,
+
+                "orden_categoria": indice,
+
+                "orden_producto": indice
+
+            }
+
+        _insertar_snapshot_componente(
+            cursor=cursor,
+            detalle_pedido_id=detalle_pedido_id,
+            componente=snapshot_componente,
+            placeholder=placeholder
+        )
 
     return detalle_pedido_id
 
@@ -755,6 +1598,30 @@ def crear_pedido(data):
         )
 
         # =============================================
+        # VALIDAR Y PREPARAR ARTICULOS DEL CATALOGO
+        # =============================================
+
+        tipo_servicio = _tipo_servicio_snapshot(
+            data.get("tipo")
+        )
+
+        for item in detalles:
+
+            if not isinstance(item, dict):
+
+                raise ValueError(
+                    "El detalle del pedido tiene un formato inválido."
+                )
+
+            _preparar_detalle_catalogo(
+                cursor=cursor,
+                item=item,
+                tipo_servicio=tipo_servicio,
+                placeholder=placeholder,
+                is_postgres=is_postgres
+            )
+
+        # =============================================
         # CALCULAR TOTAL
         # =============================================
 
@@ -796,7 +1663,9 @@ def crear_pedido(data):
 
                 is_postgres=is_postgres,
 
-                placeholder=placeholder
+                placeholder=placeholder,
+
+                tipo_servicio=tipo_servicio
 
             )
 
@@ -1504,7 +2373,11 @@ def exportar_pedidos(filtros=None):
                 dp.cantidad,
                 dp.precio,
 
-                pr.nombre AS producto,
+                COALESCE(
+                    NULLIF(s.nombre_item, ''),
+                    NULLIF(pr.nombre, '')
+                ) AS producto,
+
                 pr.categoria AS categoria
 
             FROM {DETALLE_PEDIDOS} dp
@@ -1517,6 +2390,9 @@ def exportar_pedidos(filtros=None):
 
             LEFT JOIN {PRODUCTOS} pr
                 ON pr.id = dp.producto_id
+
+            LEFT JOIN {DETALLE_PEDIDO_CATALOGO_SNAPSHOT} s
+                ON s.detalle_pedido_id = dp.id
 
             {where_sql}
 
@@ -1698,6 +2574,10 @@ def exportar_pedidos(filtros=None):
                 "MENU_ESPECIAL":
                     #"Menú Especial",
                     "Cazuela",
+
+                "MENU": "Menú",
+
+                "COMBO": "Combo",
 
                 "DESAYUNO":
                     "Desayuno",
@@ -1955,7 +2835,9 @@ def transformar_detalle_pedido(detalle):
         "MENU_ESPECIAL",
         "DESAYUNO",
         "COMIDA_RAPIDA",
-        "LICOR"
+        "LICOR",
+        "MENU",
+        "COMBO"
 
     }
 
@@ -2028,44 +2910,69 @@ def obtener_detalles_pedido(
     placeholder
 ):
 
-    cursor.execute(f"""
-
+    cursor.execute(
+        f"""
         SELECT
-
-            dp.id                AS detalle_id,
+            dp.id AS detalle_id,
             dp.pedido_id,
             dp.producto_id,
             dp.tipo_item,
             dp.cantidad,
             dp.precio,
 
-            p.nombre            AS producto_nombre,
-            p.categoria         AS categoria
+            p.nombre AS producto_nombre,
+            p.categoria AS categoria,
+
+            s.nombre_item AS snapshot_nombre_item,
+            s.catalogo_item_id,
+            s.linea_codigo,
+            s.item_codigo,
+            s.tipo_item_catalogo,
+            s.tipo_servicio AS tipo_servicio_snapshot,
+            s.precio_base,
+            s.precio_adicional_unitario,
+            s.precio_unitario_final,
+            s.observaciones AS snapshot_observaciones
 
         FROM {DETALLE_PEDIDOS} dp
 
         LEFT JOIN {PRODUCTOS} p
-               ON p.id = dp.producto_id
+            ON p.id = dp.producto_id
+
+        LEFT JOIN {DETALLE_PEDIDO_CATALOGO_SNAPSHOT} s
+            ON s.detalle_pedido_id = dp.id
 
         WHERE dp.pedido_id = {placeholder}
 
         ORDER BY dp.id
+        """,
+        (pedido_id,)
+    )
 
-    """, (pedido_id,))
-
-    columns = [c[0] for c in cursor.description]
+    columns = [
+        column[0]
+        for column in cursor.description
+    ]
 
     data = []
 
-    for r in cursor.fetchall():
+    for row in cursor.fetchall():
 
-        row = dict(zip(columns, r))
+        item = dict(zip(columns, row))
 
-        row["cantidad"] = float(row.get("cantidad") or 0)
+        item["cantidad"] = float(
+            item.get("cantidad") or 0
+        )
 
-        row["precio"] = float(row.get("precio") or 0)
+        item["precio"] = float(
+            item.get("precio") or 0
+        )
 
-        data.append(row)
+        item["observaciones"] = (
+            item.get("snapshot_observaciones") or ""
+        )
+
+        data.append(item)
 
     return data
 
@@ -2079,10 +2986,56 @@ def obtener_componentes_detalle(
     placeholder
 ):
 
-    cursor.execute(f"""
+    # =============================================
+    # PRIMERO: SNAPSHOT HISTORICO
+    # =============================================
 
+    cursor.execute(
+        f"""
         SELECT
+            producto_id AS id,
+            producto_nombre AS nombre,
+            categoria_nombre AS categoria,
+            menu_categoria_id,
+            categoria_codigo,
+            precio_adicional_unitario,
+            subtotal_adicional,
+            predeterminado,
+            orden_categoria,
+            orden_producto
 
+        FROM {DETALLE_PEDIDO_COMPONENTES_SNAPSHOT}
+
+        WHERE detalle_pedido_id = {placeholder}
+
+        ORDER BY
+            orden_categoria,
+            orden_producto,
+            id
+        """,
+        (detalle_id,)
+    )
+
+    columns = [
+        column[0]
+        for column in cursor.description
+    ]
+
+    componentes = [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
+
+    if componentes:
+        return componentes
+
+    # =============================================
+    # SEGUNDO: COMPATIBILIDAD HISTORICA
+    # =============================================
+
+    cursor.execute(
+        f"""
+        SELECT
             p.id,
             p.nombre,
             p.categoria
@@ -2090,29 +3043,26 @@ def obtener_componentes_detalle(
         FROM {DETALLE_PEDIDO_COMPONENTES} dpc
 
         INNER JOIN {PRODUCTOS} p
-
             ON p.id = dpc.producto_id
 
         WHERE dpc.detalle_pedido_id = {placeholder}
 
-        ORDER BY p.categoria,
-                 p.nombre
+        ORDER BY
+            p.categoria,
+            p.nombre
+        """,
+        (detalle_id,)
+    )
 
-    """, (detalle_id,))
+    columns = [
+        column[0]
+        for column in cursor.description
+    ]
 
-    columns = [c[0] for c in cursor.description]
-
-    data = []
-
-    for r in cursor.fetchall():
-
-        data.append(
-
-            dict(zip(columns, r))
-
-        )
-
-    return data
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
 
 # ==========================================================
 # ENRIQUECER DETALLES DEL PEDIDO
@@ -2241,15 +3191,18 @@ def transformar_constructor(item):
     }
 
     detalle["nombre"] = (
-        nombres_constructores.get(
+        item.get("snapshot_nombre_item")
+
+        or item.get("nombre_item")
+
+        or nombres_constructores.get(
             tipo_item
         )
-        or tipo_item
-            .replace(
-                "_",
-                " "
-            )
-            .title()
+
+        or tipo_item.replace(
+            "_",
+            " "
+        ).title()
     )
 
     # =====================================================
@@ -2306,27 +3259,32 @@ def transformar_constructor(item):
 
     detalle["componentes"] = []
 
-    for componente in item.get(
-        "componentes",
-        []
-    ):
+    for componente in item.get("componentes", []):
 
         detalle["componentes"].append({
 
-            "producto_id":
-                componente.get(
-                    "id"
-                ),
+            "producto_id": (
+                componente.get("id")
+                or componente.get("producto_id")
+            ),
 
-            "categoria":
-                componente.get(
-                    "categoria"
-                ),
+            "categoria": (
+                componente.get("categoria")
+                or componente.get("categoria_nombre")
+            ),
 
-            "nombre":
-                componente.get(
-                    "nombre"
-                )
+            "nombre": (
+                componente.get("nombre")
+                or componente.get("producto_nombre")
+            ),
+
+            "menu_categoria_id": componente.get(
+                "menu_categoria_id"
+            ),
+
+            "precio_adicional_unitario": float(
+                componente.get("precio_adicional_unitario") or 0
+            )
 
         })
 
@@ -2336,11 +3294,37 @@ def transformar_constructor(item):
 
     detalle["metadata"] = {
 
-        "constructor":
-            True,
+        "constructor": True,
 
-        "tipo_item":
-            tipo_item
+        "tipo_item": tipo_item,
+
+        "catalogo_item_id": item.get(
+            "catalogo_item_id"
+        ),
+
+        "linea_codigo": item.get(
+            "linea_codigo"
+        ),
+
+        "item_codigo": item.get(
+            "item_codigo"
+        ),
+
+        "tipo_servicio": item.get(
+            "tipo_servicio_snapshot"
+        ),
+
+        "precio_base": float(
+            item.get("precio_base") or 0
+        ),
+
+        "precio_adicional_unitario": float(
+            item.get("precio_adicional_unitario") or 0
+        ),
+
+        "precio_unitario_final": float(
+            item.get("precio_unitario_final") or 0
+        )
 
     }
 
@@ -2384,11 +3368,18 @@ def transformar_producto(item):
 
     detalle = crear_item_detalle()
 
-    detalle["id"] = item.get("id")
+    detalle["id"] = (
+        item.get("detalle_id")
+        or item.get("id")
+    )
 
     detalle["tipo"] = "PRODUCTO"
 
-    detalle["nombre"] = item.get("nombre")
+    detalle["nombre"] = (
+        item.get("snapshot_nombre_item")
+        or item.get("producto_nombre")
+        or item.get("nombre")
+    )
 
     detalle["cantidad"] = item.get("cantidad")
 
@@ -2404,12 +3395,8 @@ def transformar_producto(item):
 
     )
 
-    detalle["observaciones"] = item.get(
-
-        "observaciones",
-
-        ""
-
+    detalle["observaciones"] = (
+        item.get("snapshot_observaciones") or ""
     )
 
     return detalle
@@ -2435,7 +3422,9 @@ def agrupar_detalle_pedido(rows):
         "MENU_ESPECIAL",
         "DESAYUNO",
         "COMIDA_RAPIDA",
-        "LICOR"
+        "LICOR",
+        "MENU",
+        "COMBO"
 
     }
 
@@ -2841,16 +3830,20 @@ def facturar_pedido(
         cursor.execute(
             f"""
             SELECT
-                producto_id,
-                tipo_item,
-                cantidad,
-                precio
+                dp.producto_id,
+                dp.tipo_item,
+                dp.cantidad,
+                dp.precio,
+                s.nombre_item
 
-            FROM {DETALLE_PEDIDOS}
+            FROM {DETALLE_PEDIDOS} dp
 
-            WHERE pedido_id = {placeholder}
+            LEFT JOIN {DETALLE_PEDIDO_CATALOGO_SNAPSHOT} s
+                ON s.detalle_pedido_id = dp.id
 
-            ORDER BY id
+            WHERE dp.pedido_id = {placeholder}
+
+            ORDER BY dp.id
             """,
             (pedido_id,)
         )
@@ -2902,7 +3895,8 @@ def facturar_pedido(
             producto_id,
             tipo_item,
             cantidad,
-            precio
+            precio,
+            nombre_item
         ) in detalles_db:
 
             tipo_item = str(
@@ -2917,7 +3911,9 @@ def facturar_pedido(
 
                 "cantidad": float(cantidad or 0),
 
-                "precio": float(precio or 0)
+                "precio": float(precio or 0),
+
+                "nombre_item": nombre_item
 
             })
 

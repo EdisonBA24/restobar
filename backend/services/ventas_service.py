@@ -363,7 +363,8 @@ def crear_venta(data):
                         f"Producto {producto_id} no existe"
                     )
 
-                nombre_item = producto[0]
+                if not nombre_item:
+                    nombre_item = producto[0]
 
                 if not nombre_item:
                     raise Exception(

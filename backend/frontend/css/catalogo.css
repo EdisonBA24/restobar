@@ -1,0 +1,1337 @@
+/* ==========================================================
+   PARCHE EL ANTOJO
+   CATALOGO COMERCIAL
+========================================================== */
+
+.catalogo-page {
+    background: #f1f5f9;
+}
+
+
+/* ==========================================================
+   ENCABEZADO
+========================================================== */
+
+.catalogo-page .catalogo-page-header {
+    margin-bottom: 22px;
+}
+
+.catalogo-page .catalogo-page-header h2 {
+    margin: 0 0 8px;
+    color: #0f172a;
+    font-size: 23px;
+    font-weight: 750;
+}
+
+.catalogo-page .catalogo-page-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+/* ==========================================================
+   LINEA COMERCIAL
+========================================================== */
+
+.catalogo-page .catalogo-lineas-card {
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.catalogo-page .catalogo-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+}
+
+.catalogo-page .catalogo-toolbar .form-group {
+    width: min(100%, 360px);
+    margin: 0;
+}
+
+.catalogo-page .catalogo-toolbar-info {
+    flex: 1;
+    text-align: right;
+    color: #64748b;
+    font-size: 13px;
+}
+
+
+/* ==========================================================
+   PESTAÑAS
+========================================================== */
+
+.catalogo-page .catalogo-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.catalogo-page .catalogo-tab {
+    border: 0;
+    border-bottom: 3px solid transparent;
+    padding: 13px 18px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 650;
+    transition: .2s ease;
+}
+
+.catalogo-page .catalogo-tab:hover {
+    color: #2563eb;
+    background: #eff6ff;
+}
+
+.catalogo-page .catalogo-tab.active {
+    color: #1d4ed8;
+    border-bottom-color: #2563eb;
+}
+
+
+/* ==========================================================
+   PANELES
+========================================================== */
+
+.catalogo-page .catalogo-panel {
+    padding: 23px;
+    border-radius: 16px;
+}
+
+.catalogo-page .catalogo-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 22px;
+}
+
+.catalogo-page .catalogo-panel-header h3 {
+    margin: 0 0 6px;
+    font-size: 19px;
+    color: #0f172a;
+}
+
+.catalogo-page .catalogo-panel-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+}
+
+
+/* ==========================================================
+   FILTROS
+========================================================== */
+
+.catalogo-page .catalogo-filtros {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(180px, 280px);
+    gap: 15px;
+    margin-bottom: 24px;
+}
+
+.catalogo-page .catalogo-filtros .form-group {
+    margin: 0;
+    min-width: 0;
+}
+
+
+/* ==========================================================
+   GRID DE ARTICULOS
+========================================================== */
+
+.catalogo-page .catalogo-items-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.catalogo-page .catalogo-item-card {
+    min-width: 0;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .045);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.catalogo-page .catalogo-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, .09);
+}
+
+.catalogo-page .catalogo-item-image {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    background: #f1f5f9;
+}
+
+.catalogo-page .catalogo-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.catalogo-page .catalogo-item-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #eff6ff, #e2e8f0);
+    color: #64748b;
+    font-size: 52px;
+}
+
+.catalogo-page .catalogo-type-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: rgba(15, 23, 42, .84);
+    color: white;
+    font-size: 10px;
+    font-weight: 750;
+}
+
+.catalogo-page .catalogo-featured-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 10px;
+    font-weight: 750;
+}
+
+.catalogo-page .catalogo-item-content {
+    padding: 15px;
+}
+
+.catalogo-page .catalogo-item-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.catalogo-page .catalogo-item-heading h4 {
+    margin: 0 0 5px;
+    color: #0f172a;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+.catalogo-page .catalogo-item-heading div>span {
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.catalogo-page .catalogo-item-description {
+    min-height: 37px;
+    margin: 12px 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.catalogo-page .catalogo-item-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 13px 0;
+    padding: 11px 0;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.catalogo-page .catalogo-item-meta span {
+    color: #64748b;
+    font-size: 11px;
+}
+
+.catalogo-page .catalogo-item-meta strong {
+    color: #15803d;
+    font-size: 15px;
+    font-weight: 750;
+}
+
+
+/* ==========================================================
+   ESTADOS
+========================================================== */
+
+.catalogo-page .status-active {
+    display: inline-flex;
+    padding: 4px 8px;
+    border-radius: 20px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 10px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.catalogo-page .status-inactive {
+    display: inline-flex;
+    padding: 4px 8px;
+    border-radius: 20px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 10px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   ACCIONES
+========================================================== */
+
+.catalogo-page .catalogo-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.catalogo-page .btn-small {
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    color: #334155;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 650;
+    transition: .2s ease;
+}
+
+.catalogo-page .btn-small:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 7px rgba(15, 23, 42, .08);
+}
+
+.catalogo-page .btn-edit:hover {
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
+.catalogo-page .btn-price:hover {
+    border-color: #86efac;
+    color: #15803d;
+}
+
+.catalogo-page .btn-danger-soft {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #be123c;
+}
+
+.catalogo-page .btn-success-soft {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #15803d;
+}
+
+
+/* ==========================================================
+   CATEGORIAS COMERCIALES
+========================================================== */
+
+.catalogo-page .catalogo-categorias-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.catalogo-page .catalogo-category-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 13px;
+    background: white;
+}
+
+.catalogo-page .catalogo-category-info {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    flex: 1;
+    min-width: 0;
+}
+
+.catalogo-page .catalogo-category-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 55px;
+    width: 55px;
+    height: 55px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #eff6ff;
+    font-size: 25px;
+}
+
+.catalogo-page .catalogo-category-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.catalogo-page .catalogo-category-info h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: #0f172a;
+}
+
+.catalogo-page .catalogo-category-info span {
+    color: #64748b;
+    font-size: 11px;
+}
+
+.catalogo-page .catalogo-category-info p {
+    margin: 5px 0 0;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.catalogo-page .catalogo-category-status {
+    flex: 0 0 auto;
+}
+
+
+/* ==========================================================
+   FORMULARIOS
+========================================================== */
+
+.catalogo-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.catalogo-form-grid .form-group {
+    min-width: 0;
+    margin: 0;
+}
+
+.catalogo-form-full {
+    grid-column: 1 / -1;
+}
+
+.catalogo-form-grid input,
+.catalogo-form-grid select,
+.catalogo-form-grid textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.catalogo-checkbox-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: center;
+    gap: 13px;
+}
+
+.catalogo-checkbox-field label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #475569;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.catalogo-checkbox-field input {
+    width: 17px;
+    height: 17px;
+    accent-color: #2563eb;
+}
+
+.catalogo-form-grid input[readonly] {
+    background: #f1f5f9;
+    cursor: not-allowed;
+}
+
+
+/* ==========================================================
+   VISTA PREVIA DE IMAGEN
+========================================================== */
+
+.catalogo-image-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 130px;
+    margin-top: 10px;
+    overflow: hidden;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.catalogo-image-preview img {
+    width: 100%;
+    max-height: 190px;
+    object-fit: contain;
+}
+
+.catalogo-image-preview span {
+    padding: 20px;
+}
+
+
+/* ==========================================================
+   MODALES
+========================================================== */
+
+.catalogo-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    overflow-y: auto;
+    background: rgba(15, 23, 42, .65);
+    backdrop-filter: blur(3px);
+}
+
+.catalogo-modal.hidden {
+    display: none !important;
+}
+
+.catalogo-modal-content {
+    width: min(100%, 680px);
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 25px;
+    border-radius: 17px;
+    background: #fff;
+    box-shadow: 0 20px 55px rgba(0, 0, 0, .25);
+}
+
+.catalogo-modal-wide {
+    width: min(100%, 820px);
+}
+
+.catalogo-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 22px;
+    padding-bottom: 17px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.catalogo-modal-header h3 {
+    margin: 0 0 5px;
+    color: #0f172a;
+    font-size: 20px;
+}
+
+.catalogo-modal-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.catalogo-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+.catalogo-modal-close:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.catalogo-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 24px;
+    padding-top: 17px;
+    border-top: 1px solid #e2e8f0;
+}
+
+
+/* ==========================================================
+   PRECIOS
+========================================================== */
+
+.catalogo-price-notice {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 18px;
+    padding: 13px;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: #eff6ff;
+}
+
+.catalogo-price-notice strong {
+    color: #1d4ed8;
+    font-size: 12px;
+}
+
+.catalogo-price-notice span {
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.catalogo-prices-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.catalogo-price-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(120px, 180px) 75px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.catalogo-price-row strong {
+    display: block;
+    color: #0f172a;
+    font-size: 13px;
+}
+
+.catalogo-price-row small {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.catalogo-price-row input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.catalogo-price-row label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #64748b;
+    font-size: 10px;
+}
+
+.catalogo-price-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #16a34a;
+}
+
+.catalogo-history {
+    margin-top: 22px;
+    padding-top: 17px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.catalogo-history h4 {
+    margin: 0 0 14px;
+    color: #0f172a;
+    font-size: 15px;
+}
+
+.catalogo-history-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.catalogo-history-table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.catalogo-history-table th {
+    padding: 10px;
+    background: #f1f5f9;
+    color: #475569;
+    text-align: left;
+}
+
+.catalogo-history-table td {
+    padding: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+}
+
+.catalogo-history-empty {
+    padding: 20px;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #64748b;
+    text-align: center;
+    font-size: 13px;
+}
+
+
+/* ==========================================================
+   ESTADOS VACIOS Y CARGA
+========================================================== */
+
+.catalogo-loading {
+    grid-column: 1 / -1;
+    padding: 40px 15px;
+    color: #64748b;
+    text-align: center;
+    font-size: 13px;
+}
+
+.catalogo-empty {
+    padding: 35px 15px;
+    color: #64748b;
+    text-align: center;
+}
+
+.catalogo-empty>span,
+.catalogo-no-access>div {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 38px;
+}
+
+.catalogo-empty strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #334155;
+    font-size: 15px;
+}
+
+.catalogo-empty p {
+    margin: 0;
+    font-size: 12px;
+}
+
+.catalogo-error {
+    grid-column: 1 / -1;
+    padding: 20px;
+    border-radius: 10px;
+    background: #fff1f2;
+    color: #be123c;
+    font-size: 13px;
+}
+
+.catalogo-no-access {
+    max-width: 550px;
+    margin: 60px auto;
+    padding: 40px 25px;
+    text-align: center;
+}
+
+.catalogo-no-access h2 {
+    color: #0f172a;
+}
+
+.catalogo-no-access p {
+    margin-bottom: 20px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+
+/* ==========================================================
+   TOASTS
+========================================================== */
+
+.catalogo-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.catalogo-toast {
+    max-width: min(380px, calc(100vw - 40px));
+    padding: 13px 18px;
+    border-radius: 10px;
+    background: #0f172a;
+    color: white;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, .15);
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: .25s ease;
+}
+
+.catalogo-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.catalogo-toast.success {
+    background: #166534;
+}
+
+.catalogo-toast.error {
+    background: #991b1b;
+}
+
+.catalogo-toast.warning {
+    background: #92400e;
+}
+
+
+/* ==========================================================
+   RESPONSIVE - TABLETS
+========================================================== */
+
+@media (max-width: 1100px) {
+
+    .catalogo-page .catalogo-items-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .catalogo-page .catalogo-categorias-list {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+/* ==========================================================
+   RESPONSIVE - MOVILES Y PANTALLAS TACTILES
+========================================================== */
+
+@media (max-width: 700px) {
+
+    .catalogo-page .catalogo-panel {
+        padding: 15px;
+    }
+
+    .catalogo-page .catalogo-panel-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .catalogo-page .catalogo-panel-header>button {
+        width: 100%;
+    }
+
+    .catalogo-page .catalogo-filtros {
+        grid-template-columns: 1fr;
+    }
+
+    .catalogo-page .catalogo-items-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .catalogo-page .catalogo-item-image {
+        height: 210px;
+    }
+
+    .catalogo-page .catalogo-category-card {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .catalogo-page .catalogo-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .catalogo-page .catalogo-toolbar .form-group {
+        width: 100%;
+    }
+
+    .catalogo-page .catalogo-toolbar-info {
+        text-align: left;
+    }
+
+    .catalogo-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .catalogo-form-full {
+        grid-column: auto;
+    }
+
+    .catalogo-modal {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .catalogo-modal-content {
+        width: 100%;
+        max-height: 94vh;
+        padding: 20px;
+        border-radius: 18px 18px 0 0;
+    }
+
+    .catalogo-price-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .catalogo-price-row>div {
+        grid-column: 1 / -1;
+    }
+
+    .catalogo-price-row label {
+        justify-content: flex-end;
+    }
+
+    .catalogo-modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .catalogo-modal-actions button {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .catalogo-toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+
+    .catalogo-toast {
+        max-width: none;
+    }
+
+}
+
+
+/* ==========================================================
+   MODO TACTIL
+========================================================== */
+
+.touch-mode .catalogo-page .btn-small {
+    min-height: 44px;
+    padding: 9px 12px;
+}
+
+.touch-mode .catalogo-page .catalogo-tab {
+    min-height: 48px;
+}
+
+.touch-mode .catalogo-page input,
+.touch-mode .catalogo-page select {
+    min-height: 44px;
+}
+
+
+
+/* ==========================================================
+   CONFIGURACION INTERNA DE MENUS
+========================================================== */
+
+.menu-config-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 13px 15px;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.menu-config-toolbar {
+    margin-bottom: 18px;
+}
+
+.menu-categorias-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.menu-categoria-card {
+    min-width: 0;
+    padding: 17px;
+    border: 1px solid #e2e8f0;
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, .035);
+}
+
+.menu-categoria-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.menu-categoria-code {
+    margin-bottom: 5px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: .5px;
+}
+
+.menu-categoria-top h4 {
+    margin: 0 0 6px;
+    color: #0f172a;
+    font-size: 16px;
+}
+
+.menu-categoria-top p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.menu-categoria-reglas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 15px 0;
+    padding: 11px 0;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.menu-categoria-reglas span {
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 650;
+}
+
+
+/* ==========================================================
+   PRODUCTOS ASOCIADOS A CATEGORIAS
+========================================================== */
+
+.menu-productos-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 17px;
+    padding: 13px;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: #eff6ff;
+}
+
+.menu-productos-info strong {
+    color: #1e40af;
+    font-size: 12px;
+}
+
+.menu-productos-info span {
+    color: #475569;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.menu-productos-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 3px;
+}
+
+.menu-producto-row {
+    display: grid;
+    grid-template-columns: 25px 58px minmax(120px, 1fr) minmax(150px, 210px);
+    align-items: center;
+    gap: 12px;
+    padding: 11px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.menu-producto-row.hidden {
+    display: none !important;
+}
+
+.menu-producto-check input {
+    width: 19px;
+    height: 19px;
+    accent-color: #2563eb;
+    cursor: pointer;
+}
+
+.menu-producto-imagen {
+    width: 58px;
+    height: 58px;
+    overflow: hidden;
+    border-radius: 9px;
+    background: #f1f5f9;
+}
+
+.menu-producto-imagen img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.menu-producto-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #64748b;
+    font-size: 25px;
+}
+
+.menu-producto-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.menu-producto-info strong {
+    color: #0f172a;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.menu-producto-info span {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.menu-producto-info small {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.menu-producto-config {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+}
+
+.menu-producto-config label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #64748b;
+    font-size: 10px;
+}
+
+.menu-producto-config input[type="number"] {
+    width: 95px;
+    min-height: 32px;
+    padding: 5px 7px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.menu-producto-config input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #2563eb;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width: 850px) {
+
+    .menu-categorias-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .menu-producto-row {
+        grid-template-columns: 25px 55px minmax(0, 1fr);
+    }
+
+    .menu-producto-config {
+        grid-column: 1 / -1;
+        padding-top: 10px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .menu-producto-config label {
+        justify-content: flex-start;
+    }
+
+}
+
+@media (max-width: 550px) {
+
+    .menu-config-summary {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .menu-producto-row {
+        gap: 8px;
+        padding: 9px;
+    }
+
+    .menu-producto-imagen {
+        width: 50px;
+        height: 50px;
+    }
+
+}
+
+
+/* =====================================================
+   DISTRIBUCION DEFINITIVA DE CATEGORIAS COMERCIALES
+===================================================== */
+
+.catalogo-page .catalogo-category-card {
+
+    display: grid;
+
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    align-items: center;
+
+    column-gap: 14px;
+
+    row-gap: 12px;
+
+}
+
+.catalogo-page .catalogo-category-info {
+
+    grid-column: 1;
+
+    min-width: 0;
+
+}
+
+.catalogo-page .catalogo-category-status {
+
+    grid-column: 2;
+
+    align-self: start;
+
+}
+
+.catalogo-page .catalogo-category-card > .catalogo-card-actions {
+
+    grid-column: 1 / -1;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    justify-content: flex-start;
+
+    gap: 8px;
+
+    width: 100%;
+
+}
+
+/* Los botones deben mantener su tamaño horizontal. */
+
+.catalogo-page .catalogo-card-actions > .btn-small {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: auto;
+
+    min-width: max-content;
+
+    min-height: 38px;
+
+    height: auto;
+
+    padding: 8px 12px;
+
+    border-radius: 8px;
+
+    white-space: nowrap;
+
+}
+
+/* Responsive */
+
+@media (max-width: 600px) {
+
+    .catalogo-page .catalogo-category-card {
+
+        grid-template-columns: minmax(0, 1fr) auto;
+
+        padding: 12px;
+
+    }
+
+    .catalogo-page .catalogo-card-actions {
+
+        gap: 6px;
+
+    }
+
+}

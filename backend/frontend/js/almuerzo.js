@@ -539,6 +539,12 @@ function registrarEventos() {
         agregarAdicionDesdePedido
     );
 
+
+    elementosDOM.divPedido?.addEventListener(
+        "click",
+        manejarCantidadMenuPedido
+    );
+
     elementosDOM.btnCancelar?.addEventListener(
 
         "click",
@@ -3708,6 +3714,60 @@ function buscarProducto(
 
 /********************************************************************/
 
+// =====================================================
+// FIRMA PARA IDENTIFICAR MENUS IDENTICOS
+// =====================================================
+
+function obtenerFirmaMenuPedido(almuerzo) {
+
+    const componentes = (
+        almuerzo.componentesSeleccionados || []
+    )
+        .map(componente => ({
+
+            categoria: Number(
+                componente.menu_categoria_id
+            ),
+
+            producto: Number(
+                componente.producto_id
+            ),
+
+            cantidad: Number(
+                componente.cantidad || 1
+            )
+
+        }))
+        .sort((a, b) => {
+
+            return (
+                a.categoria - b.categoria ||
+                a.producto - b.producto
+            );
+
+        });
+
+    return JSON.stringify({
+
+        catalogoItemId: Number(
+            almuerzo.catalogoItemId
+        ),
+
+        precio: Number(
+            almuerzo.precio || 0
+        ).toFixed(2),
+
+        observaciones: String(
+            almuerzo.observaciones || ""
+        ).trim(),
+
+        componentes
+
+    });
+
+}
+
+
 /********************************************************************
  * PEDIDO
  ********************************************************************/
@@ -3718,23 +3778,27 @@ function agregarAlPedido() {
     if (faltantes.length > 0) {
 
         mostrarToast(
-
             `Se agregará el pedido sin: ${faltantes.join(", ")}.`,
-
             "warning"
-
         );
 
     }
 
     const almuerzo = almuerzoActual.duplicar();
 
+    almuerzo.cantidad = Math.max(
+        1,
+        parseInt(almuerzo.cantidad || 1, 10)
+    );
+
+    // =============================================
+    // EDITAR UN ARTICULO EXISTENTE
+    // =============================================
+
     if (editandoId) {
 
         const indice = almuerzosPedido.findIndex(
-
             item => item.id === editandoId
-
         );
 
         if (indice >= 0) {
@@ -3743,7 +3807,51 @@ function agregarAlPedido() {
 
         }
 
-    } else {
+    }
+
+    // =============================================
+    // AGREGAR O AGRUPAR MENU COMERCIAL
+    // =============================================
+
+    else if (almuerzo.catalogoItemId) {
+
+        const firmaNueva = obtenerFirmaMenuPedido(
+            almuerzo
+        );
+
+        const existente = almuerzosPedido.find(
+            item => {
+
+                if (!item.catalogoItemId)
+                    return false;
+
+                return (
+                    obtenerFirmaMenuPedido(item) ===
+                    firmaNueva
+                );
+
+            }
+        );
+
+        if (existente) {
+
+            existente.cantidad =
+                Number(existente.cantidad || 1) +
+                Number(almuerzo.cantidad || 1);
+
+        } else {
+
+            almuerzosPedido.push(almuerzo);
+
+        }
+
+    }
+
+    // =============================================
+    // ADICIONES Y OTROS ARTICULOS
+    // =============================================
+
+    else {
 
         almuerzosPedido.push(almuerzo);
 
@@ -3755,7 +3863,6 @@ function agregarAlPedido() {
 
     limpiarFormulario();
 
-    //actualizarResumen();
     actualizarResumenActual();
 
     renderPedido();
@@ -4046,6 +4153,69 @@ function renderPedido() {
 
 }
 
+// =====================================================
+// MODIFICAR CANTIDAD DE MENUS EN EL PEDIDO
+// =====================================================
+
+function manejarCantidadMenuPedido(event) {
+
+    const boton = event.target.closest(
+        "[data-menu-qty-action]"
+    );
+
+    if (!boton)
+        return;
+
+    const id = boton.dataset.almuerzoId;
+
+    const almuerzo = almuerzosPedido.find(
+        item => item.id === id
+    );
+
+    if (!almuerzo || !almuerzo.catalogoItemId)
+        return;
+
+    const accion = boton.dataset.menuQtyAction;
+
+    let cantidad = Number(
+        almuerzo.cantidad || 1
+    );
+
+    if (accion === "increment") {
+
+        cantidad += 1;
+
+    } else if (accion === "decrement") {
+
+        cantidad = Math.max(
+            1,
+            cantidad - 1
+        );
+
+    } else {
+
+        return;
+
+    }
+
+    if (cantidad > 99) {
+
+        mostrarToast(
+            "La cantidad máxima por línea es 99.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    almuerzo.cantidad = cantidad;
+
+    renderPedido();
+
+}
+
+
 function crearCardAlmuerzo(
 
     almuerzo,
@@ -4057,6 +4227,16 @@ function crearCardAlmuerzo(
     const card = document.createElement("div");
 
     card.className = "pedido-item";
+
+    const cantidadItem = Math.max(
+        1,
+        Number(almuerzo.cantidad || 1)
+    );
+
+    const subtotalLinea = (
+        Number(almuerzo.precio || 0) *
+        cantidadItem
+    );
 
     card.innerHTML = `
 
@@ -4082,19 +4262,63 @@ function crearCardAlmuerzo(
 
                 <div class="pedido-precio">
 
-                    ${formatearMoneda(almuerzo.precio)}
+                    ${formatearMoneda(subtotalLinea)}
 
                     <small>
 
-                        ${almuerzo.modo === MODOS.MENU
-            ? "Precio fijo del menú"
-            : "Adición"}
+                        ${almuerzo.catalogoItemId
+            ? `${cantidadItem} × ${formatearMoneda(almuerzo.precio)}`
+            : "Adición"
+        }
 
                     </small>
 
                 </div>
 
             </div>
+
+            ${almuerzo.catalogoItemId
+            ? `
+
+                    <div class="pedido-menu-quantity">
+
+                        <span>Unidades del menú</span>
+
+                        <div class="pedido-menu-stepper">
+
+                            <button
+                            type="button"
+                            class="pedido-menu-qty-btn"
+                            data-menu-qty-action="decrement"
+                            data-almuerzo-id="${escaparHTML(almuerzo.id)}"
+                            aria-label="Disminuir cantidad">
+
+                            −
+
+                            </button>
+
+                            <strong>
+                                ${cantidadItem}
+                            </strong>
+
+                            <button
+                            type="button"
+                            class="pedido-menu-qty-btn"
+                            data-menu-qty-action="increment"
+                            data-almuerzo-id="${escaparHTML(almuerzo.id)}"
+                            aria-label="Aumentar cantidad">
+
+                            +
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                `
+            : ""
+        }
 
             <div class="pedido-componentes">
 
@@ -4346,11 +4570,10 @@ function generarComponentesCatalogoCard(almuerzo) {
 
                 <span>
                     ${escaparHTML(componente.producto_nombre)}
-                    ${
-                        Number(componente.cantidad || 1) > 1
-                        ? ` × ${Number(componente.cantidad)}`
-                        : ""
-                    }
+                    ${Number(componente.cantidad || 1) > 1
+                ? ` × ${Number(componente.cantidad)}`
+                : ""
+            }
                 </span>
 
             </div>
@@ -4395,17 +4618,58 @@ function actualizarResumenPedido() {
 
     const total = obtenerTotalPedido();
 
-    const cantidadMenus = almuerzosPedido.filter(item =>
-        item.catalogoItemId ||
-        item.modo === MODOS.MENU
-    ).length;
+    const cantidadMenus = almuerzosPedido.reduce(
+        (total, item) => {
 
-    const cantidadAdiciones = almuerzosPedido.filter(item =>
-        !item.catalogoItemId &&
-        item.tipo === "ADICION"
-    ).length;
+            if (
+                item.catalogoItemId ||
+                item.modo === MODOS.MENU
+            ) {
 
-    const totalItems = almuerzosPedido.length;
+                return total + Number(
+                    item.cantidad || 1
+                );
+
+            }
+
+            return total;
+
+        },
+        0
+    );
+
+
+    const cantidadAdiciones = almuerzosPedido.reduce(
+        (total, item) => {
+
+            if (
+                !item.catalogoItemId &&
+                item.tipo === "ADICION"
+            ) {
+
+                return total + Number(
+                    item.cantidad || 1
+                );
+
+            }
+
+            return total;
+
+        },
+        0
+    );
+
+
+    const totalItems = almuerzosPedido.reduce(
+        (total, item) => {
+
+            return total + Number(
+                item.cantidad || 1
+            );
+
+        },
+        0
+    );
 
     if (elementosDOM.lblTotal) {
 
@@ -4416,6 +4680,7 @@ function actualizarResumenPedido() {
 
     elementosDOM.lblCantidadMenus.textContent = cantidadMenus;
     elementosDOM.lblCantidadAdiciones.textContent = cantidadAdiciones;
+    elementosDOM.lblCantidadItems.textContent = totalItems;
     elementosDOM.lblCantidadItems.textContent = almuerzosPedido.length;
 
 }
@@ -4424,9 +4689,20 @@ function obtenerTotalPedido() {
 
     return almuerzosPedido.reduce(
 
-        (total, almuerzo) =>
+        (total, almuerzo) => {
 
-            total + Number(almuerzo.precio),
+            const cantidad = Math.max(
+                1,
+                Number(almuerzo.cantidad || 1)
+            );
+
+            const precio = Number(
+                almuerzo.precio || 0
+            );
+
+            return total + (cantidad * precio);
+
+        },
 
         0
 
@@ -4555,7 +4831,7 @@ function construirDetallesPedido() {
 
                 catalogo_item_id: almuerzo.catalogoItemId,
 
-                cantidad: 1,
+                cantidad: Number(almuerzo.cantidad || 1),
 
                 precio: almuerzo.precio,
 

@@ -1241,7 +1241,7 @@ def listar_productos_disponibles_menu_categoria(
     if not incluir_inactivos:
 
         conditions.append(
-            f"p.activo = {_true_sql()}"
+            f"p.activo = 1"
         )
 
     if search:

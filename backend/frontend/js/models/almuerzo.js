@@ -24,6 +24,8 @@ export class Almuerzo {
 
         this.precio = 0;
 
+        this.cantidad = 1;
+
         // =====================================
         // DATOS DEL CATÁLOGO
         // =====================================
@@ -75,6 +77,8 @@ export class Almuerzo {
         this.precioBase = 0;
 
         this.precio = 0;
+
+        this.cantidad = 1;
 
         this.catalogoItemId = null;
 
@@ -209,6 +213,8 @@ export class Almuerzo {
         copia.precioBase = this.precioBase;
 
         copia.precio = this.precio;
+
+        copia.cantidad = Number(this.cantidad || 1);
 
         copia.catalogoItemId = this.catalogoItemId;
 

@@ -11934,3 +11934,137 @@ button,
     }
 
 }
+
+/* =====================================================
+   CANTIDAD DE MENUS EN EL PEDIDO
+===================================================== */
+
+.pedido-menu-quantity {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin: 12px 0;
+
+    padding: 10px 12px;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 10px;
+
+    background: #f8fafc;
+
+}
+
+.pedido-menu-quantity > span {
+
+    color: #475569;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+}
+
+.pedido-menu-stepper {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+.pedido-menu-stepper strong {
+
+    min-width: 28px;
+
+    text-align: center;
+
+    color: #0f172a;
+
+    font-size: 16px;
+
+}
+
+.pedido-menu-qty-btn {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 34px;
+
+    height: 34px;
+
+    min-width: 34px;
+
+    padding: 0;
+
+    border: 1px solid #bfdbfe;
+
+    border-radius: 8px;
+
+    background: #eff6ff;
+
+    color: #2563eb;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+
+}
+
+.pedido-menu-qty-btn:hover {
+
+    background: #dbeafe;
+
+}
+
+.pedido-menu-qty-btn:active {
+
+    transform: scale(.95);
+
+}
+
+.pedido-precio small {
+
+    display: block;
+
+    margin-top: 4px;
+
+    color: #64748b;
+
+    font-size: 11px;
+
+}
+
+@media (max-width: 480px) {
+
+    .pedido-menu-quantity {
+
+        padding: 9px;
+
+    }
+
+    .pedido-menu-quantity > span {
+
+        font-size: 12px;
+
+    }
+
+}
